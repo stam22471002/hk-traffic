@@ -3156,6 +3156,7 @@
     });
     live.push(lv);
     applyLiveVisibility(lv);
+    if (lv.op === 'mtr') renderTransitStops();          // 追蹤港鐵綫：只顯示嗰條綫嘅站
     const geo = attachGeometry(lv).then(() => { if (live.includes(lv)) drawVehicles(lv); });
     await fetchLineEtas(lv);
     drawVehicles(lv);
@@ -3176,6 +3177,7 @@
     live = live.filter(x => x !== lv);
     if (panelLine === lv) panelLine = null;
     if (!live.length) { clearInterval(liveTick); clearInterval(liveFetch); liveTick = liveFetch = null; }
+    if (lv.op === 'mtr') renderTransitStops();          // 港鐵綫收起：顯示返全部站
   }
 
   function ensureLayerOn(name) {
@@ -5429,7 +5431,21 @@
     mtrFocus = null;
     if (!silent) renderTransitStops();
   }
-  const mtrStVisible = (code, z) => mtrFocus ? (z >= 11 && mtrFocus.codes.has(code)) : z >= 13;
+  // 追蹤緊一條港鐵綫（「睇 X 綫列車位置」）：只顯示嗰條綫嘅站
+  function trackedMtrCodes() {
+    const lv = live.find(l => l.op === 'mtr' && (l.tracked || l.friend));
+    if (!lv) return null;
+    const codes = new Set();
+    (MTR_LINES[lv.line]?.p || []).forEach(p => p[1].split(' ').forEach(c => codes.add(c)));
+    lv.stops.forEach(s => codes.add(s.id));
+    return codes;
+  }
+  function mtrStVisible(code, z) {
+    if (mtrFocus) return z >= 11 && mtrFocus.codes.has(code);
+    const t = trackedMtrCodes();
+    if (t) return z >= 11 && t.has(code);
+    return z >= 13;
+  }
 
   function initMapExtras() {
     if (!infoWin) return;
