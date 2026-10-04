@@ -289,6 +289,52 @@
       #search-row { padding: 6px 10px; }
       .sbox input { padding-top: 7px; padding-bottom: 7px; }
     }
+
+    /* ===== 朋友行程 ===== */
+    .fr-card { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+    .fr-card h3 { margin: 0 0 8px; font-size: 16px; }
+    .fr-field { display: block; font-size: 13px; color: var(--muted); margin-top: 10px; }
+    .fr-field input, .fr-field select { display: block; width: 100%; margin-top: 4px; background: var(--panel); color: var(--text); border: 1px solid var(--line);
+      border-radius: 8px; padding: 8px 10px; font-size: 14px; font-family: inherit; }
+    .fr-big { width: 100%; margin-top: 12px; padding: 11px; font-size: 15px; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; }
+    .fr-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .fr-btn { flex: 1 1 auto; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+      cursor: pointer; font-size: 13px; font-family: inherit; text-align: center; text-decoration: none; white-space: nowrap; }
+    .fr-btn:hover { border-color: var(--accent); }
+    .fr-btn.go { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .fr-btn.wa { background: #25d366; border-color: #25d366; color: #fff; }
+    .fr-btn.stop { color: #ff8a80; }
+    .fr-head { display: flex; gap: 10px; align-items: center; }
+    .fr-ava { font-size: 26px; width: 40px; height: 40px; border-radius: 50%; background: #ff4081; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .fr-head .tt { min-width: 0; }
+    .fr-head .tt b { display: block; font-size: 15px; }
+    .fr-head .tt small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .fr-eta { margin-top: 12px; font-size: 15px; }
+    .fr-eta b { font-size: 26px; color: #9fe3a8; }
+    .fr-eta span { color: var(--muted); font-size: 13px; }
+    .fr-parts { font-size: 13px; line-height: 1.7; margin-top: 2px; }
+    .fr-parts small, .fr-opt small { color: var(--muted); }
+    .fr-where { margin-top: 8px; font-size: 13px; line-height: 1.6; background: rgba(255,64,129,0.1); border-left: 3px solid #ff4081; padding: 6px 8px; border-radius: 4px; }
+    .fr-me { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; }
+    .fr-invite { margin-top: 10px; font-size: 13px; }
+    .fr-invite summary { cursor: pointer; font-weight: bold; }
+    .fr-link { margin-top: 6px; padding: 6px 8px; background: var(--panel); border: 1px dashed var(--line); border-radius: 6px; font-size: 12px; word-break: break-all; user-select: all; }
+    .fr-invite a { color: var(--accent); }
+    .fr-sub { margin-top: 12px; font-size: 12px; color: var(--muted); }
+    .fr-tl { list-style: none; padding: 0; margin: 4px 0 0; border-left: 2px solid var(--line); font-size: 13px; }
+    .fr-tl li { padding: 3px 0 3px 10px; line-height: 1.5; }
+    .fr-tl .tm { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+    .fr-opts { max-height: 46vh; overflow-y: auto; margin-top: 4px; }
+    .fr-opt { display: flex; gap: 8px; align-items: center; padding: 7px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .fr-opt:hover { background: var(--panel); }
+    .fr-opt .t { flex: 1; min-width: 0; font-size: 13px; }
+    .fr-opt .t small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fr-opt.best { background: rgba(0,200,83,0.1); }
+    .friend-pin { background: #ff4081; color: #fff; border: 2px solid #fff; border-radius: 14px; padding: 3px 9px; font-size: 13px; font-weight: bold;
+      white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.5); cursor: pointer; }
+    .friend-pin.stale { background: #ad1457; opacity: 0.85; }
+    .friend-pin small { font-weight: normal; margin-left: 2px; }
+    .meet-pin { background: #d93025; }
   </style>
 </head>
 <body>
@@ -310,6 +356,7 @@
       <button data-tab="overview" class="on">總覽</button>
       <button data-tab="route">路線</button>
       <button data-tab="transit">乘車</button>
+      <button data-tab="friends">朋友</button>
       <button data-tab="parking">泊車</button>
       <button data-tab="fuel">油價</button>
       <button data-tab="tolls">隧道費</button>
@@ -375,6 +422,10 @@
 
     <section class="tab" id="tab-transit">
       <div id="transit-panel"></div>
+    </section>
+
+    <section class="tab" id="tab-friends">
+      <div id="friends-panel"><div id="fr-main"></div><div id="fr-picker"></div></div>
     </section>
 
     <section class="tab" id="tab-parking">
@@ -689,6 +740,7 @@
   const deadProxies = new Set();
   const blockedUntil = new Map();   // 網站 → 幾時之前唔再直接試
   let localProxy = null;            // 用 server.js 開就係 '/proxy?url='
+  let proxyInfo = null;             // 中轉站回覆（Cloudflare 版有 trips: true）
 
   // 中轉站位置：填咗 PROXY_BASE（Cloudflare Worker）就用佢；否則用本機 server.js（同一個網址）
   const PROXY_ROOT = (typeof PROXY_BASE === 'string' ? PROXY_BASE : '').replace(/\/+$/, '');
@@ -696,7 +748,8 @@
     if (!IS_HTTP && !PROXY_ROOT) return false;
     try {
       const r = await fetch(PROXY_ROOT + '/proxy/ping', { cache: 'no-store' });
-      if (r.ok && (await r.json()).app === 'hk-traffic') { localProxy = PROXY_ROOT + '/proxy?url='; return true; }
+      const j = r.ok ? await r.json() : null;
+      if (j && j.app === 'hk-traffic') { proxyInfo = j; localProxy = PROXY_ROOT + '/proxy?url='; return true; }
     } catch (e) { /* 冇中轉站 */ }
     return false;
   })();
@@ -1717,7 +1770,7 @@
   async function walkToDest(lat, lng, dest = endPlace) {
     const key = `${lat.toFixed(5)},${lng.toFixed(5)}>${dest.lat.toFixed(5)},${dest.lng.toFixed(5)}`;
     if (!walkCache[key]) {
-      const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', { referrerPolicy: 'no-referrer-when-downgrade',
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': API_KEY,
                    'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline' },
@@ -2118,7 +2171,7 @@
     box.innerHTML = '<p>計算中…</p>';
 
     try {
-      const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', { referrerPolicy: 'no-referrer-when-downgrade',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2464,7 +2517,7 @@
   // 取消行程：清走起點終點、路線、建議、追蹤緊嘅車
   $('cancel-trip').onclick = () => {
     clearTrip();
-    live.slice().forEach(removeLiveLine);
+    live.filter(lv => !lv.friend).forEach(removeLiveLine);
     startPlace = endPlace = null;
     parkPlan = null;
     if (startMarker) startMarker.map = null;
@@ -2490,7 +2543,7 @@
     stopAnimation();
     hideWalk();
     clearInterval(etaTimer);
-    live.filter(lv => !lv.tracked).forEach(removeLiveLine);
+    live.filter(lv => !lv.tracked && !lv.friend).forEach(removeLiveLine);
     speedSites.forEach(s => { s.onRoute = false; s.el && s.el.classList.remove('on-route'); });
     rlcSites.forEach(s => { s.onRoute = false; s.el && s.el.classList.remove('on-route'); });
     allCameras.forEach(c => { c.onRoute = false; });
@@ -2509,7 +2562,7 @@
   }
 
   async function computeRoute(mode, fieldMask, extra = {}) {
-    const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+    const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', { referrerPolicy: 'no-referrer-when-downgrade',
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': API_KEY, 'X-Goog-FieldMask': fieldMask },
       body: JSON.stringify({
@@ -2642,7 +2695,7 @@
     tripLines.splice(0).forEach(l => l.setMap(null));
     tripMarkers.splice(0).forEach(m => { m.map = null; });
     clearInterval(etaTimer);
-    live.filter(lv => !lv.tracked).forEach(removeLiveLine);
+    live.filter(lv => !lv.tracked && !lv.friend).forEach(removeLiveLine);
     const gen = ++tripGen;
 
     const legs = groupLegs(transitRoutes[i]);
@@ -3859,7 +3912,7 @@
 
   async function startTracking(lv) {
     if (!lv) { toast('搵唔到呢條線嘅資料', 4000); return; }
-    live.filter(x => x.tracked).forEach(removeLiveLine);
+    live.filter(x => x.tracked && !x.friend).forEach(removeLiveLine);
     lv.tracked = true;
     panelLine = lv;
     goTab('transit');
@@ -4352,6 +4405,783 @@
   }
 
   // =====================================================================
+  // 朋友行程：朋友用手機分享位置同上車資料，你睇到佢喺邊、搭緊邊架車、仲有幾耐到
+  //   你：建立行程 → 將連結（?trip=…&k=…）WhatsApp 俾朋友
+  //   朋友：開連結 → 開始分享 → 上車時撳「我上車喇」揀路線
+  //   資料經 Cloudflare Worker（/trip）傳送，過咗時限自動刪除
+  // =====================================================================
+  const FR = { id: null, key: null, role: null, owner: false, data: null, err: '', pollT: null, tickT: null, n: 0,
+               watchId: null, wake: null, fix: null, lastSentAt: 0, lastSentPos: null, sendErr: '', chain: Promise.resolve(),
+               lv: null, lvSig: null, lvErr: '', marker: null, circle: null, trail: null, destMarker: null, fitted: false,
+               eta: null, etaT: null, g: null, tail: null, busy: false };
+  const tripsOn = () => !!(proxyInfo && proxyInfo.trips);
+  const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* 私隱模式 */ } };
+  const pageBase = () => location.origin + location.pathname;
+  const friendLink = () => `${pageBase()}?trip=${FR.id}&k=${FR.key}`;
+  const viewLink = () => `${pageBase()}?trip=${FR.id}`;
+  const agoText = ms => ms < 60000 ? Math.max(1, Math.round(ms / 1000)) + ' 秒前' : ms < 3600000 ? Math.round(ms / 60000) + ' 分鐘前' : '超過一個鐘前';
+  const minsBig = s => s < 60 ? '1 分鐘內' : Math.round(s / 60) + ' 分鐘';
+
+  async function tripCall(method, path, body) {
+    const r = await fetch(PROXY_ROOT + '/trip' + path, {
+      method, cache: 'no-store', body: body ? JSON.stringify(body) : undefined,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), { status: r.status });
+    return j;
+  }
+  // 朋友嗰邊傳資料：排隊逐個傳，唔會互相覆蓋
+  function tripPost(body) {
+    const p = FR.chain.then(async () => {
+      const j = await tripCall('POST', '/' + FR.id, { key: FR.key, ...body });
+      if (j.trip) FR.data = j.trip;
+      return j;
+    });
+    FR.chain = p.catch(() => {});
+    return p;
+  }
+
+  // ---------------------------------------------------------------------
+  // 開始
+  // ---------------------------------------------------------------------
+  async function initFriends() {
+    const panel = $('friends-panel');
+    if (!panel) return;
+    panel.addEventListener('click', onFriendsClick);
+    panel.addEventListener('input', e => { if (e.target.id === 'fr-filter') filterPicker(e.target.value); });
+    document.querySelector('#tabs button[data-tab="friends"]')?.addEventListener('click', () => renderFriends(true));
+    const q = new URLSearchParams(location.search);
+    const id = q.get('trip');
+    if (id && /^[a-z0-9]{10,32}$/.test(id)) {
+      FR.id = id;
+      FR.role = q.get('k') ? 'friend' : 'viewer';
+      FR.key = q.get('k') || lsGet('trip-key-' + id);
+      FR.owner = FR.role === 'viewer' && !!FR.key;
+      goTab('friends');
+    }
+    renderFriends(true);
+    await localProxyReady;
+    renderFriends(true);
+    if (FR.id && tripsOn()) startPolling();
+  }
+
+  function startPolling() {
+    clearInterval(FR.pollT); clearInterval(FR.tickT);
+    pollTrip();
+    FR.pollT = setInterval(pollTrip, FR.role === 'friend' ? 20000 : 8000);
+    FR.tickT = setInterval(tickFriends, 1000);
+  }
+  function stopPolling() { clearInterval(FR.pollT); clearInterval(FR.tickT); FR.pollT = FR.tickT = null; }
+
+  async function pollTrip() {
+    if (!FR.id) return;
+    try {
+      FR.data = await tripCall('GET', '/' + FR.id);
+      FR.err = '';
+    } catch (e) {
+      if (e.status === 404) { FR.err = 'gone'; stopPolling(); stopWatch(); clearFriendMap(); }
+      else FR.err = e.message;
+    }
+    renderFriends();
+  }
+
+  function tickFriends() {
+    FR.n++;
+    const safe = (f, name) => { try { f(); } catch (e) { console.warn('朋友行程：' + name, e); } };
+    safe(syncFriendLine, '路線');
+    safe(drawFriend, '地圖');
+    if (FR.n % 5 === 1) updateFriendEta().then(() => renderFriends()).catch(e => console.warn('朋友 ETA', e));
+    if (FR.role === 'friend' && FR.watchId !== null && FR.fix) sendFix(Date.now() - FR.lastSentAt > 30000);
+  }
+
+  // ---------------------------------------------------------------------
+  // 建立行程（你）
+  // ---------------------------------------------------------------------
+  async function createTrip() {
+    if (FR.busy) return;
+    FR.busy = true;
+    try {
+      const name = ($('fr-name').value || '').trim().slice(0, 30) || '朋友';
+      const sel = $('fr-dest').value;
+      let dest = null;
+      if (sel === 'end' && endPlace) dest = { name: endPlace.name, lat: endPlace.lat, lng: endPlace.lng };
+      else if (sel === 'me') { const l = myLoc || await locateMe(); dest = { name: '我而家嘅位置', lat: l.lat, lng: l.lng }; }
+      else if (sel === 'center' && map) { const c = map.getCenter(); dest = { name: '地圖中心位置', lat: c.lat(), lng: c.lng() }; }
+      const j = await tripCall('POST', '', { name, dest, hours: +$('fr-hours').value || 3 });
+      Object.assign(FR, { id: j.id, key: j.key, role: 'viewer', owner: true, data: j.trip, err: '', fitted: false });
+      lsSet('trip-key-' + j.id, j.key);
+      history.replaceState(null, '', `${location.pathname}?trip=${j.id}`);
+      startPolling();
+      renderFriends(true);
+    } catch (e) {
+      toast('建立唔到：' + e.message, 6000);
+    } finally { FR.busy = false; }
+  }
+
+  function leaveTrip() {
+    stopPolling(); stopWatch(); clearFriendMap();
+    Object.assign(FR, { id: null, key: null, role: null, owner: false, data: null, err: '', eta: null, etaT: null, g: null, tail: null });
+    history.replaceState(null, '', location.pathname);
+    renderFriends(true);
+  }
+
+  // ---------------------------------------------------------------------
+  // 分享位置（朋友）
+  // ---------------------------------------------------------------------
+  function startSharing() {
+    if (!navigator.geolocation) { toast('呢部手機嘅瀏覽器唔支援定位', 6000); return; }
+    if (FR.watchId !== null) return;
+    FR.sendErr = '';
+    FR.watchId = navigator.geolocation.watchPosition(onFix, err => {
+      FR.sendErr = { 1: '你未准許用位置：請喺網址列左邊嘅圖示開返「位置」權限，再撳一次開始分享', 2: '暫時攞唔到位置（試下行出空曠啲嘅地方）', 3: '定位逾時，會繼續試' }[err.code] || '定位失敗';
+      if (err.code === 1) stopWatch();
+      renderFriends();
+    }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+    keepAwake();
+    renderFriends();
+  }
+  function stopWatch() {
+    if (FR.watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(FR.watchId);
+    FR.watchId = null;
+    if (FR.wake) { FR.wake.release().catch(() => {}); FR.wake = null; }
+  }
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !FR.wake && document.visibilityState === 'visible') FR.wake = await navigator.wakeLock.request('screen'); FR.wake?.addEventListener('release', () => { FR.wake = null; }); }
+    catch (e) { /* 唔支援就算 */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && FR.watchId !== null) { keepAwake(); if (FR.fix) sendFix(true); }
+  });
+
+  function onFix(pos) {
+    const c = pos.coords;
+    FR.fix = { lat: c.latitude, lng: c.longitude, acc: Math.round(c.accuracy), spd: c.speed, hdg: c.heading, t: Date.now() };
+    myLoc = { lat: FR.fix.lat, lng: FR.fix.lng, acc: FR.fix.acc };
+    FR.sendErr = '';
+    sendFix(false);
+  }
+  async function sendFix(force) {
+    const f = FR.fix;
+    if (!f || FR.sending || !FR.id || FR.data?.stopped) return;
+    const since = Date.now() - FR.lastSentAt;
+    const moved = FR.lastSentPos ? distM(f.lat, f.lng, FR.lastSentPos.lat, FR.lastSentPos.lng) : Infinity;
+    if (!force && since < 10000) return;
+    if (!force && moved < 15 && since < 30000) return;
+    FR.sending = true;
+    try {
+      await tripPost({ type: 'loc', lat: f.lat, lng: f.lng, acc: f.acc, spd: f.spd, hdg: f.hdg });
+      FR.lastSentAt = Date.now();
+      FR.lastSentPos = f;
+      FR.sendErr = '';
+    } catch (e) {
+      FR.sendErr = '傳送失敗：' + e.message + '（會自動再試）';
+      FR.lastSentAt = Date.now() - 20000;     // 10 秒後再試
+      if (e.status === 409 || e.status === 404) stopWatch();
+    } finally { FR.sending = false; renderFriends(); }
+  }
+
+  // ---------------------------------------------------------------------
+  // 我上車喇：揀路線（朋友）
+  // ---------------------------------------------------------------------
+  let pickerOpts = [];
+  async function openBoardPicker() {
+    const box = $('fr-picker');
+    box.innerHTML = '<div class="fr-card">搵緊你附近嘅車站…</div>';
+    box.scrollIntoView({ block: 'nearest' });
+    let pos = FR.fix || myLoc;
+    if (!pos) { try { pos = await locateMe(); } catch (e) { /* 冇位置 */ } }
+    if (!pos) { box.innerHTML = '<div class="fr-card warnbox">未有你嘅位置：請先撳「開始分享」並准許用位置。</div>'; return; }
+    try { await loadTransitDb(); } catch (e) { /* 冇資料庫照列港鐵同渡輪 */ }
+    pickerOpts = nearbyBoardOptions(pos);
+    const row = (o, i) => {
+      const badge = o.kind === 'mtr' ? `<span class="rbadge" style="background:${MTR_LINES[o.line].c}">${esc(MTR_LINES[o.line].n)}</span>`
+        : o.kind === 'ferry' ? `<span class="rbadge" style="background:#0277bd">⛴️</span>`
+        : `<span class="rbadge" style="background:${CO_COLOR[o.co] || '#555'}">${esc(o.route)}</span>`;
+      return `<div class="fr-opt" data-fr-pick="${i}" data-r="${esc(String(o.route || '').toUpperCase())}" data-q="${esc(o.dest + ' ' + o.stopName + ' ' + o.opName).toUpperCase()}">
+        ${badge}<span class="t">往 <b>${esc(o.dest)}</b><small>${esc(o.opName)}．${esc(o.stopName)}（${Math.round(o.d)} 米）</small></span></div>`;
+    };
+    box.innerHTML = `<div class="fr-card">
+      <b>你喺邊度上車？</b> <small class="muted">（按離你最近排列）</small>
+      <div class="sbox" style="margin:6px 0"><input id="fr-filter" type="search" placeholder="打路線號碼篩選，例如 106" autocomplete="off"></div>
+      <div class="fr-opts">${pickerOpts.map(row).join('') || '<div class="note">附近 900 米冇搵到車站</div>'}</div>
+      <div class="fr-opt" data-fr-other="taxi"><span class="rbadge" style="background:#555">🚕</span><span class="t">的士／私家車</span></div>
+      <div class="fr-opt" data-fr-other="walk"><span class="rbadge" style="background:#555">🚶</span><span class="t">行路</span></div>
+      <button class="mini-btn" data-fr="pick-cancel" style="margin-top:8px">取消</button></div>`;
+  }
+  function filterPicker(q) {
+    const k = q.trim().toUpperCase();
+    const isNo = /^[0-9A-Z]+$/.test(k);         // 打路線號碼：由頭對；打中文：對目的地／站名
+    document.querySelectorAll('#fr-picker .fr-opt[data-fr-pick]').forEach(el => {
+      const ok = !k || (isNo ? el.dataset.r.startsWith(k) : el.dataset.r.includes(k) || el.dataset.q.includes(k));
+      el.style.display = ok ? '' : 'none';
+    });
+  }
+
+  // 附近可以上車嘅路線：巴士／小巴站 350 米、港鐵站 900 米、碼頭 600 米
+  function nearbyBoardOptions(pos) {
+    const out = [];
+    if (tdb) {
+      const near = [];
+      for (const id in tdb.stops) {
+        const s = tdb.stops[id], d = distM(pos.lat, pos.lng, s.location.lat, s.location.lng);
+        if (d < 350) near.push({ id, d });
+      }
+      near.sort((a, b) => a.d - b.d);
+      const seen = new Set();
+      near.forEach(({ id, d }) => (tdb.stopOps.get(id) || []).forEach(({ r, co, i }) => {
+        if (!['kmb', 'ctb', 'nlb', 'gmb'].includes(co) || seen.has(r.key)) return;
+        const ids = r.stops[co] || [];
+        if (i >= ids.length - 1) return;                      // 總站落車，唔係上車
+        seen.add(r.key);
+        const st = tdbStop(id);
+        out.push({ kind: co === 'gmb' ? 'gmb' : 'road', r, co, route: r.route, dest: r.dest?.zh || '', opName: r.co.map(c => CO_LABEL[c] || c).join('＋'),
+                   stopId: id, stopIdx: i, stopName: st.name, lat: st.lat, lng: st.lng, d,
+                   later: ids.slice(i + 1).map(tdbStop).filter(Boolean) });
+      }));
+    }
+    Object.entries(MTR_ST).forEach(([code, s]) => {
+      const d = distM(pos.lat, pos.lng, s[2], s[3]);
+      if (d > 900) return;
+      const seen = new Set();
+      mtrLinesAt(code).forEach(line => MTR_LINES[line].p.forEach(([, str], pi) => {
+        const codes = str.split(' '), i = codes.indexOf(code);
+        const dest = MTR_ST[codes[codes.length - 1]]?.[0] || '';
+        if (i < 0 || i === codes.length - 1 || seen.has(line + dest)) return;
+        seen.add(line + dest);
+        out.push({ kind: 'mtr', line, pathIdx: pi, code, route: MTR_LINES[line].n, dest, opName: '港鐵', stopName: s[0] + '站', lat: s[2], lng: s[3], d,
+                   later: codes.slice(i + 1).map(c => ({ id: c, name: MTR_ST[c][0] + '站', lat: MTR_ST[c][2], lng: MTR_ST[c][3] })) });
+      }));
+    });
+    FERRY_ROUTES.forEach((fr, fi) => fr.s.forEach((pid, i) => {
+      if (i === fr.s.length - 1 || !FERRY_PIERS[pid]) return;
+      const p = pierLL(pid), d = distM(pos.lat, pos.lng, p.lat, p.lng);
+      if (d > 600) return;
+      out.push({ kind: 'ferry', fr, ferryIdx: fi, code: pid, route: '渡輪', dest: fr.d, opName: FERRY_CO[fr.co] || '渡輪', stopName: p.name, lat: p.lat, lng: p.lng, d,
+                 later: fr.s.slice(i + 1).filter(x => FERRY_PIERS[x]).map(pierLL) });
+    }));
+    const seen = new Set();
+    return out.sort((a, b) => a.d - b.d).filter(o => {
+      const k = o.kind + '|' + o.route + '|' + o.dest + '|' + (o.co || '');
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).slice(0, 80);
+  }
+
+  // 揀咗路線：再揀落車站（預設揀最近見面地點嗰個）
+  function pickAlight(i) {
+    const o = pickerOpts[i];
+    if (!o) return;
+    const dest = FR.data?.dest;
+    let best = -1;
+    if (dest) {
+      let bd = Infinity;
+      o.later.forEach((s, k) => { const d = distM(dest.lat, dest.lng, s.lat, s.lng); if (d < bd) { bd = d; best = k; } });
+    }
+    const rows = o.later.map((s, k) => `<div class="fr-opt${k === best ? ' best' : ''}" data-fr-alight="${k}">
+      <span class="rbadge" style="background:${k === best ? '#00c853' : '#555'}">${k + 1}</span><span class="t">${esc(s.name)}${k === best ? '<small>最近見面地點</small>' : ''}</span></div>`);
+    if (best > 0) rows.unshift(rows.splice(best, 1)[0]);
+    $('fr-picker').innerHTML = `<div class="fr-card"><b>${esc(o.route)} 往 ${esc(o.dest)}：你會喺邊個站落車？</b>
+      <div class="fr-opts">${rows.join('')}
+        <div class="fr-opt" data-fr-alight="-1"><span class="rbadge" style="background:#555">?</span><span class="t">唔肯定（自動揀最近見面地點嘅站）</span></div></div>
+      <button class="mini-btn" data-fr="pick-back" style="margin-top:8px">← 揀過路線</button></div>`;
+    $('fr-picker').dataset.opt = i;
+  }
+
+  async function confirmBoard(k) {
+    const o = pickerOpts[+$('fr-picker').dataset.opt];
+    if (!o) return;
+    const al = k >= 0 ? o.later[k] : null;
+    const b = { kind: o.kind, route: o.route, dest: o.dest, opName: o.opName, stopName: o.stopName, lat: o.lat, lng: o.lng };
+    if (o.kind === 'road' || o.kind === 'gmb') Object.assign(b, { rkey: o.r.key, co: o.co, stopId: o.stopId });
+    if (o.kind === 'mtr') Object.assign(b, { line: o.line, pathIdx: o.pathIdx, code: o.code });
+    if (o.kind === 'ferry') Object.assign(b, { ferryIdx: o.ferryIdx, fco: o.fr.co, fr: o.fr.r, fb: o.fr.b, code: o.code });
+    if (al) Object.assign(b, { alightId: al.id, alightName: al.name, alat: al.lat, alng: al.lng });
+    await sendBoard(b);
+  }
+  async function sendBoard(b) {
+    $('fr-picker').innerHTML = '<div class="fr-card">傳送中…</div>';
+    try {
+      await tripPost({ type: 'board', board: b });
+      $('fr-picker').innerHTML = '';
+      toast(b.kind === 'other' ? '已記低' : `已記低：${b.route} 往 ${b.dest}`, 3000);
+      FR.etaT = null;
+      if (FR.watchId === null) startSharing();
+      renderFriends();
+    } catch (e) {
+      $('fr-picker').innerHTML = `<div class="fr-card warnbox">傳送唔到：${esc(e.message)}</div>`;
+    }
+  }
+
+  async function alightNow() {
+    const p = FR.fix || FR.data?.last;
+    const b = FR.data?.board;
+    let name = '';
+    if (FR.lv && p) { let bd = 400; FR.lv.stops.forEach(s => { const d = distM(p.lat, p.lng, s.lat, s.lng); if (d < bd) { bd = d; name = s.name; } }); }
+    if (!name && b?.alightName) name = b.alightName;
+    try { await tripPost({ type: 'alight', name, lat: p?.lat, lng: p?.lng }); FR.etaT = null; renderFriends(); }
+    catch (e) { toast('傳送唔到：' + e.message, 5000); }
+  }
+
+  // ---------------------------------------------------------------------
+  // 地圖：朋友位置、軌跡、見面地點、搭緊嗰條線
+  // ---------------------------------------------------------------------
+  function friendPos() {
+    const t = FR.data;
+    let p = t?.last ? { ...t.last } : null;
+    if (FR.role === 'friend' && FR.fix && (!p || FR.fix.t > p.t)) p = { ...FR.fix };
+    return p;
+  }
+  const gpsFresh = p => p && Date.now() - p.t < 90000 && (p.acc || 0) < 200;
+
+  function clearFriendMap() {
+    if (FR.marker) FR.marker.map = null;
+    if (FR.circle) FR.circle.setMap(null);
+    if (FR.trail) FR.trail.setMap(null);
+    if (FR.destMarker) FR.destMarker.map = null;
+    if (FR.lv) removeLiveLine(FR.lv);
+    FR.marker = FR.circle = FR.trail = FR.destMarker = FR.lv = null;
+    FR.lvSig = null;
+  }
+
+  function drawFriend() {
+    if (!map || !FR.data || !AdvancedMarkerElement) return;
+    const t = FR.data;
+    let p = friendPos();
+    let est = false;
+    if (FR.eta?.estPos && (!p || !gpsFresh(p))) { p = { ...FR.eta.estPos, acc: 0 }; est = true; }
+    if (p) {
+      if (!FR.marker) {
+        const el = document.createElement('div');
+        el.className = 'friend-pin';
+        FR.marker = new AdvancedMarkerElement({ map, content: el, zIndex: 3000, title: t.name });
+        onMarkerClick(FR.marker, () => goTab('friends'));
+        FR.circle = new google.maps.Circle({ map, strokeColor: '#ff4081', strokeOpacity: 0.5, strokeWeight: 1, fillColor: '#ff4081', fillOpacity: 0.12, clickable: false });
+      }
+      FR.marker.position = { lat: p.lat, lng: p.lng };
+      const stale = !est && Date.now() - p.t > 90000;
+      const html = `🧑 ${esc(t.name)}${est ? '<small>（推算）</small>' : stale ? '<small>（' + agoText(Date.now() - p.t) + '）</small>' : ''}`;
+      if (FR.marker.content._h !== html) { FR.marker.content.innerHTML = html; FR.marker.content._h = html; }
+      FR.marker.content.classList.toggle('stale', stale || est);
+      FR.circle.setCenter({ lat: p.lat, lng: p.lng });
+      FR.circle.setRadius(est ? 0 : Math.min(p.acc || 0, 2000));
+    }
+    const path = (t.pts || []).map(x => ({ lat: x.lat, lng: x.lng }));
+    if (path.length > 1) {
+      if (!FR.trail) FR.trail = new google.maps.Polyline({ map, strokeColor: '#ff4081', strokeOpacity: 0.7, strokeWeight: 4, zIndex: 60,
+        icons: [{ icon: { path: 'M -2,2 0,-2 2,2', scale: 2, strokeColor: '#ff4081', strokeOpacity: 1 }, offset: '0', repeat: '80px' }] });
+      if (FR.trail._n !== path.length) { FR.trail.setPath(path); FR.trail._n = path.length; }
+    }
+    if (t.dest) {
+      const key = t.dest.lat + ',' + t.dest.lng;
+      if (!FR.destMarker || FR.destMarker._k !== key) {
+        if (FR.destMarker) FR.destMarker.map = null;
+        const el = document.createElement('div');
+        el.className = 'place-pin meet-pin';
+        el.textContent = '📍 見面：' + t.dest.name.slice(0, 14);
+        FR.destMarker = new AdvancedMarkerElement({ map, content: el, position: { lat: t.dest.lat, lng: t.dest.lng }, zIndex: 2900, title: '見面地點：' + t.dest.name });
+        FR.destMarker._k = key;
+      }
+    }
+    if (!FR.fitted && (p || t.dest)) {
+      FR.fitted = true;
+      const b = new google.maps.LatLngBounds();
+      if (p) b.extend({ lat: p.lat, lng: p.lng });
+      if (t.dest) b.extend({ lat: t.dest.lat, lng: t.dest.lng });
+      if (p && t.dest) map.fitBounds(b, 70); else { map.setCenter(b.getCenter()); map.setZoom(15); }
+    }
+  }
+
+  // 朋友上咗車：喺地圖畫嗰條線同推算車輛
+  function syncFriendLine() {
+    if (!map || !FR.data) return;
+    const b = FR.data.board;
+    const sig = b ? JSON.stringify(b) : '';
+    if (sig === FR.lvSig) return;
+    FR.lvSig = sig;
+    if (FR.lv) { removeLiveLine(FR.lv); FR.lv = null; }
+    FR.lvErr = ''; FR.etaT = null; FR.tail = null;
+    if (!b || b.kind === 'other') return;
+    buildFriendLine(b, sig).catch(e => { console.warn('朋友路線', e); if (FR.lvSig === sig) { FR.lvErr = e.message; renderFriends(); } });
+  }
+
+  async function buildFriendLine(b, sig) {
+    let lv = null;
+    const boardLL = b.lat ? { lat: b.lat, lng: b.lng } : null;
+    if (b.kind === 'road' || b.kind === 'gmb') {
+      await loadTransitDb();
+      const r = tdb.routes.find(x => x.key === b.rkey);
+      if (!r) throw new Error(`路線資料搵唔到 ${b.route}`);
+      lv = b.kind === 'gmb' ? gmbLine(r, { boardId: b.stopId, boardLL }) : await busLine(r, { boardId: b.stopId, boardLL });
+    } else if (b.kind === 'mtr') {
+      const p = MTR_LINES[b.line]?.p[b.pathIdx];
+      if (!p) throw new Error('港鐵綫資料唔啱');
+      lv = mtrLine(b.line, p[0], p[1].split(' '), { boardId: b.code });
+    } else if (b.kind === 'ferry') {
+      const fr = FERRY_ROUTES[b.ferryIdx];
+      if (!fr || fr.co !== b.fco || fr.r !== b.fr) throw new Error('渡輪航線資料唔啱');
+      lv = ferryLine(fr, { boardLL });
+    }
+    if (!lv) throw new Error('暫時冇呢條線嘅實時資料');
+    if (FR.lvSig !== sig) return;
+    const nearIdx = (ll, from, max) => {
+      let bi = -1, bd = max;
+      lv.stops.forEach((s, i) => { if (i < from) return; const d = distM(ll.lat, ll.lng, s.lat, s.lng); if (d < bd) { bd = d; bi = i; } });
+      return bi;
+    };
+    let from = lv.boardIdx >= 0 ? lv.boardIdx : boardLL ? nearIdx(boardLL, 0, 800) : -1;
+    if (from < 0) from = 0;
+    let to = -1;
+    if (b.alightId) to = lv.stops.findIndex((s, i) => i > from && s.id === b.alightId);
+    if (to < 0 && b.alat) to = nearIdx({ lat: b.alat, lng: b.alng }, from + 1, 800);
+    if (to < 0 && FR.data?.dest) to = nearIdx(FR.data.dest, from + 1, 4000);
+    if (to < 0) to = lv.stops.length - 1;
+    Object.assign(lv, { friend: true, rideFrom: from, rideTo: to });
+    // 問到站時間同推算車輛都以「落車站」為準（巴士／小巴／港鐵）；渡輪照用上船碼頭計
+    if (lv.op !== 'ferry') { lv.boardIdx = to; lv.alightIdx = -1; }
+    else { lv.boardIdx = from; lv.alightIdx = to; }
+    FR.lv = lv;
+    ensureLayerOn(OPS[lv.op].layer);
+    await addLiveLine(lv);
+    if (FR.lv !== lv) removeLiveLine(lv);
+    renderFriends();
+  }
+
+  // ---------------------------------------------------------------------
+  // 仲有幾耐到
+  // ---------------------------------------------------------------------
+  // 朋友喺條線上邊個位：segs[k] 係第 k 站至第 k+1 站
+  function friendProgress(lv, p) {
+    let best = null;
+    for (let k = Math.max(0, lv.rideFrom); k < Math.min(lv.rideTo, lv.segs.length); k++) {
+      const seg = lv.segs[k];
+      if (!seg || seg.pts.length < 2) continue;
+      const c = alignPasses(seg, p, 0).reduce((m, x) => (x.off < m.off ? x : m), { off: Infinity, d: 0 });
+      if (!best || c.off < best.off) best = { k, d: c.d, off: c.off, f: seg.len ? c.d / seg.len : 1 };
+    }
+    return best;
+  }
+  const segLen = (lv, a, b) => { let s = 0; for (let k = a; k < b; k++) s += lv.segs[k]?.len || 0; return s; };
+
+  async function routeSecs(from, to, mode) {
+    const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      referrerPolicy: 'no-referrer-when-downgrade', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': API_KEY, 'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters' },
+      body: JSON.stringify({
+        origin: { location: { latLng: { latitude: from.lat, longitude: from.lng } } },
+        destination: { location: { latLng: { latitude: to.lat, longitude: to.lng } } },
+        travelMode: mode, languageCode: 'zh-HK', units: 'METRIC'
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.routes?.length) throw new Error(data.error?.message || '搵唔到路線');
+    return { secs: parseInt(data.routes[0].duration || '0'), m: data.routes[0].distanceMeters || 0 };
+  }
+  // Google 估計（每 90 秒或者行咗 200 米先再問）
+  async function googleEta(from, to, mode) {
+    const g = FR.g;
+    if (g && g.mode === mode && Date.now() - g.at < 90000 && distM(from.lat, from.lng, g.from.lat, g.from.lng) < 200 &&
+        g.to.lat === to.lat && g.to.lng === to.lng) return g;
+    try {
+      const r = await routeSecs(from, to, mode);
+      FR.g = { ...r, mode, from, to, at: Date.now(), err: '' };
+    } catch (e) {
+      FR.g = { secs: null, mode, from, to, at: Date.now(), err: e.message };
+    }
+    return FR.g;
+  }
+
+  async function updateFriendEta() {
+    const t = FR.data;
+    if (!t || !t.dest || t.stopped) { FR.eta = null; return; }
+    const p = friendPos(), now = Date.now(), dest = t.dest;
+    const b = t.board;
+    const e = { parts: [], where: '', estPos: null, secs: null, src: '' };
+    if (b && b.kind !== 'other') {
+      const lv = FR.lv;
+      if (!lv) { e.where = FR.lvErr ? `⚠️ ${FR.lvErr}` : '載入路線中…'; FR.eta = e; return; }
+      const ride = rideEta(lv, p, now);
+      Object.assign(e, { where: ride.where, estPos: ride.estPos });
+      // 落車站行去見面地點
+      const al = lv.stops[lv.rideTo];
+      const tailKey = `${al.lat},${al.lng}>${dest.lat},${dest.lng}`;
+      if (!FR.tail || FR.tail.key !== tailKey) {
+        const d = distM(al.lat, al.lng, dest.lat, dest.lng);
+        FR.tail = { key: tailKey, secs: d < 80 ? 0 : Math.round(d * 1.3 / 1.25), est: true };   // 未有 Google 結果：直線 ×1.3，每秒 1.25 米
+        if (d >= 80) routeSecs(al, dest, 'WALK').then(r => { if (FR.tail?.key === tailKey) FR.tail = { key: tailKey, secs: r.secs }; }).catch(() => {});
+      }
+      if (ride.secs !== null) {
+        e.secs = ride.secs + FR.tail.secs;
+        e.parts.push(`${OPS[lv.op].icon} ${esc(lv.op === 'ferry' ? '渡輪' : lv.short)} 到「${esc(al.name)}」${minsBig(ride.secs)}<small>（${esc(ride.src)}）</small>`);
+        if (FR.tail.secs > 30) e.parts.push(`🚶 再行 ${minsBig(FR.tail.secs)}${FR.tail.est ? '<small>（估計）</small>' : ''}`);
+      }
+    } else if (p) {
+      const d = distM(p.lat, p.lng, dest.lat, dest.lng);
+      const lastAlight = [...(t.events || [])].reverse().find(x => x.type === 'board' || x.type === 'alight');
+      const mode = b?.kind === 'other' ? (b.mode === 'taxi' ? 'DRIVE' : 'WALK') : lastAlight?.type === 'alight' || d < 1200 ? 'WALK' : 'TRANSIT';
+      const label = { DRIVE: '🚕 揸車／的士', WALK: '🚶 步行', TRANSIT: '🚌 公共交通' }[mode];
+      if (d < 60) { e.secs = 0; e.where = '已經到咗見面地點附近'; }
+      else {
+        const g = await googleEta(p, dest, mode);
+        if (g.secs !== null) { e.secs = g.secs; e.parts.push(`${label} 約 ${minsBig(g.secs)}<small>（Google 估計，由最後位置計）</small>`); }
+        else e.parts.push(`⚠️ 計唔到時間：${esc(g.err)}`);
+        e.where = nearPlaceText(p) + `．離見面地點 ${fmtDist(d)}`;
+      }
+    }
+    if (e.secs !== null) {
+      // 位置舊咗：當佢一直有行緊，扣返已經過咗嘅時間
+      const age = p && !(b && b.kind !== 'other') ? Math.max(0, (now - p.t) / 1000) : 0;
+      e.secs = Math.max(0, e.secs - age);
+      e.at = now + e.secs * 1000;
+    }
+    FR.eta = e;
+  }
+
+  // 搭緊車：用實時到站時間搵朋友架車幾時到落車站
+  function rideEta(lv, p, now) {
+    const op = OPS[lv.op] || OPS.kmb;
+    const out = { secs: null, src: '', where: '', estPos: null };
+    const to = lv.rideTo, alight = lv.stops[to];
+    if (lv.op === 'ferry') return ferryRideEta(lv, now, out);
+    const prog = gpsFresh(p) ? friendProgress(lv, p) : null;
+    const onLine = prog && prog.off < 350 ? prog : null;
+    let expect = null;
+    if (onLine) {
+      const remain = (lv.segs[onLine.k].len - onLine.d) + segLen(lv, onLine.k + 1, to);
+      const stopsLeft = Math.max(0, to - onLine.k - 1);
+      expect = remain / op.speed + stopsLeft * op.dwell;
+      const prev = lv.stops[onLine.k], next = lv.stops[onLine.k + 1];
+      out.where = `喺 ${OPS[lv.op].icon} ${esc(lv.short)} 上面，` + (onLine.f < 0.12 ? `喺「${esc(prev.name)}」附近` : `啱啱過咗「${esc(prev.name)}」，下一站「${esc(next.name)}」`) +
+        (onLine.k + 1 >= to ? '．下一站就係落車站' : `．離落車站「${esc(alight.name)}」仲有 ${to - onLine.k - 1} 個站`);
+    } else if (FR.etaT) expect = (FR.etaT - now) / 1000;
+    else {
+      // 冇 GPS 又未推算過：由上車時間同上車站計
+      const bt = FR.data?.board?.t || now;
+      expect = (bt + (segLen(lv, lv.rideFrom, to) / op.speed + Math.max(0, to - lv.rideFrom - 1) * op.dwell) * 1000 - now) / 1000;
+      if (expect < 0) expect = null;
+    }
+    // 落車站嘅實時到站時間：揀同推算最接近嗰班
+    const cands = (lv.etas?.[to] || []).filter(x => x > now - 30000);
+    let pick = null;
+    if (cands.length && expect !== null) {
+      const want = now + expect * 1000;
+      const c = cands.reduce((m, x) => (Math.abs(x - want) < Math.abs(m - want) ? x : m));
+      if (Math.abs(c - want) < Math.max(4 * 60000, expect * 500)) pick = c;
+    }
+    if (pick) { FR.etaT = pick; out.secs = Math.max(0, (pick - now) / 1000); out.src = `${lv.opName}實時到站`; }
+    else if (expect !== null) { FR.etaT = now + expect * 1000; out.secs = Math.max(0, expect); out.src = onLine ? '按距離估算' : '按之前推算倒數'; }
+    // 冇 GPS（例如港鐵喺地底）：用推算車輛位置
+    if (!onLine && FR.etaT) {
+      const rank = cands.filter(x => x < FR.etaT - 30000).length;
+      const ahead = (lv.vehicles || []).filter(v => v.towardsBoard && v.k > lv.rideFrom && v.k <= to).sort((a, b) => b.k - a.k || a.left - b.left);
+      const v = ahead[rank];
+      if (v) {
+        out.estPos = { lat: v.lat, lng: v.lng, t: now };
+        out.where = `${lv.op === 'mtr' ? '喺港鐵車廂（地底冇 GPS），' : 'GPS 暫時冇更新，'}按班次推算喺「${esc(lv.stops[v.k - 1]?.name || '')}」至「${esc(lv.stops[v.k].name)}」之間`;
+      } else if (!out.where) out.where = `${p && !gpsFresh(p) ? 'GPS 暫時冇更新（' + agoText(now - p.t) + '）．' : ''}搭緊 ${esc(lv.short)} 往 ${esc(lv.dest)}，喺「${esc(alight.name)}」落車`;
+    }
+    if (!out.where) out.where = `搭緊 ${esc(lv.short)}（GPS 位置唔喺路線附近，可能未上車或者定位唔準）`;
+    return out;
+  }
+
+  function ferryRideEta(lv, now, out) {
+    const b = FR.data.board;
+    const fwd = (lv.sailings || []).filter(s => !s.rev && s.arr > now - 60000);
+    if (!fwd.length || !lv.fwdAl) { out.where = `搭緊${esc(lv.opName)}往 ${esc(lv.dest)}`; return out; }
+    const s = fwd.reduce((m, x) => (Math.abs(x.dep - b.t) < Math.abs(m.dep - b.t) ? x : m));
+    const total = lv.fwdAl.len || 1, toFrac = segLen(lv, 0, lv.rideTo) / total;
+    const arr = s.dep + (s.arr - s.dep) * toFrac;
+    out.secs = Math.max(0, (arr - now) / 1000);
+    out.src = s.rt ? '實時船期' : '時間表';
+    if (now >= s.dep && now <= arr) {
+      const pt = s.lat ? { lat: s.lat, lng: s.lng } : pointAtD(lv.fwdAl, Math.min(1, (now - s.dep) / (s.arr - s.dep)) * total);
+      out.estPos = { ...pt, t: now };
+      out.where = `喺船上（${hhmm(s.dep)} 開），預計 ${hhmm(arr)} 到「${esc(lv.stops[lv.rideTo].name)}」`;
+    } else out.where = now < s.dep ? `等緊 ${hhmm(s.dep)} 開嗰班船` : '船應該已經泊岸';
+    return out;
+  }
+
+  function nearPlaceText(p) {
+    let best = null, bd = 250;
+    if (tdb) for (const id in tdb.stops) {
+      const s = tdb.stops[id], d = distM(p.lat, p.lng, s.location.lat, s.location.lng);
+      if (d < bd) { bd = d; best = s.name.zh; }
+    }
+    Object.values(MTR_ST).forEach(s => { const d = distM(p.lat, p.lng, s[2], s[3]); if (d < Math.min(bd, 400)) { bd = d; best = s[0] + '站'; } });
+    const spd = p.spd != null && p.spd >= 0 ? p.spd * 3.6 : null;
+    const moving = spd === null ? '' : spd < 1.5 ? '（停低咗）' : spd < 8 ? '（行緊路）' : `（時速約 ${Math.round(spd)} 公里）`;
+    return best ? `喺「${esc(best)}」附近${moving}` : `位置見地圖${moving}`;
+  }
+
+  // ---------------------------------------------------------------------
+  // 畫面
+  // ---------------------------------------------------------------------
+  function evText(ev) {
+    switch (ev.type) {
+      case 'created': return '建立行程';
+      case 'start': return '開始分享位置';
+      case 'board': {
+        const b = ev.board || {};
+        if (b.kind === 'other') return b.mode === 'taxi' ? '🚕 坐的士／私家車' : '🚶 開始行路';
+        const icon = b.kind === 'mtr' ? '🚇' : b.kind === 'ferry' ? '⛴️' : b.kind === 'gmb' ? '🚐' : '🚌';
+        return `${icon} 喺「${esc(b.stopName || '')}」上 <b>${esc(b.route || '')}</b>（往 ${esc(b.dest || '')}${b.alightName ? '，會喺「' + esc(b.alightName) + '」落' : ''}）`;
+      }
+      case 'alight': return `喺「${esc(ev.name || '')}」落車`;
+      case 'dest': return `見面地點改做「${esc(ev.name || '')}」`;
+      case 'stop': return '⏹ 停止分享';
+      default: return esc(ev.type);
+    }
+  }
+
+  function renderFriends(force) {
+    const el = $('fr-main');
+    if (!el) return;
+    if (!tripsOn()) {
+      el.innerHTML = `<div class="fr-card"><h3>👥 朋友行程</h3><div class="note">呢個功能要經 Cloudflare Worker 傳送位置。請用 GitHub Pages／workers.dev 嘅網址開，並確認「資料來源狀態」顯示「中轉站（Cloudflare）已連接」。
+        ${PROXY_ROOT ? '' : '（本機 start.bat 版本冇呢個功能，因為朋友喺外面連唔到你部電腦）'}</div></div>`;
+      el.dataset.view = 'off';
+      return;
+    }
+    if (!FR.id) {
+      if (!force && el.dataset.view === 'create') return;          // 唔好重畫，避免清走打緊嘅字
+      el.dataset.view = 'create';
+      el.innerHTML = `<div class="fr-card"><h3>👥 朋友行程</h3>
+        <div class="note" style="margin-top:0">朋友由第二度過嚟搵你？整一條連結 WhatsApp 俾佢。佢開咗撳「開始分享」，你就會見到佢喺邊、上咗邊架車、仲有幾耐到。</div>
+        <label class="fr-field">朋友名稱<input id="fr-name" maxlength="30" placeholder="例如：阿明"></label>
+        <label class="fr-field">喺邊度等<select id="fr-dest">
+          ${endPlace ? `<option value="end">終點：${esc(endPlace.name)}</option>` : ''}
+          <option value="me">我而家嘅位置</option><option value="center">地圖中心位置</option><option value="none">遲啲先講</option></select></label>
+        <label class="fr-field">分享時限<select id="fr-hours"><option value="1">1 小時</option><option value="2">2 小時</option>
+          <option value="3" selected>3 小時</option><option value="6">6 小時</option></select></label>
+        <button class="fr-big" data-fr="create">建立分享連結</button>
+        <div class="note">🔒 朋友要自己撳「開始分享」先會傳位置；時限到咗或者撳「結束」就會刪除，唔會記入 machine learning 數據。</div></div>`;
+      return;
+    }
+    el.dataset.view = 'trip';
+    if (FR.err === 'gone') {
+      el.innerHTML = `<div class="fr-card"><h3>👥 朋友行程</h3><p>呢個行程已經結束，或者過咗分享時限。</p>
+        <button class="fr-big" data-fr="leave">${FR.role === 'friend' ? '關閉' : '開新行程'}</button></div>`;
+      return;
+    }
+    const t = FR.data;
+    if (!t) { el.innerHTML = `<div class="fr-card">載入行程中…${FR.err ? `<div class="warnbox">⚠️ ${esc(FR.err)}</div>` : ''}</div>`; return; }
+    const now = Date.now(), p = friendPos();
+    const me = FR.role === 'friend';
+    const who = me ? '你' : esc(t.name);
+    const status = t.stopped ? '⏹ 已停止分享'
+      : !t.sharing && !(me && FR.fix) ? (me ? '⏳ 未開始分享' : '⏳ 等緊朋友撳「開始分享」')
+      : p && now - p.t < 60000 ? `🟢 分享緊．${agoText(now - p.t)}更新`
+      : p ? `🟠 ${agoText(now - p.t)}更新（可能熄咗螢幕、轉咗 app 或者冇網絡）` : '🟢 分享緊';
+    const e = FR.eta;
+    const etaHtml = !t.dest ? `<div class="note">未揀見面地點，所以計唔到幾耐到。${FR.owner ? '' : ''}</div>`
+      : t.stopped ? ''
+      : e && e.secs !== null && e.secs !== undefined ? `<div class="fr-eta">${me ? '你' : '大概'}仲要 <b>${e.secs < 60 ? '1 分鐘內' : Math.round(e.secs / 60) + ' 分鐘'}</b>
+          <span>（約 ${hhmm(e.at)} 到）</span></div><div class="fr-parts">${e.parts.join('<br>')}</div>`
+      : e ? `<div class="fr-parts">${e.parts.join('<br>') || '計緊…'}</div>` : (p ? '<div class="fr-parts">計緊幾耐到…</div>' : '');
+    const where = e?.where ? `<div class="fr-where">📍 ${e.where}</div>` : '';
+    const tl = (t.events || []).slice().reverse().map(ev => `<li><span class="tm">${hhmm(ev.t)}</span>${evText(ev)}</li>`).join('');
+    const exp = `分享到 ${hhmm(t.expires)}`;
+
+    let ctrl = '';
+    if (me && !t.stopped) {
+      const sharing = FR.watchId !== null;
+      ctrl = `<div class="fr-me">
+        ${sharing ? `<div>✅ 分享緊你嘅位置${FR.fix ? `（誤差約 ${FR.fix.acc} 米${FR.lastSentAt ? '，' + agoText(now - FR.lastSentAt) + '傳送' : ''}）` : '（等緊 GPS…）'}</div>
+          <div class="note" style="margin-top:2px">請保持呢個網頁開住、唔好熄螢幕或者轉去其他 app，否則手機會停咗傳送。${FR.wake ? '已設定唔會自動熄螢幕。' : ''}</div>`
+        : `<button class="fr-big" data-fr="share">▶ 開始分享我嘅位置</button>`}
+        ${FR.sendErr ? `<div class="warnbox">${esc(FR.sendErr)}</div>` : ''}
+        <div class="fr-row">
+          ${t.board ? `<button class="fr-btn" data-fr="alight">🚶 我落車喇</button>` : `<button class="fr-btn go" data-fr="board">🚌 我上車喇</button>`}
+          ${t.board ? `<button class="fr-btn" data-fr="board">🔁 轉車</button>` : ''}
+          <button class="fr-btn stop" data-fr="stop">⏹ 停止分享</button>
+        </div></div>`;
+    } else if (me && t.stopped) ctrl = `<button class="fr-big" data-fr="leave">關閉</button>`;
+
+    let invite = '';
+    if (FR.owner && !t.stopped) {
+      const msg = `我用呢個網頁睇你過嚟嘅行程，開咗之後撳「開始分享」，上車嗰陣撳「我上車喇」揀路線：`;
+      const open = !t.sharing;
+      invite = `<details class="fr-invite"${open ? ' open' : ''}><summary>🔗 俾朋友嘅連結${open ? '' : '（已經用緊）'}</summary>
+        <div class="fr-link">${esc(friendLink())}</div>
+        <div class="fr-row">
+          <button class="fr-btn go" data-fr="copy">📋 複製</button>
+          <a class="fr-btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg + '\n' + friendLink())}">WhatsApp</a>
+          ${navigator.share ? '<button class="fr-btn" data-fr="share-sheet">分享…</button>' : ''}
+        </div>
+        <div class="note">⚠️ 呢條連結可以傳位置，只好俾朋友本人。其他人想一齊睇，可以俾佢「睇」嘅連結：<a href="${esc(viewLink())}" data-fr="copy-view">複製睇嘅連結</a></div>
+      </details>`;
+    }
+    const ownerBtns = FR.owner ? `<div class="fr-row">
+        ${endPlace && (!t.dest || t.dest.lat !== endPlace.lat || t.dest.lng !== endPlace.lng) ? `<button class="fr-btn" data-fr="dest-end">📍 見面地點改做終點</button>` : ''}
+        ${!t.stopped ? `<button class="fr-btn" data-fr="extend">⏱ 延長 1 小時</button>` : ''}
+        <button class="fr-btn stop" data-fr="end">🗑 結束並刪除</button></div>` : '';
+
+    el.innerHTML = `<div class="fr-card">
+      <div class="fr-head"><span class="fr-ava">🧑</span><div class="tt"><b>${me ? `${esc(t.name)}，你嘅行程` : esc(t.name)}</b>
+        <small>${status}</small><small>${t.dest ? `見面地點：${esc(t.dest.name)}` : '未揀見面地點'}．${exp}</small></div></div>
+      ${etaHtml}${where}
+      ${t.board && FR.lv && !me ? `<div class="note">地圖上 ${OPS[FR.lv.op].icon} 係${esc(FR.lv.opName)}按實時到站時間推算嘅車輛位置；🧑 粉紅色係${who}手機 GPS 位置。</div>` : ''}
+      ${ctrl}${invite}
+      <div class="fr-row">${p || t.dest ? '<button class="fr-btn" data-fr="fit">🗺 喺地圖睇</button>' : ''}
+        ${!me ? '<button class="fr-btn" data-fr="leave">✕ 離開</button>' : ''}</div>
+      ${ownerBtns}
+      <div class="fr-sub">時間線</div><ol class="fr-tl">${tl}</ol>
+      ${FR.err ? `<div class="warnbox">⚠️ 更新唔到：${esc(FR.err)}</div>` : ''}
+      <div class="note">${me ? '你嘅位置只會傳俾邀請你嘅朋友，時限到咗會自動刪除。' : '巴士／小巴／港鐵用政府實時到站時間計，冇資料時用距離或者 Google 估計，只係大概。'}</div>
+    </div>`;
+  }
+
+  async function onFriendsClick(ev) {
+    const a = ev.target.closest('[data-fr],[data-fr-pick],[data-fr-alight],[data-fr-other]');
+    if (!a) return;
+    if (a.dataset.frPick !== undefined) return pickAlight(+a.dataset.frPick);
+    if (a.dataset.frAlight !== undefined) return confirmBoard(+a.dataset.frAlight);
+    if (a.dataset.frOther) {
+      const taxi = a.dataset.frOther === 'taxi';
+      return sendBoard({ kind: 'other', mode: a.dataset.frOther, route: taxi ? '的士／私家車' : '行路', dest: FR.data?.dest?.name || '' });
+    }
+    const act = a.dataset.fr;
+    const copy = async (txt, ok) => {
+      try { await navigator.clipboard.writeText(txt); toast(ok, 2500); }
+      catch (e) { window.prompt('複製呢條連結：', txt); }
+    };
+    switch (act) {
+      case 'create': return createTrip();
+      case 'leave': return leaveTrip();
+      case 'share': return startSharing();
+      case 'board': return openBoardPicker();
+      case 'pick-cancel': $('fr-picker').innerHTML = ''; return;
+      case 'pick-back': return openBoardPicker();
+      case 'alight': return alightNow();
+      case 'stop':
+        if (!confirm('停止分享位置？朋友會見唔到你之後嘅位置。')) return;
+        stopWatch();
+        try { await tripPost({ type: 'stop' }); } catch (e) { toast('傳送唔到：' + e.message, 5000); }
+        return renderFriends();
+      case 'copy': return copy(friendLink(), '已複製朋友連結');
+      case 'copy-view': ev.preventDefault(); return copy(viewLink(), '已複製「睇」嘅連結');
+      case 'share-sheet':
+        try { await navigator.share({ title: '分享你嘅行程', text: '開咗之後撳「開始分享」', url: friendLink() }); } catch (e) { /* 取消 */ }
+        return;
+      case 'fit': FR.fitted = false; drawFriend(); if (window.innerWidth <= 800) $('map').scrollIntoView({ behavior: 'smooth' }); return;
+      case 'extend':
+        try { await tripPost({ type: 'extend', hours: 1 }); toast('已延長 1 小時', 2500); } catch (e) { toast('延長唔到：' + e.message, 5000); }
+        return renderFriends();
+      case 'dest-end':
+        try { await tripPost({ type: 'dest', dest: { name: endPlace.name, lat: endPlace.lat, lng: endPlace.lng } }); FR.tail = null; FR.g = null; }
+        catch (e) { toast('改唔到：' + e.message, 5000); }
+        return renderFriends();
+      case 'end':
+        if (!confirm('結束並刪除呢個行程？朋友嗰邊會即刻停止。')) return;
+        try { await tripPost({ type: 'end' }); } catch (e) { /* 可能已經刪咗 */ }
+        lsSet('trip-key-' + FR.id, null);
+        return leaveTrip();
+    }
+  }
+
+  // =====================================================================
   // 行程動畫：一個圖示沿住路線郁（駕駛 🚗、步行 🚶、搭車就換成車款圖示）
   // =====================================================================
   let anim = { raf: null, marker: null, segments: null };
@@ -4480,6 +5310,7 @@
   // ===== 搜尋列（唔使等 Google 都用得：路線、港鐵站、車站）=====
   initSearchUI();
   renderTransitHint();
+  initFriends();
 
   // ===== 唔使等 Google 都可以先顯示隧道費 =====
   renderTolls();
