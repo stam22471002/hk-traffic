@@ -345,6 +345,11 @@
     @media (max-width: 800px) {
       body.side-off #mapwrap { height: 100%; }
     }
+
+    /* 已處理嘅事故 */
+    .pin.incident.done { background: #607d8b; opacity: 0.8; }
+    .item.done { opacity: 0.6; }
+    .inc-done { color: var(--green); font-size: 12px; }
   </style>
 </head>
 <body>
@@ -2031,31 +2036,82 @@
   }
 
   // ===== 特別交通消息 =====
+  // 運輸署條 XML 只有「而家」嘅消息：新消息一出、舊嘅可能就唔再喺入面。
+  // 所以自己記住：已處理（運輸署標「已完結」，或者佢已經移除咗）之後再留 15 分鐘先收起。
+  const INC_KEEP_MS = 15 * 60 * 1000;
+  const INC_STORE = 'hk-incidents-v1';
+  const incStore = new Map();          // key → 事故（包括已處理但未夠 15 分鐘）
+  (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(INC_STORE) || '[]');
+      saved.forEach(it => { if (!it.doneAt || Date.now() - it.doneAt < INC_KEEP_MS) incStore.set(it.key, it); });
+    } catch (e) { /* 冇得記就由頭開始 */ }
+  })();
+  function saveIncidents() {
+    try {
+      const list = [...incStore.values()].map(({ marker, ...rest }) => rest);
+      localStorage.setItem(INC_STORE, JSON.stringify(list));
+    } catch (e) { /* 私隱模式 */ }
+  }
+  const isClosedStatus = it => /CLOSED|RESOLVED/i.test(it.statusEn || '') || /已完結|完結|已解決|已處理|已解除|已恢復|已重開/.test(it.status || '');
+
   async function loadIncidents() {
     try {
       const res = await fetchWithTimeout(URLS.incidents);
       const xml = new DOMParser().parseFromString(await res.text(), 'text/xml');
       const g = (n, tag) => (n.getElementsByTagName(tag)[0]?.textContent || '').trim();
-      const items = [...xml.getElementsByTagName('INCIDENT_NUMBER')].map(x => x.parentNode).map(n => ({
+      const now = Date.now();
+      const fresh = [...xml.getElementsByTagName('INCIDENT_NUMBER')].map(x => x.parentNode).map(n => ({
+        no: g(n, 'INCIDENT_NUMBER'),
         heading: g(n, 'INCIDENT_HEADING_CN'), detail: g(n, 'INCIDENT_DETAIL_CN'),
         location: g(n, 'LOCATION_CN'), district: g(n, 'DISTRICT_CN'), direction: g(n, 'DIRECTION_CN'),
-        status: g(n, 'INCIDENT_STATUS_CN'), date: g(n, 'ANNOUNCEMENT_DATE'), content: g(n, 'CONTENT_CN'),
+        status: g(n, 'INCIDENT_STATUS_CN'), statusEn: g(n, 'INCIDENT_STATUS_EN'), date: g(n, 'ANNOUNCEMENT_DATE'), content: g(n, 'CONTENT_CN'),
         lat: parseFloat(g(n, 'LATITUDE')), lng: parseFloat(g(n, 'LONGITUDE'))
       }));
 
+      // 合併：同一單事故（同一個編號）用最新資料；已經唔喺運輸署清單嘅當作已處理
+      const seen = new Set();
+      fresh.forEach(f => {
+        const key = f.no || `${f.heading}|${f.location}|${f.direction}`;
+        seen.add(key);
+        const old = incStore.get(key);
+        const prevPos = old && old.approx ? { lat: old.lat, lng: old.lng } : null;
+        const it = Object.assign(old || { key, firstSeen: now }, f, { lastSeen: now, gone: false });
+        if (prevPos && !(f.lat && f.lng)) Object.assign(it, prevPos, { approx: true });
+        else if (f.lat && f.lng) it.approx = false;
+        if (isClosedStatus(it)) { if (!it.doneAt) it.doneAt = now; }
+        else delete it.doneAt;                         // 重新變返「最新情況」就唔再當已處理
+        incStore.set(key, it);
+      });
+      incStore.forEach((it, key) => {
+        if (seen.has(key)) return;
+        if (!it.gone) { it.gone = true; it.doneAt = it.doneAt || now; }
+      });
+      incStore.forEach((it, key) => { if (it.doneAt && now - it.doneAt >= INC_KEEP_MS) incStore.delete(key); });
+      saveIncidents();
+
+      // 未處理排先，新嘅排先
+      const items = [...incStore.values()].sort((a, b) => (!!a.doneAt - !!b.doneAt) || String(b.date).localeCompare(String(a.date)));
+      const active = items.filter(it => !it.doneAt);
+
       clearLayer('incidents');
-      items.forEach(it => { placeIncident(it).catch(e => console.warn('事故位置', e)); });
+      items.forEach(it => { it.marker = null; placeIncident(it).catch(e => console.warn('事故位置', e)); });
       showLayer('incidents');
 
-      $('t-incidents').textContent = items.length;
-      $('t-incidents').className = 'num ' + (items.length ? 'warn' : 'ok');
-      $('c-incidents').textContent = items.length;
+      $('t-incidents').textContent = active.length;
+      $('t-incidents').className = 'num ' + (active.length ? 'warn' : 'ok');
+      $('c-incidents').textContent = active.length + (items.length > active.length ? `+${items.length - active.length}` : '');
 
+      const doneNote = it => {
+        const left = Math.max(1, Math.ceil((INC_KEEP_MS - (now - it.doneAt)) / 60000));
+        return `<span class="inc-done">✅ ${it.gone ? '運輸署已移除' : '已處理'}（${hhmm(it.doneAt)}）．${left} 分鐘後收起</span>`;
+      };
       const listHtml = items.length ? items.map((it, i) => `
-        <div class="item" data-i="${i}">
+        <div class="item${it.doneAt ? ' done' : ''}" data-i="${i}">
           <b>${esc(it.detail || it.heading)}</b>
           ${esc(it.location)}${it.direction ? '（' + esc(it.direction) + '）' : ''}<br>
           <small>${esc(it.district)}．${esc(it.status)}．${esc(it.date)}</small>
+          ${it.doneAt ? '<br>' + doneNote(it) : ''}
         </div>`).join('') : '<div class="empty">暫時冇特別交通消息</div>';
       $('list-incidents').innerHTML = listHtml;
       $('overview-news').innerHTML = listHtml;
@@ -2063,17 +2119,17 @@
       document.querySelectorAll('#list-incidents .item, #overview-news .item').forEach(el => {
         el.onclick = () => openIncident(items[el.dataset.i]);
       });
-      setSource('運輸署特別交通消息', true, `${items.length} 則`);
+      setSource('運輸署特別交通消息', true, `${active.length} 則${items.length > active.length ? `（另有 ${items.length - active.length} 則已處理，15 分鐘後收起）` : ''}`);
     } catch (err) {
       console.error(err);
-      $('list-incidents').innerHTML = $('overview-news').innerHTML = '<div class="empty">⚠️ 未能載入</div>';
-      setSource('運輸署特別交通消息', false, '載入失敗（' + err.message + '）');
+      if (!incStore.size) $('list-incidents').innerHTML = $('overview-news').innerHTML = '<div class="empty">⚠️ 未能載入</div>';
+      setSource('運輸署特別交通消息', false, '載入失敗（' + err.message + '），顯示緊上次嘅消息');
     }
   }
 
   function incidentHtml(it) {
     return `<b>${esc(it.heading)}：${esc(it.detail)}</b><br>${esc(it.location)} ${esc(it.direction)}<br>
-            <small>${esc(it.status)}．${esc(it.date)}</small>${it.content ? `<p>${esc(it.content)}</p>` : ''}${it.approx ? '<small>📍 運輸署冇提供座標，地圖位置係按地名搵嘅大概位置</small>' : ''}`;
+            <small>${esc(it.status)}．${esc(it.date)}</small>${it.content ? `<p>${esc(it.content)}</p>` : ''}${it.approx ? '<small>📍 運輸署冇提供座標，地圖位置係按地名搵嘅大概位置</small>' : ''}${it.doneAt ? `<br><small>✅ ${it.gone ? '運輸署已移除呢則消息' : '已處理'}（${hhmm(it.doneAt)}），15 分鐘後收起</small>` : ''}`;
   }
 
   // ===== 道路工程 =====
@@ -5345,7 +5401,7 @@
       Object.assign(it, pos, { approx: true });
     }
     if (it.marker) return it.marker;
-    it.marker = makeMarker('pin incident', '⚠ ' + (it.detail || it.heading), it.location + (it.approx ? '（大概位置）' : ''), it.lat, it.lng,
+    it.marker = makeMarker('pin incident' + (it.doneAt ? ' done' : ''), (it.doneAt ? '✅ ' : '⚠ ') + (it.detail || it.heading), it.location + (it.approx ? '（大概位置）' : ''), it.lat, it.lng,
       m => openInfo(incidentHtml(it), m));
     layerMarkers.incidents.push(it.marker);
     it.marker.map = layers.incidents ? map : null;
