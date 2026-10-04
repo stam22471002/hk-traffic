@@ -335,6 +335,16 @@
     .friend-pin.stale { background: #ad1457; opacity: 0.85; }
     .friend-pin small { font-weight: normal; margin-left: 2px; }
     .meet-pin { background: #d93025; }
+
+    /* 收起側欄／全螢幕 */
+    #view-btns { position: absolute; right: 10px; bottom: 172px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
+    #view-btns button { width: 44px; height: 44px; border-radius: 50%; border: none; background: #fff; color: #333; font-size: 20px; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+    #view-btns button:hover { background: #f1f3f4; }
+    body.side-off #side { display: none; }
+    @media (max-width: 800px) {
+      body.side-off #mapwrap { height: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -482,7 +492,7 @@
       <div id="fuel-discounts"></div>
       <h3>牌價（每公升）</h3>
       <div id="fuel-table"><div class="empty">載入中…</div></div>
-      <p class="src fuel-links">折扣資料係我喺 <b>2026-10-03</b> 由消委會「今日折扣」頁抄錄，油公司會經常改，條件以消委會為準：
+      <p class="src fuel-links"><span id="fuel-disc-src">折扣資料讀取中…</span>油公司會經常改，條件以消委會為準：
         <a href="https://oil-price.consumer.org.hk/tc/today-discount" target="_blank">核實今日折扣</a>．
         <a href="https://oil-price.consumer.org.hk/tc" target="_blank">油價資訊通</a></p>
     </section>
@@ -532,6 +542,7 @@
     <div id="legend"><span style="color:#34c759">暢順</span><span style="color:#ffb020">緩慢</span><span style="color:#ff5a5f">擠塞</span></div>
     <div id="zoom-hint">放大地圖先會顯示路面情況相機</div>
     <button id="locate-btn" title="我嘅位置">📍</button>
+    <div id="view-btns"><button id="side-btn" title="收起側欄（地圖放大）">⤢</button><button id="fs-btn" title="全螢幕">⛶</button></div>
     <div id="walk-card"></div>
     <div id="toast"></div>
   </main>
@@ -974,6 +985,7 @@
     infoWin = new InfoWindow();
     trafficLayer = new google.maps.TrafficLayer();
     trafficLayer.setMap(map);
+    initMapExtras();
 
     // 地圖停低先重畫（拖動時唔做嘢，所以唔會 lag）
     map.addListener('idle', () => { renderCameras(); renderParks(); renderMeters(); renderParkList(); renderTransitStops(); });
@@ -1930,6 +1942,7 @@
       setSource('消委會油價', false, `網上讀唔到，用 ${FUEL_FALLBACK.date} 牌價`);
     }
     renderFuel();
+    loadFuelDiscounts();
   }
 
   function renderFuel() {
@@ -1953,7 +1966,7 @@
       const save = d.pump && d.valid ? (d.pump - d.net).toFixed(2) : null;
       const note = d.expired ? '⚠️ 優惠已過期，請撳下面連結核實'
                  : d.notToday ? '今日唔適用（只限星期' + d.days.map(x => '日一二三四五六'[x]).join('、') + '）'
-                 : `平過牌價 $${save}${d.until ? `．至 ${d.until.slice(5).replace('-', '月')}日` : ''}`;
+                 : `${save ? `平過牌價 $${save}` : '會員價'}${d.until ? `．至 ${d.until.slice(5).replace('-', '月')}日` : ''}`;
       return `<div class="item" style="${i === 0 && d.valid ? 'border-color:var(--green)' : ''}">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <b>${i === 0 && d.valid ? '🏆 ' : ''}${esc(d.vendor)}</b>
@@ -2031,13 +2044,7 @@
       }));
 
       clearLayer('incidents');
-      items.forEach(it => {
-        if (it.lat && it.lng) {
-          it.marker = makeMarker('pin incident', '⚠ ' + (it.detail || it.heading), it.location, it.lat, it.lng,
-            m => openInfo(incidentHtml(it), m));
-          layerMarkers.incidents.push(it.marker);
-        }
-      });
+      items.forEach(it => { placeIncident(it).catch(e => console.warn('事故位置', e)); });
       showLayer('incidents');
 
       $('t-incidents').textContent = items.length;
@@ -2054,11 +2061,7 @@
       $('overview-news').innerHTML = listHtml;
 
       document.querySelectorAll('#list-incidents .item, #overview-news .item').forEach(el => {
-        el.onclick = () => {
-          const it = items[el.dataset.i];
-          if (it.marker) { map.setCenter({ lat: it.lat, lng: it.lng }); map.setZoom(15); openInfo(incidentHtml(it), it.marker); }
-          else alert(it.content || it.location);
-        };
+        el.onclick = () => openIncident(items[el.dataset.i]);
       });
       setSource('運輸署特別交通消息', true, `${items.length} 則`);
     } catch (err) {
@@ -2070,7 +2073,7 @@
 
   function incidentHtml(it) {
     return `<b>${esc(it.heading)}：${esc(it.detail)}</b><br>${esc(it.location)} ${esc(it.direction)}<br>
-            <small>${esc(it.status)}．${esc(it.date)}</small>${it.content ? `<p>${esc(it.content)}</p>` : ''}`;
+            <small>${esc(it.status)}．${esc(it.date)}</small>${it.content ? `<p>${esc(it.content)}</p>` : ''}${it.approx ? '<small>📍 運輸署冇提供座標，地圖位置係按地名搵嘅大概位置</small>' : ''}`;
   }
 
   // ===== 道路工程 =====
@@ -3163,7 +3166,7 @@
   function ensureLiveTimers() {
     if (liveTick) return;
     liveTick = setInterval(() => live.forEach(drawVehicles), 1000);                                   // 每秒郁一次
-    liveFetch = setInterval(() => live.forEach(lv => { fetchLineEtas(lv); }), 30000);                 // 每 30 秒更新到站時間
+    liveFetch = setInterval(() => live.forEach(lv => { fetchLineEtas(lv); }), 15000);                 // 每 15 秒更新到站時間
   }
 
   function removeLiveLine(lv) {
@@ -3429,7 +3432,7 @@
   }
 
   function mtrSchedule(line, sta) {
-    return once(`mtr:${line}:${sta}:${Math.floor(Date.now() / 20000)}`, async () => {
+    return once(`mtr:${line}:${sta}:${Math.floor(Date.now() / 10000)}`, async () => {
       const j = await getJson(`https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=${line}&sta=${sta}&lang=TC`);
       if (j.status === 0) throw new Error(String(j.message || '港鐵暫停提供資料').replace(/Please click here.*$/i, '').trim());
       const d = (j.data || {})[`${line}-${sta}`] || {};
@@ -3465,7 +3468,8 @@
   async function showMtrStation(code, marker, pos) {
     const st = MTR_ST[code];
     if (!st) return;
-    const head = `<b>🚇 ${esc(st[0])}站</b> <small>${esc(st[1])}</small>`;
+    const head = `<b data-mtr-focus>🚇 ${esc(st[0])}站</b> <small>${esc(st[1])}</small>`;
+    focusMtrLines(code);
     openInfo(`${head}<br>查詢中…`, marker, pos || { lat: st[2], lng: st[3] });
     let html = '';
     for (const line of mtrLinesAt(code)) {
@@ -3838,10 +3842,11 @@
         el.innerHTML = `<span class="ico">🚇</span><span class="lbl"> ${esc(s[0])}</span>`;
         const m = new AdvancedMarkerElement({ position: { lat: s[2], lng: s[3] }, content: el, title: s[0] + '站', zIndex: 30 });
         onMarkerClick(m, () => showMtrStation(code, m));
+        m._code = code;
         return m;
       });
     }
-    (mtrStMarkers || []).forEach(m => { const t = layers.mtr && z >= 13 ? map : null; if (m.map !== t) m.map = t; });
+    (mtrStMarkers || []).forEach(m => { const t = layers.mtr && mtrStVisible(m._code, z) ? map : null; if (m.map !== t) m.map = t; });
     // 碼頭
     if (!pierMarkers && AdvancedMarkerElement) {
       const seen = new Set();
@@ -5180,6 +5185,265 @@
         return leaveTrip();
     }
   }
+
+  // =====================================================================
+  // 其他：油公司今日折扣自動讀取、事故按地名標上地圖、收起側欄／全螢幕、撳港鐵站只顯示嗰條綫
+  // =====================================================================
+
+  // ---------------------------------------------------------------------
+  // 油公司今日折扣：經中轉站讀消委會「今日折扣」頁（讀唔到就用內置抄錄）
+  // ---------------------------------------------------------------------
+  const DISC_URL = 'https://oil-price.consumer.org.hk/tc/today-discount';
+  const FUEL_VENDORS = ['中石化', '中國石油', '加德士', '埃索', '蜆殼'];
+  const FUEL_BUILTIN = { std: FUEL_DISCOUNTS.std.slice(), prem: FUEL_DISCOUNTS.prem.slice(), date: '2026-10-03' };
+  let fuelDiscSrc = { live: false, at: 0, note: '' };
+
+  // 將網頁變成一行行文字（唔理排版，靠文字次序搵資料）
+  function pageLines(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('script,style,noscript,svg').forEach(n => n.remove());
+    const out = [];
+    const walk = doc.createTreeWalker(doc.body || doc.documentElement, NodeFilter.SHOW_TEXT);
+    while (walk.nextNode()) {
+      const t = walk.currentNode.nodeValue.replace(/\s+/g, ' ').trim();
+      if (t) out.push(t);
+    }
+    return out;
+  }
+
+  // 由文字搵：公司 → 零售牌價 → 折後價 → 條件
+  function parseDiscounts(lines, pump) {
+    const S = lines.join('\n');
+    const re = /零售牌價\s*[:：]?\s*\$?\s*([\d.]+)[\s\S]{0,60}?折後價\s*[:：]?\s*\$?\s*([\d.]+)/g;
+    const found = [];
+    let m;
+    while ((m = re.exec(S))) {
+      const before = S.slice(0, m.index);
+      let vendor = null, at = -1;
+      FUEL_VENDORS.forEach(v => { const i = before.lastIndexOf(v); if (i > at) { at = i; vendor = v; } });
+      if (!vendor) continue;
+      const after = S.slice(re.lastIndex, re.lastIndex + 400);
+      const stop = after.search(/零售牌價|中石化-|中國石油-|加德士-|埃索-|蜆殼-/);
+      const tail = (stop > 0 ? after.slice(0, stop) : after).split('\n').map(x => x.trim()).filter(Boolean);
+      const need = (tail.find(x => /^需|出示|會員|咭|卡/.test(x) && x.length < 40) || '').replace(/^\/?升/, '').trim();
+      const rule = tail.find(x => /由即日起|折扣|減\s*\$|優惠/.test(x) && x.length > 8) || '';
+      found.push({ vendor, retail: +m[1], net: +m[2], need, rule });
+    }
+    // 每間公司：第一個係無鉛汽油、第二個係特級（牌價對得上就以牌價為準）
+    const out = { std: [], prem: [] };
+    FUEL_VENDORS.forEach(v => {
+      const list = found.filter(f => f.vendor === v && f.net > 5 && f.net < 80);
+      const taken = new Set();
+      list.forEach((f, i) => {
+        let type = null;
+        const isStd = pump?.std?.[v] && Math.abs(pump.std[v] - f.retail) < 0.005;
+        const isPrem = pump?.prem?.[v] && Math.abs(pump.prem[v] - f.retail) < 0.005;
+        if (isStd && !isPrem) type = 'std';
+        else if (isPrem && !isStd) type = 'prem';
+        else type = taken.has('std') ? 'prem' : 'std';
+        if (taken.has(type)) type = type === 'std' ? 'prem' : null;
+        if (!type) return;
+        taken.add(type);
+        out[type].push(discountEntry(f));
+      });
+    });
+    return out;
+  }
+
+  function discountEntry(f) {
+    const d = { vendor: f.vendor, net: f.net };
+    const txt = f.rule;
+    const now = new Date();
+    let um = txt.match(/至\s*(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/) || txt.match(/至\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/);
+    if (um) {
+      const [y, mo, da] = um.length === 4 ? [+um[1], +um[2], +um[3]] : [now.getFullYear(), +um[1], +um[2]];
+      // 跨年（例如 12 月睇到「至 1 月 5 日」）
+      const yy = um.length === 3 && mo < now.getMonth() + 1 - 6 ? y + 1 : y;
+      d.until = `${yy}-${String(mo).padStart(2, '0')}-${String(da).padStart(2, '0')}`;
+    }
+    const dm = txt.match(/逢星期([一二三四五六日天、及和至\s]+)/);
+    if (dm) {
+      const map = { 日: 0, 天: 0, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6 };
+      const s = dm[1].replace(/\s/g, '');
+      const rng = s.match(/^([一二三四五六日天])至([一二三四五六日天])$/);
+      let days = [];
+      if (rng) { let a = map[rng[1]], b = map[rng[2]]; for (let i = 0; i < 7; i++) { const k = (a + i) % 7; days.push(k); if (k === b) break; } }
+      else days = [...s].filter(c => c in map).map(c => map[c]);
+      if (days.length && days.length < 7) d.days = [...new Set(days)];
+    }
+    const per = txt.match(/每升[^$\d]{0,8}\$\s*([\d.]+)/);
+    const need = f.need.replace(/^需出示/, '').replace(/^需/, '').trim();
+    d.cond = [need, per ? `每升減 $${per[1]}` : ''].filter(Boolean).join('（').replace(/（(.+)$/, '（$1）') || '會員優惠';
+    if (/柴灣|山頂/.test(txt) && /不適用|除外/.test(txt)) d.cond += '；部分油站除外';
+    return d;
+  }
+
+  async function loadFuelDiscounts() {
+    try {
+      const html = await fetchWithTimeout(DISC_URL, 20000).then(r => r.text());
+      const got = parseDiscounts(pageLines(html), fuelPrices && fuelFromLive ? fuelPrices : null);
+      const vendors = new Set([...got.std, ...got.prem].map(d => d.vendor));
+      if (got.std.length < 3 || vendors.size < 3) throw new Error('網頁格式認唔到');
+      FUEL_DISCOUNTS.std = got.std;
+      FUEL_DISCOUNTS.prem = got.prem.length ? got.prem : FUEL_BUILTIN.prem;
+      fuelDiscSrc = { live: true, at: Date.now(), note: '' };
+    } catch (e) {
+      console.warn('今日折扣讀唔到', e);
+      if (!fuelDiscSrc.live) { FUEL_DISCOUNTS.std = FUEL_BUILTIN.std; FUEL_DISCOUNTS.prem = FUEL_BUILTIN.prem; }
+      fuelDiscSrc.note = e.message;
+    }
+    renderFuelDiscSrc();
+    renderFuel();
+  }
+  function renderFuelDiscSrc() {
+    const el = $('fuel-disc-src');
+    if (!el) return;
+    el.innerHTML = fuelDiscSrc.live
+      ? `折扣資料：消委會「今日折扣」自動讀取（${hhmm(fuelDiscSrc.at)} 更新，每 30 分鐘再讀）。`
+      : `折扣資料：網上讀唔到${fuelDiscSrc.note ? '（' + esc(fuelDiscSrc.note) + '）' : ''}，顯示 <b>${FUEL_BUILTIN.date}</b> 抄錄嘅內置資料，可能已經過時。`;
+  }
+
+  // ---------------------------------------------------------------------
+  // 事故：冇座標嘅消息用地名搵大概位置
+  // ---------------------------------------------------------------------
+  const incidentGeo = new Map();          // 地名 → { lat, lng } 或 null（搵唔到）
+  const HK_BOUNDS = { north: 22.57, south: 22.15, east: 114.45, west: 113.82 };
+
+  async function geocodeIncident(it) {
+    const q = [it.location, it.district].filter(Boolean).join(' ').trim();
+    if (!q) return null;
+    if (incidentGeo.has(q)) return incidentGeo.get(q);
+    let pos = null;
+    try {
+      if (placesLib?.Place?.searchByText) {
+        const { places } = await placesLib.Place.searchByText({ textQuery: q + ' 香港', fields: ['location', 'displayName'],
+          locationRestriction: HK_BOUNDS, language: 'zh-HK', region: 'hk', maxResultCount: 1 });
+        const loc = places?.[0]?.location;
+        if (loc) pos = { lat: loc.lat(), lng: loc.lng() };
+      }
+    } catch (e) { console.warn('事故地名（Places）', q, e.message); }
+    if (!pos && google?.maps?.Geocoder) {
+      try {
+        const { results } = await new google.maps.Geocoder().geocode({ address: q + ' 香港', region: 'hk', bounds: HK_BOUNDS });
+        const loc = results?.[0]?.geometry?.location;
+        if (loc) pos = { lat: loc.lat(), lng: loc.lng() };
+      } catch (e) { console.warn('事故地名（Geocoder）', q, e.message); }
+    }
+    if (pos && (pos.lat < HK_BOUNDS.south || pos.lat > HK_BOUNDS.north || pos.lng < HK_BOUNDS.west || pos.lng > HK_BOUNDS.east)) pos = null;
+    incidentGeo.set(q, pos);
+    return pos;
+  }
+
+  async function placeIncident(it) {
+    if (it.marker) return it.marker;
+    if (!(it.lat && it.lng)) {
+      if (!map || !AdvancedMarkerElement) return null;
+      const pos = await geocodeIncident(it);
+      if (!pos) return null;
+      Object.assign(it, pos, { approx: true });
+    }
+    if (it.marker) return it.marker;
+    it.marker = makeMarker('pin incident', '⚠ ' + (it.detail || it.heading), it.location + (it.approx ? '（大概位置）' : ''), it.lat, it.lng,
+      m => openInfo(incidentHtml(it), m));
+    layerMarkers.incidents.push(it.marker);
+    it.marker.map = layers.incidents ? map : null;
+    return it.marker;
+  }
+
+  async function openIncident(it) {
+    await placeIncident(it);
+    if (it.marker && map) {
+      if (!layers.incidents) ensureLayerChip('incidents');
+      map.setCenter({ lat: it.lat, lng: it.lng });
+      map.setZoom(it.approx ? 14 : 15);
+      openInfo(incidentHtml(it), it.marker);
+    } else if (map) {
+      openInfo(incidentHtml(it) + '<br><small>⚠️ 呢則消息冇提供位置，地圖上標唔到</small>', null, map.getCenter());
+    }
+  }
+  function ensureLayerChip(name) {
+    layers[name] = true;
+    document.querySelector(`.chip[data-layer="${name}"]`)?.classList.remove('off');
+    showLayer(name);
+  }
+
+  // ---------------------------------------------------------------------
+  // 收起側欄／全螢幕
+  // ---------------------------------------------------------------------
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const fsOk = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  function initViewButtons() {
+    const side = $('side-btn'), fs = $('fs-btn');
+    if (!side) return;
+    const setSide = off => {
+      document.body.classList.toggle('side-off', off);
+      side.textContent = off ? '☰' : '⤢';
+      side.title = off ? '打開側欄' : '收起側欄（地圖放大）';
+      try { localStorage.setItem('side-off', off ? '1' : ''); } catch (e) { /* 冇得記就算 */ }
+    };
+    let saved = '';
+    try { saved = localStorage.getItem('side-off') || ''; } catch (e) { /* 私隱模式 */ }
+    setSide(!!saved && !new URLSearchParams(location.search).get('trip'));
+    side.onclick = () => setSide(!document.body.classList.contains('side-off'));
+    if (!fsOk()) { fs.style.display = 'none'; return; }
+    fs.onclick = () => {
+      const de = document.documentElement;
+      if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else (de.requestFullscreen || de.webkitRequestFullscreen).call(de);
+    };
+    const upd = () => { fs.textContent = fsEl() ? '🗗' : '⛶'; fs.title = fsEl() ? '離開全螢幕' : '全螢幕'; };
+    document.addEventListener('fullscreenchange', upd);
+    document.addEventListener('webkitfullscreenchange', upd);
+    upd();
+  }
+
+  // ---------------------------------------------------------------------
+  // 撳港鐵站：地圖只顯示經過呢個站嘅綫（關咗資料框先顯示返全部）
+  // ---------------------------------------------------------------------
+  let mtrFocus = null;                 // { lines: [...], codes: Set, polys: [] }
+  async function focusMtrLines(code) {
+    const lines = mtrLinesAt(code);
+    if (!lines.length) return;
+    if (mtrFocus && mtrFocus.code === code) return;
+    clearMtrFocus(true);
+    const codes = new Set();
+    lines.forEach(l => MTR_LINES[l].p.forEach(p => p[1].split(' ').forEach(c => codes.add(c))));
+    const f = mtrFocus = { code, lines, codes, polys: [] };
+    renderTransitStops();
+    for (const l of lines) {
+      const L = MTR_LINES[l];
+      let parts = [];
+      try { parts = geoParts(await loadWaypoints(l.toLowerCase())); } catch (e) { /* 冇走線就用直線 */ }
+      if (mtrFocus !== f) return;
+      if (!parts.length) {
+        const seen = new Set();
+        L.p.forEach(p => { if (seen.has(p[1].split(' ').slice().sort().join())) return; seen.add(p[1].split(' ').slice().sort().join());
+          parts.push(p[1].split(' ').map(c => ({ lat: MTR_ST[c][2], lng: MTR_ST[c][3] }))); });
+      }
+      parts.forEach(path => f.polys.push(new google.maps.Polyline({ map, path, strokeColor: L.c, strokeOpacity: 0.9, strokeWeight: 6, zIndex: 35, clickable: false })));
+    }
+  }
+  function clearMtrFocus(silent) {
+    if (!mtrFocus) return;
+    mtrFocus.polys.forEach(p => p.setMap(null));
+    mtrFocus = null;
+    if (!silent) renderTransitStops();
+  }
+  const mtrStVisible = (code, z) => mtrFocus ? (z >= 11 && mtrFocus.codes.has(code)) : z >= 13;
+
+  function initMapExtras() {
+    if (!infoWin) return;
+    const isMtrBox = () => String(infoWin.getContent ? infoWin.getContent() : '').includes('data-mtr-focus');
+    infoWin.addListener('closeclick', () => clearMtrFocus());
+    infoWin.addListener('close', () => clearMtrFocus());
+    infoWin.addListener('content_changed', () => { if (mtrFocus && !isMtrBox()) clearMtrFocus(); });
+  }
+
+  // ---------------------------------------------------------------------
+  // 開始
+  // ---------------------------------------------------------------------
+  initViewButtons();
+  setInterval(() => { loadFuel(); }, 30 * 60 * 1000);       // 牌價同折扣每 30 分鐘再讀
 
   // =====================================================================
   // 行程動畫：一個圖示沿住路線郁（駕駛 🚗、步行 🚶、搭車就換成車款圖示）
