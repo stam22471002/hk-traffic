@@ -363,6 +363,16 @@
     .fr-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
     .fr-tab.on small { color: #e3f2fd; }
     .fr-field .sbox-wrap { margin-top: 4px; }
+    .fr-opt.goes { background: rgba(0,200,83,0.07); }
+    .fr-go { display: block; color: #9fe3a8; font-size: 12px; }
+    .fr-tab.has-go:not(.on) small { color: #9fe3a8; font-weight: bold; }
+    details.fr-more summary { cursor: pointer; color: var(--muted); font-size: 12px; padding: 8px 0 4px; }
+
+    /* 港台交通消息 */
+    .item.rthk.accident { border-color: var(--red); }
+    .item.rthk small a { color: var(--accent); }
+    #overview-rthk .item { margin-top: 6px; }
+    .pin.incident.works { background: #ef6c00; }
   </style>
 </head>
 <body>
@@ -414,6 +424,7 @@
       </div>
       <h3>最新特別交通消息</h3>
       <div id="overview-news"><div class="empty">載入中…</div></div>
+      <div id="overview-rthk"></div>
       <h3>資料來源狀態</h3>
       <div class="src" id="sources"></div>
     </section>
@@ -518,6 +529,8 @@
     <section class="tab" id="tab-incidents">
       <h3 style="margin-top:0">特別交通消息</h3>
       <div id="list-incidents"><div class="empty">載入中…</div></div>
+      <h3>📻 港台交通消息</h3>
+      <div id="list-rthk"><div class="empty">載入中…</div></div>
       <h3>道路工程（涉及封線）</h3>
       <div id="list-works"><div class="empty">載入中…</div></div>
     </section>
@@ -755,7 +768,7 @@
   // =====================================================================
   const IS_HTTP = /^https?:$/.test(location.protocol);
   // 完全唔俾網頁跨網域讀，一定要經中轉站
-  const NEEDS_PROXY = /(^|\.)(1823\.gov\.hk|consumer\.org\.hk|opendata\.mtr\.com\.hk|map\.gov\.hk)$/i;
+  const NEEDS_PROXY = /(^|\.)(1823\.gov\.hk|consumer\.org\.hk|opendata\.mtr\.com\.hk|map\.gov\.hk|rthk\.hk)$/i;
   // 直接開檔（file://）時會被擋
   const FILE_BLOCKED = /(^|\.)(etagmb\.gov\.hk|sunferry\.com\.hk|hkkfeta\.com)$/i;
   // 確定支援跨網域：讀唔到即係網絡問題，唔使浪費時間試中轉站
@@ -2010,7 +2023,8 @@
       const l = FUEL_DISCOUNTS[k].map(d => {
         const ok = !(d.until && todayKey > d.until) && !(d.days && !d.days.includes(today.getDay()));
         return { v: d.vendor, p: ok ? d.net : fuelPrices[k][d.vendor] };
-      }).sort((a, b) => a.p - b.p)[0];
+      }).filter(x => isFinite(x.p)).sort((a, b) => a.p - b.p)[0];
+      if (!l) return '';
       return `<div><b>$${l.p.toFixed(2)}</b><small>${esc(l.v)}．${k === 'std' ? '無鉛' : '特級'}</small></div>`;
     };
     $('mini-fuel').innerHTML = cheapest('std') + cheapest('prem') +
@@ -4699,10 +4713,12 @@
     if (!pos || Date.now() - (FR.fix?.t || 0) > 60000) { try { pos = await locateMe(); } catch (e) { /* 用舊位置 */ } }
     if (!pos) { box.innerHTML = '<div class="fr-card warnbox">未有你嘅位置：請先撳「開始分享我嘅位置」並准許用位置。</div>'; return; }
     try { await loadTransitDb(); } catch (e) { /* 冇資料庫照列港鐵同渡輪 */ }
-    pickerOpts = nearbyBoardOptions(pos, radius);
-    if (!FR.pick.tab || !['tram', 'taxi'].includes(FR.pick.tab)) {
+    FR.pick.pos = pos;
+    pickerOpts = nearbyBoardOptions(pos, radius).map(markReach);
+    if (!FR.pick.tab || !['tram', 'taxi'].includes(FR.pick.tab) || radius > 50) {
+      const firstGo = PICK_TABS.find(t => pickerOpts.some(o => tabOf(o) === t.id && o.goes));
       const firstWith = PICK_TABS.find(t => pickerOpts.some(o => tabOf(o) === t.id));
-      FR.pick.tab = firstWith ? firstWith.id : 'bus';
+      FR.pick.tab = (firstGo || firstWith || { id: 'bus' }).id;
     }
     renderPicker();
     box.scrollIntoView({ block: 'nearest' });
@@ -4710,8 +4726,9 @@
 
   function renderPicker() {
     const box = $('fr-picker'), tab = FR.pick.tab, r = FR.pick.radius;
-    const count = id => pickerOpts.filter(o => tabOf(o) === id).length;
-    const tabs = PICK_TABS.map(t => `<button class="fr-tab${t.id === tab ? ' on' : ''}" data-fr-tab="${t.id}">${t.label}${['tram', 'taxi'].includes(t.id) ? '' : `<small>${count(t.id)}</small>`}</button>`).join('');
+    const count = id => pickerOpts.filter(o => tabOf(o) === id && !o.global).length;
+    const goCount = id => pickerOpts.filter(o => tabOf(o) === id && o.goes && !o.global).length;
+    const tabs = PICK_TABS.map(t => `<button class="fr-tab${t.id === tab ? ' on' : ''}${goCount(t.id) ? ' has-go' : ''}" data-fr-tab="${t.id}">${t.label}${['tram', 'taxi'].includes(t.id) ? '' : `<small>${goCount(t.id) ? '✓' + goCount(t.id) : count(t.id)}</small>`}</button>`).join('');
     let body = '';
     if (tab === 'tram') {
       body = `<div class="note">電車暫時冇官方路線資料，會用 Google 公共交通由你位置計到見面地點要幾耐。</div>
@@ -4721,21 +4738,69 @@
       body = `<div class="note">的士／私家車：用 Google 按實時路面情況計最快嘅駕駛路線同時間。</div>
         <div class="fr-row"><button class="fr-btn go" data-fr-other="taxi">🚕 上咗的士</button><button class="fr-btn" data-fr-other="car">🚗 揸車／坐私家車</button></div>`;
     } else {
-      const rows = pickerOpts.map((o, i) => ({ o, i })).filter(x => tabOf(x.o) === tab).map(({ o, i }) => {
-        const badge = o.kind === 'mtr' ? `<span class="rbadge" style="background:${MTR_LINES[o.line].c}">${esc(MTR_LINES[o.line].n)}</span>`
-          : o.kind === 'ferry' ? `<span class="rbadge" style="background:#0277bd">⛴️</span>`
-          : `<span class="rbadge" style="background:${CO_COLOR[o.co] || '#555'}">${esc(o.route)}</span>`;
-        return `<div class="fr-opt" data-fr-pick="${i}" data-r="${esc(String(o.route || '').toUpperCase())}" data-q="${esc(o.dest + ' ' + o.stopName + ' ' + o.opName).toUpperCase()}">
-          ${badge}<span class="t">往 <b>${esc(o.dest)}</b><small>${esc(o.opName)}．${esc(o.stopName)}（${Math.round(o.d)} 米）</small></span></div>`;
-      }).join('');
-      body = `${['bus', 'gmb'].includes(tab) ? '<div class="sbox" style="margin:6px 0"><input id="fr-filter" type="search" placeholder="打路線號碼篩選，例如 106" autocomplete="off"></div>' : ''}
-        <div class="fr-opts">${rows || `<div class="note">你身邊 ${r} 米內冇搵到${PICK_TABS.find(t => t.id === tab).label.slice(2)}站。</div>`}</div>
-        ${r < 400 ? `<button class="mini-btn" data-fr-radius="${r < 150 ? 150 : 400}" style="margin-top:6px">🔍 搵唔到？擴大範圍至 ${r < 150 ? 150 : 400} 米</button>` : ''}`;
+      const mine = pickerOpts.map((o, i) => ({ o, i })).filter(x => tabOf(x.o) === tab);
+      const go = mine.filter(x => x.o.goes).sort((a, b) => a.o.reachK - b.o.reachK || a.o.d - b.o.d);
+      const rest = mine.filter(x => !x.o.goes);
+      const destName = FR.data?.dest?.name || '';
+      const label = PICK_TABS.find(t => t.id === tab).label.slice(2);
+      const goHtml = !destName ? '' : go.length
+        ? `<div class="fr-sub">✅ 去到「${esc(destName)}」附近（${go.length} 條）</div>${go.map(x => optRow(x.o, x.i)).join('')}`
+        : `<div class="note">你身邊 ${r} 米內冇${label}直接去到「${esc(destName)}」附近${mine.length ? '，可能要轉車' : ''}。</div>`;
+      const restHtml = !rest.length ? '' : destName
+        ? `<details class="fr-more"${go.length ? '' : ' open'}><summary>其他路線（${rest.length} 條，未必去到見面地點）</summary>${rest.map(x => optRow(x.o, x.i)).join('')}</details>`
+        : rest.map(x => optRow(x.o, x.i)).join('');
+      body = `${['bus', 'gmb'].includes(tab) ? '<div class="sbox" style="margin:6px 0"><input id="fr-filter" type="search" placeholder="打路線號碼，例如 1A（附近冇都搵到）" autocomplete="off"></div>' : ''}
+        <div class="fr-opts">${mine.length ? goHtml + restHtml : `<div class="note">你身邊 ${r} 米內冇搵到${label}站。</div>`}<div id="fr-global"></div></div>
+        ${r < 400 ? `<button class="mini-btn" data-fr-radius="${r < 150 ? 150 : 400}" style="margin-top:6px">🔍 擴大範圍至 ${r < 150 ? 150 : 400} 米</button>` : ''}`;
     }
-    box.innerHTML = `<div class="fr-card"><b>你搭緊咩？</b> <small class="muted">（列出你身邊 ${r} 米內嘅車站）</small>
+    box.innerHTML = `<div class="fr-card"><b>你搭緊咩？</b> <small class="muted">（你身邊 ${r} 米內嘅車站${FR.data?.dest ? '，✓ = 去到見面地點' : ''}）</small>
       <div class="fr-tabs">${tabs}</div>${body}
       <button class="mini-btn" data-fr="pick-cancel" style="margin-top:8px">取消</button></div>`;
   }
+  // 呢個選項之後嘅站，有冇一個近見面地點（巴士／小巴 500 米、港鐵 800 米、渡輪 1 公里）
+  const REACH_M = { road: 500, gmb: 500, mtr: 800, ferry: 1000 };
+  function markReach(o) {
+    const dest = FR.data?.dest;
+    o.goes = false; o.reachK = -1; o.reachD = Infinity;
+    if (!dest) return o;
+    o.later.forEach((s, k) => { const d = distM(dest.lat, dest.lng, s.lat, s.lng); if (d < o.reachD) { o.reachD = d; o.reachK = k; } });
+    o.goes = o.reachD <= (REACH_M[o.kind] || 500);
+    return o;
+  }
+
+  function optRow(o, i) {
+    const badge = o.kind === 'mtr' ? `<span class="rbadge" style="background:${MTR_LINES[o.line].c}">${esc(MTR_LINES[o.line].n)}</span>`
+      : o.kind === 'ferry' ? `<span class="rbadge" style="background:#0277bd">⛴️</span>`
+      : `<span class="rbadge" style="background:${CO_COLOR[o.co] || '#555'}">${esc(o.route)}</span>`;
+    const reach = o.goes ? `<span class="fr-go">✓ 到「${esc(o.later[o.reachK].name)}」${o.reachK + 1} 個站${o.reachD > 120 ? `，再行 ${Math.round(o.reachD)} 米` : ''}</span>` : '';
+    return `<div class="fr-opt${o.goes ? ' goes' : ''}" data-fr-pick="${i}" data-r="${esc(String(o.route || '').toUpperCase())}" data-q="${esc(o.dest + ' ' + o.stopName + ' ' + o.opName).toUpperCase()}">
+      ${badge}<span class="t">往 <b>${esc(o.dest)}</b>${reach}<small>${esc(o.opName)}．${esc(o.stopName)}${o.d < 1e5 ? `（${Math.round(o.d)} 米）` : ''}</small></span></div>`;
+  }
+
+  // 手打路線號碼：全港搵（唔限附近），揀最近你嘅上車站
+  function globalRouteOptions(k, tab) {
+    if (!tdb || !k || !FR.pick.pos) return [];
+    const pos = FR.pick.pos, want = tab === 'gmb' ? ['gmb'] : ['kmb', 'ctb', 'nlb'];
+    const out = [];
+    for (const [no, list] of tdb.byRoute) {
+      if (!no.startsWith(k)) continue;
+      list.forEach(r => {
+        const co = r.co.find(c => want.includes(c));
+        if (!co) return;
+        const stops = (r.stops[co] || []).map(tdbStop).filter(Boolean);
+        let bi = -1, bd = Infinity;
+        stops.forEach((s, i) => { if (i < stops.length - 1) { const d = distM(pos.lat, pos.lng, s.lat, s.lng); if (d < bd) { bd = d; bi = i; } } });
+        if (bi < 0) return;
+        out.push(markReach({ kind: co === 'gmb' ? 'gmb' : 'road', r, co, route: r.route, dest: r.dest?.zh || '', opName: r.co.map(c => CO_LABEL[c] || c).join('＋'),
+                             stopId: stops[bi].id, stopName: stops[bi].name, lat: stops[bi].lat, lng: stops[bi].lng, d: bd, later: stops.slice(bi + 1), global: true }));
+      });
+      if (out.length > 40) break;
+    }
+    const seen = new Set();
+    return out.sort((a, b) => (b.goes - a.goes) || (a.route === k ? -1 : 0) - (b.route === k ? -1 : 0) || a.d - b.d)
+      .filter(o => { const key = o.route + '|' + o.dest; if (seen.has(key)) return false; seen.add(key); return true; }).slice(0, 8);
+  }
+
   function filterPicker(q) {
     const k = q.trim().toUpperCase();
     const isNo = /^[0-9A-Z]+$/.test(k);
@@ -4743,6 +4808,15 @@
       const ok = !k || (isNo ? el.dataset.r.startsWith(k) : el.dataset.r.includes(k) || el.dataset.q.includes(k));
       el.style.display = ok ? '' : 'none';
     });
+    document.querySelectorAll('#fr-picker details.fr-more').forEach(d => { if (k) d.open = true; });
+    const g = $('fr-global');
+    if (!g) return;
+    pickerOpts = pickerOpts.filter(o => !o.global);
+    if (!k || !isNo) { g.innerHTML = ''; return; }
+    const list = globalRouteOptions(k, FR.pick.tab);
+    const start = pickerOpts.length;
+    pickerOpts.push(...list);
+    g.innerHTML = list.length ? `<div class="fr-sub">全港路線「${esc(k)}」（揀最近你嘅站上車）</div>` + list.map((o, j) => optRow(o, start + j)).join('') : '';
   }
 
   function nearbyBoardOptions(pos, radius) {
@@ -4799,8 +4873,8 @@
     const o = pickerOpts[i];
     if (!o) return;
     const dest = FR.data?.dest;
-    let best = -1;
-    if (dest) { let bd = Infinity; o.later.forEach((s, k) => { const d = distM(dest.lat, dest.lng, s.lat, s.lng); if (d < bd) { bd = d; best = k; } }); }
+    let best = o.reachK ?? -1;
+    if (best < 0 && dest) { let bd = Infinity; o.later.forEach((s, k) => { const d = distM(dest.lat, dest.lng, s.lat, s.lng); if (d < bd) { bd = d; best = k; } }); }
     const rows = o.later.map((s, k) => `<div class="fr-opt${k === best ? ' best' : ''}" data-fr-alight="${k}">
       <span class="rbadge" style="background:${k === best ? '#00c853' : '#555'}">${k + 1}</span><span class="t">${esc(s.name)}${k === best ? '<small>最近見面地點</small>' : ''}</span></div>`);
     if (best > 0) rows.unshift(rows.splice(best, 1)[0]);
@@ -5607,6 +5681,105 @@
   // ---------------------------------------------------------------------
   initViewButtons();
   setInterval(() => { loadFuel(); }, 30 * 60 * 1000);       // 牌價同折扣每 30 分鐘再讀
+
+  // =====================================================================
+  // 港台交通消息（programme.rthk.hk）：經中轉站讀網頁，抽出每則消息同時間
+  // =====================================================================
+  const RTHK_URL = 'https://programme.rthk.hk/channel/radio/trafficnews/index.php';
+  let rthkItems = [], rthkAt = 0, rthkErr = '';
+
+  function parseRthk(lines) {
+    const out = [], seen = new Set();
+    const DT = /(\d{4}-\d{2}-\d{2})\s*HKT\s*(\d{1,2}:\d{2})/;
+    lines.forEach((ln, i) => {
+      const m = ln.match(DT);
+      if (!m) return;
+      let text = ln.replace(DT, '').trim();
+      // 時間自己一行：消息喺前一兩行
+      for (let j = i - 1; !text && j >= Math.max(0, i - 3); j--) {
+        const prev = lines[j].trim();
+        if (prev.length > 8 && !DT.test(prev)) text = prev;
+      }
+      if (!text || text.length < 6) return;
+      const t = Date.parse(`${m[1]}T${m[2].padStart(5, '0')}:00+08:00`);
+      const key = text + '|' + m[1] + m[2];
+      if (seen.has(key) || isNaN(t)) return;
+      seen.add(key);
+      const ci = text.search(/[：:]/);
+      const title = ci > 0 && ci < 30 ? text.slice(0, ci) : '';
+      const body = ci > 0 && ci < 30 ? text.slice(ci + 1) : text;
+      const kind = /意外|相撞|撞|故障|壞車|翻側|起火|火警|塌|墮|泄漏|漏油/.test(text) ? 'accident'
+        : /工程|維修|封閉|改道|封路/.test(text) ? 'works' : 'info';
+      out.push({ t, title, body, text, kind });
+    });
+    return out.sort((a, b) => b.t - a.t);
+  }
+
+  async function loadRthk() {
+    try {
+      const html = await fetchWithTimeout(RTHK_URL, 20000).then(r => r.text());
+      const items = parseRthk(pageLines(html));
+      if (!items.length) throw new Error('網頁格式認唔到');
+      rthkItems = items.filter(x => Date.now() - x.t < 12 * 3600e3).slice(0, 30);
+      rthkAt = Date.now(); rthkErr = '';
+      setSource('港台交通消息', true, `${rthkItems.length} 則（最近 12 個鐘）`);
+    } catch (e) {
+      rthkErr = e.message;
+      setSource('港台交通消息', false, '讀唔到（' + e.message + '）');
+    }
+    renderRthk();
+  }
+
+  // 由消息估地點：標題（去咗「道路工程」等字）+ 內文第一個路名
+  function rthkPlace(x) {
+    const area = (x.title || '').replace(/[-－–]/g, ' ').replace(/(道路工程|渠務維修工程|渠務工程|維修工程|工程|交通意外|意外|消息|特別交通安排|交通安排)$/g, '').trim();
+    const road = (x.body.match(/[一-鿿]{1,8}(?:公路|隧道|大橋|天橋|道|路|街|里|橋)/) || [''])[0].replace(/^.*[近往於沿由在對經向]/, '');
+    return [area, road].filter(Boolean).join(' ');
+  }
+
+  function renderRthk() {
+    const icon = k => ({ accident: '🚨', works: '🚧', info: 'ℹ️' })[k];
+    const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? `${m} 分鐘前` : `${Math.floor(m / 60)} 小時前`; };
+    const row = (x, i) => `<div class="item rthk ${x.kind}" data-rthk="${i}">
+      <b>${icon(x.kind)} ${esc(x.title || '交通消息')}</b>${esc(x.body)}<br>
+      <small>${hhmm(x.t)}（${ago(x.t)}）．港台 <a href="#" data-rthk-map="${i}">📍 喺地圖搵</a></small></div>`;
+    const note = rthkErr ? `<div class="empty">⚠️ 港台交通消息讀唔到（${esc(rthkErr)}）</div>`
+      : !rthkAt ? '<div class="empty">載入中…</div>' : '';
+    const full = $('list-rthk');
+    if (full) full.innerHTML = note || (rthkItems.length ? rthkItems.map(row).join('') : '<div class="empty">最近冇港台交通消息</div>')
+      + (rthkAt ? `<div class="src">來源：<a href="${RTHK_URL}" target="_blank">香港電台交通消息</a>．${hhmm(rthkAt)} 更新，每 3 分鐘再讀</div>` : '');
+    const ov = $('overview-rthk');
+    if (ov) {
+      // 總覽：最近 2 小時嘅意外排先，最多 3 則
+      const recent = rthkItems.filter(x => Date.now() - x.t < 2 * 3600e3);
+      const top = [...recent.filter(x => x.kind === 'accident'), ...recent.filter(x => x.kind !== 'accident')].slice(0, 3);
+      ov.innerHTML = top.length ? top.map(x => row(x, rthkItems.indexOf(x))).join('') : '';
+    }
+  }
+
+  async function rthkOnMap(i) {
+    const x = rthkItems[i];
+    if (!x || !map) return;
+    const q = rthkPlace(x);
+    toast('搵緊位置：' + q, 3000);
+    const pos = await geocodeIncident({ location: q, district: '' });
+    const html = `<b>${esc(x.title || '交通消息')}</b><br>${esc(x.body)}<br><small>港台 ${hhmm(x.t)}${pos ? '．📍 按地名搵嘅大概位置' : ''}</small>`;
+    if (pos) {
+      if (rthkMarker) rthkMarker.map = null;
+      rthkMarker = makeMarker('pin incident' + (x.kind === 'accident' ? '' : ' works'), (x.kind === 'accident' ? '🚨 ' : '🚧 ') + (x.title || '港台消息'), q, pos.lat, pos.lng, m => openInfo(html, m));
+      rthkMarker.map = map;
+      map.setCenter(pos); map.setZoom(15);
+      openInfo(html, rthkMarker);
+    } else openInfo(html + '<br><small>⚠️ 搵唔到呢度喺邊</small>', null, map.getCenter());
+  }
+  let rthkMarker = null;
+
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-rthk-map]');
+    if (a) { e.preventDefault(); rthkOnMap(+a.dataset.rthkMap); }
+  });
+  loadRthk();
+  setInterval(loadRthk, 3 * 60 * 1000);
 
   // =====================================================================
   // 行程動畫：一個圖示沿住路線郁（駕駛 🚗、步行 🚶、搭車就換成車款圖示）
