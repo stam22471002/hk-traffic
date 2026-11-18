@@ -424,7 +424,6 @@
       </div>
       <h3>最新特別交通消息</h3>
       <div id="overview-news"><div class="empty">載入中…</div></div>
-      <div id="overview-rthk"></div>
       <h3>資料來源狀態</h3>
       <div class="src" id="sources"></div>
     </section>
@@ -529,8 +528,6 @@
     <section class="tab" id="tab-incidents">
       <h3 style="margin-top:0">特別交通消息</h3>
       <div id="list-incidents"><div class="empty">載入中…</div></div>
-      <h3>📻 港台交通消息</h3>
-      <div id="list-rthk"><div class="empty">載入中…</div></div>
       <h3>道路工程（涉及封線）</h3>
       <div id="list-works"><div class="empty">載入中…</div></div>
     </section>
@@ -1011,7 +1008,7 @@
     map = new GMap($('map'), {
       center: { lat: 22.35, lng: 114.12 }, zoom: 11, mapId: 'DEMO_MAP_ID',
       mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
-      clickableIcons: false, gestureHandling: 'greedy'
+      clickableIcons: true, gestureHandling: 'greedy'
     });
     infoWin = new InfoWindow();
     trafficLayer = new google.maps.TrafficLayer();
@@ -1030,6 +1027,8 @@
     applyZoomClass();
     // 右撳（手機長撳）地圖：由呢度出發／去呢度
     map.addListener('contextmenu', e => showPointMenu(e.latLng.lat(), e.latLng.lng()));
+    // 撳 Google 地圖本身嘅地點（餐廳、商場、車站…）：用我哋自己嘅資料框，可以即刻揀點去
+    map.addListener('click', e => { if (e.placeId) { e.stop(); showGooglePlace(e.placeId, e.latLng); } });
 
     if (startPlace) startMarker = placePin(startMarker, startPlace, '#188038', '起點', true);
     if (endPlace) endMarker = placePin(endMarker, endPlace, '#d93025', '終點', true);
@@ -2125,33 +2124,97 @@
       items.forEach(it => { it.marker = null; placeIncident(it).catch(e => console.warn('事故位置', e)); });
       showLayer('incidents');
 
-      $('t-incidents').textContent = active.length;
-      $('t-incidents').className = 'num ' + (active.length ? 'warn' : 'ok');
-      $('c-incidents').textContent = active.length + (items.length > active.length ? `+${items.length - active.length}` : '');
-
-      const doneNote = it => {
-        const left = Math.max(1, Math.ceil((INC_KEEP_MS - (now - it.doneAt)) / 60000));
-        return `<span class="inc-done">✅ ${it.gone ? '運輸署已移除' : '已處理'}（${hhmm(it.doneAt)}）．${left} 分鐘後收起</span>`;
-      };
-      const listHtml = items.length ? items.map((it, i) => `
-        <div class="item${it.doneAt ? ' done' : ''}" data-i="${i}">
-          <b>${esc(it.detail || it.heading)}</b>
-          ${esc(it.location)}${it.direction ? '（' + esc(it.direction) + '）' : ''}<br>
-          <small>${esc(it.district)}．${esc(it.status)}．${esc(it.date)}</small>
-          ${it.doneAt ? '<br>' + doneNote(it) : ''}
-        </div>`).join('') : '<div class="empty">暫時冇特別交通消息</div>';
-      $('list-incidents').innerHTML = listHtml;
-      $('overview-news').innerHTML = listHtml;
-
-      document.querySelectorAll('#list-incidents .item, #overview-news .item').forEach(el => {
-        el.onclick = () => openIncident(items[el.dataset.i]);
-      });
+      tdItems = items;
+      renderNews();
       setSource('運輸署特別交通消息', true, `${active.length} 則${items.length > active.length ? `（另有 ${items.length - active.length} 則已處理，15 分鐘後收起）` : ''}`);
     } catch (err) {
       console.error(err);
-      if (!incStore.size) $('list-incidents').innerHTML = $('overview-news').innerHTML = '<div class="empty">⚠️ 未能載入</div>';
+      tdFailed = !incStore.size;
+      renderNews();
       setSource('運輸署特別交通消息', false, '載入失敗（' + err.message + '），顯示緊上次嘅消息');
     }
+  }
+
+  // ---------------------------------------------------------------------
+  // 特別交通消息：運輸署 + 電台交通消息合併成一個清單（按時間排，已處理嘅排最尾）
+  // ---------------------------------------------------------------------
+  let tdItems = [], tdFailed = false;
+  const radioMarkers = new Map();         // 消息 → 地圖標記（只限最近 3 個鐘嘅意外）
+
+  function radioNews() {
+    const list = typeof rthkItems !== 'undefined' ? rthkItems : [];
+    // 同運輸署講緊同一單嘢（同一條路、兩個鐘內）就唔重複
+    return list.filter(x => !tdItems.some(it => !it.doneAt && it.location && it.location.length >= 3 &&
+      x.text.includes(it.location) && Math.abs((Date.parse(it.date + '+08:00') || 0) - x.t) < 2 * 3600e3));
+  }
+
+  function renderNews() {
+    const now = Date.now();
+    const radio = radioNews();
+    const tdT = it => Date.parse(String(it.date).slice(0, 19) + '+08:00') || it.firstSeen || 0;
+    const ago = t => { const m = Math.max(0, Math.round((now - t) / 60000)); return m < 60 ? `${m} 分鐘前` : `${Math.floor(m / 60)} 小時前`; };
+    const doneNote = it => {
+      const left = Math.max(1, Math.ceil((INC_KEEP_MS - (now - it.doneAt)) / 60000));
+      return `<span class="inc-done">✅ 已處理（${hhmm(it.doneAt)}）．${left} 分鐘後收起</span>`;
+    };
+    const rows = [
+      ...tdItems.map((it, i) => ({ t: tdT(it), done: !!it.doneAt, acc: true, html: `
+        <div class="item${it.doneAt ? ' done' : ''}" data-i="${i}">
+          <b>⚠️ ${esc(it.detail || it.heading)}</b>
+          ${esc(it.location)}${it.direction ? '（' + esc(it.direction) + '）' : ''}${it.content ? '<br>' + esc(it.content) : ''}<br>
+          <small>${esc(it.district)}${it.district ? '．' : ''}${esc(it.status)}．${hhmm(tdT(it))}（${ago(tdT(it))}）</small>
+          ${it.doneAt ? '<br>' + doneNote(it) : ''}
+        </div>` })),
+      ...radio.map(x => ({ t: x.t, done: false, acc: x.kind === 'accident', html: `
+        <div class="item news-r ${x.kind}" data-r="${rthkItems.indexOf(x)}">
+          <b>${{ accident: '🚨', works: '🚧', info: 'ℹ️' }[x.kind]} ${esc(x.title || '交通消息')}</b>${esc(x.body)}<br>
+          <small>${hhmm(x.t)}（${ago(x.t)}）．<a href="#" data-rthk-map="${rthkItems.indexOf(x)}">📍 喺地圖睇</a></small>
+        </div>` }))
+    ].sort((a, b) => (a.done - b.done) || (b.t - a.t));
+
+    const empty = tdFailed && !radio.length ? '<div class="empty">⚠️ 未能載入</div>' : '<div class="empty">暫時冇特別交通消息</div>';
+    $('list-incidents').innerHTML = rows.length ? rows.map(r => r.html).join('') : empty;
+    // 總覽：最近 3 個鐘、意外排先，最多 5 則
+    const ov = rows.filter(r => !r.done && now - r.t < 3 * 3600e3).sort((a, b) => (b.acc - a.acc) || (b.t - a.t)).slice(0, 5);
+    $('overview-news').innerHTML = ov.length ? ov.map(r => r.html).join('') : (rows.length ? rows.slice(0, 3).map(r => r.html).join('') : empty);
+
+    document.querySelectorAll('#list-incidents .item[data-i], #overview-news .item[data-i]').forEach(el => {
+      el.onclick = () => openIncident(tdItems[el.dataset.i]);
+    });
+    document.querySelectorAll('#list-incidents .item[data-r], #overview-news .item[data-r]').forEach(el => {
+      el.onclick = e => { if (!e.target.closest('a')) rthkOnMap(+el.dataset.r); };
+    });
+
+    // 數字：運輸署未處理 + 最近 3 個鐘嘅意外消息
+    const active = tdItems.filter(it => !it.doneAt).length;
+    const radioAcc = radio.filter(x => x.kind === 'accident' && now - x.t < 3 * 3600e3);
+    const n = active + radioAcc.length, done = tdItems.length - active;
+    $('t-incidents').textContent = n;
+    $('t-incidents').className = 'num ' + (n ? 'warn' : 'ok');
+    $('c-incidents').textContent = n + (done ? `+${done}` : '');
+
+    // 地圖：最近 3 個鐘嘅意外消息自動標位置
+    radioAcc.forEach(x => {
+      const key = x.text + x.t;
+      let m = radioMarkers.get(key);
+      if (m === undefined) {
+        radioMarkers.set(key, null);
+        geocodeIncident({ location: rthkPlace(x), district: '' }).then(pos => {
+          if (!pos || !map) return;
+          const html = `<b>🚨 ${esc(x.title || '交通消息')}</b><br>${esc(x.body)}<br><small>${hhmm(x.t)}．📍 按地名搵嘅大概位置</small>`;
+          const mk = makeMarker('pin incident', '🚨 ' + (x.title || '交通意外'), rthkPlace(x), pos.lat, pos.lng, mm => openInfo(html, mm));
+          radioMarkers.set(key, mk);
+          layerMarkers.incidents.push(mk);
+          mk.map = layers.incidents ? map : null;
+        }).catch(() => {});
+      } else if (m && !layerMarkers.incidents.includes(m)) {
+        layerMarkers.incidents.push(m);
+        m.map = layers.incidents ? map : null;
+      }
+    });
+    radioMarkers.forEach((m, key) => {
+      if (!radioAcc.some(x => x.text + x.t === key)) { if (m) { m.map = null; layerMarkers.incidents = layerMarkers.incidents.filter(z => z !== m); } radioMarkers.delete(key); }
+    });
   }
 
   function incidentHtml(it) {
@@ -4393,6 +4456,30 @@
   $('swap-btn').onclick = swapEnds;
 
   // 地圖上右撳（手機長撳）：由呢度出發／去呢度
+  async function showGooglePlace(id, ll) {
+    const lat = ll.lat(), lng = ll.lng();
+    const gmLink = name => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name || `${lat},${lng}`)}&query_place_id=${id}`;
+    openInfo('<b>📍 載入中…</b>', null, { lat, lng });
+    try {
+      const place = new placesLib.Place({ id, requestedLanguage: 'zh-HK' });
+      await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location', 'types'] });
+      const types = place.types || [];
+      const p = { name: place.displayName || '呢個地點', lat: place.location ? place.location.lat() : lat, lng: place.location ? place.location.lng() : lng };
+      // 港鐵站：直接開我哋嘅港鐵站資料（有班次、列車位置）
+      if (types.includes('subway_station') || types.includes('train_station') || types.includes('light_rail_station')) {
+        let code = null, bd = 400;
+        Object.entries(MTR_ST).forEach(([c, s]) => { const d = distM(p.lat, p.lng, s[2], s[3]); if (d < bd) { bd = d; code = c; } });
+        if (code) { showMtrStation(code); return; }
+      }
+      openInfo(`<b>📍 ${esc(p.name)}</b><br><small>${esc(place.formattedAddress || '')}</small>${goHtml(p)}
+        <div style="margin-top:6px"><a href="${gmLink(p.name)}" target="_blank" rel="noopener">喺 Google 地圖睇評價、營業時間 ↗</a></div>`, null, { lat: p.lat, lng: p.lng });
+    } catch (err) {
+      console.warn('Google 地點', err);
+      openInfo(`<b>📍 呢個地點</b><br><small>讀唔到詳細資料</small>${goHtml({ name: '地圖上揀嘅地點', lat, lng })}
+        <div style="margin-top:6px"><a href="${gmLink('')}" target="_blank" rel="noopener">喺 Google 地圖睇 ↗</a></div>`, null, { lat, lng });
+    }
+  }
+
   function showPointMenu(lat, lng) {
     const p = { name: '地圖上揀嘅位置', lat, lng };
     openInfo(`<b>📍 呢個位置</b><br><small>${lat.toFixed(5)}, ${lng.toFixed(5)}</small>${goHtml(p)}`, null, { lat, lng });
@@ -5737,25 +5824,7 @@
     return [area, road].filter(Boolean).join(' ');
   }
 
-  function renderRthk() {
-    const icon = k => ({ accident: '🚨', works: '🚧', info: 'ℹ️' })[k];
-    const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? `${m} 分鐘前` : `${Math.floor(m / 60)} 小時前`; };
-    const row = (x, i) => `<div class="item rthk ${x.kind}" data-rthk="${i}">
-      <b>${icon(x.kind)} ${esc(x.title || '交通消息')}</b>${esc(x.body)}<br>
-      <small>${hhmm(x.t)}（${ago(x.t)}）．港台 <a href="#" data-rthk-map="${i}">📍 喺地圖搵</a></small></div>`;
-    const note = rthkErr ? `<div class="empty">⚠️ 港台交通消息讀唔到（${esc(rthkErr)}）</div>`
-      : !rthkAt ? '<div class="empty">載入中…</div>' : '';
-    const full = $('list-rthk');
-    if (full) full.innerHTML = note || (rthkItems.length ? rthkItems.map(row).join('') : '<div class="empty">最近冇港台交通消息</div>')
-      + (rthkAt ? `<div class="src">來源：<a href="${RTHK_URL}" target="_blank">香港電台交通消息</a>．${hhmm(rthkAt)} 更新，每 3 分鐘再讀</div>` : '');
-    const ov = $('overview-rthk');
-    if (ov) {
-      // 總覽：最近 2 小時嘅意外排先，最多 3 則
-      const recent = rthkItems.filter(x => Date.now() - x.t < 2 * 3600e3);
-      const top = [...recent.filter(x => x.kind === 'accident'), ...recent.filter(x => x.kind !== 'accident')].slice(0, 3);
-      ov.innerHTML = top.length ? top.map(x => row(x, rthkItems.indexOf(x))).join('') : '';
-    }
-  }
+  function renderRthk() { if (typeof renderNews === 'function') renderNews(); }
 
   async function rthkOnMap(i) {
     const x = rthkItems[i];
@@ -5763,10 +5832,10 @@
     const q = rthkPlace(x);
     toast('搵緊位置：' + q, 3000);
     const pos = await geocodeIncident({ location: q, district: '' });
-    const html = `<b>${esc(x.title || '交通消息')}</b><br>${esc(x.body)}<br><small>港台 ${hhmm(x.t)}${pos ? '．📍 按地名搵嘅大概位置' : ''}</small>`;
+    const html = `<b>${esc(x.title || '交通消息')}</b><br>${esc(x.body)}<br><small>${hhmm(x.t)}${pos ? '．📍 按地名搵嘅大概位置' : ''}</small>`;
     if (pos) {
       if (rthkMarker) rthkMarker.map = null;
-      rthkMarker = makeMarker('pin incident' + (x.kind === 'accident' ? '' : ' works'), (x.kind === 'accident' ? '🚨 ' : '🚧 ') + (x.title || '港台消息'), q, pos.lat, pos.lng, m => openInfo(html, m));
+      rthkMarker = makeMarker('pin incident' + (x.kind === 'accident' ? '' : ' works'), (x.kind === 'accident' ? '🚨 ' : '🚧 ') + (x.title || '交通消息'), q, pos.lat, pos.lng, m => openInfo(html, m));
       rthkMarker.map = map;
       map.setCenter(pos); map.setZoom(15);
       openInfo(html, rthkMarker);
