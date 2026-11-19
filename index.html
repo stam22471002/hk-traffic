@@ -467,6 +467,103 @@
         border: 1px solid var(--line); max-height: 60%; overflow-y: auto; z-index: 6; }
       body.chips-open #layers-btn { border-color: var(--accent); }
     }
+
+    /* =================== 車站資料框（白底） =================== */
+    .sb { color: #202124; font-size: 14px; min-width: 250px; }
+    .sb-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+    .sb-title { min-width: 0; }
+    .sb-name { font-size: 16px; font-weight: 700; line-height: 1.3; }
+    .sb-sub { font-size: 12px; color: #5f6368; margin-top: 2px; }
+    .sb-list { max-height: 270px; overflow-y: auto; border-top: 1px solid #e8eaed; margin: 0 -2px; }
+    .sb-row { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto 30px; align-items: center; gap: 8px; padding: 8px 2px; border-bottom: 1px solid #f1f3f4; }
+    .sb-row.tap { cursor: pointer; }
+    .sb-row.tap:hover, .sb-row.tap:active { background: #f8f9fa; }
+    .sb-no { color: #fff; font-weight: 700; border-radius: 6px; text-align: center; padding: 4px 2px; font-size: 15px; letter-spacing: -0.3px; }
+    .sb-dest { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+    .sb-op { font-size: 11px; color: #80868b; }
+    .sb-t { text-align: right; white-space: nowrap; line-height: 1.15; }
+    .sb-t b { font-size: 21px; color: #188038; }
+    .sb-t b.now { font-size: 15px; color: #d93025; }
+    .sb-t small { font-size: 12px; color: #188038; margin-left: 1px; }
+    .sb-more { font-size: 11px; color: #80868b; }
+    .sb-none { font-size: 12px; color: #80868b; }
+    .sb-empty { padding: 10px 0; color: #80868b; }
+    .sb-note { font-size: 11px; color: #80868b; margin-top: 4px; }
+    .sb-info { background: #f1f8e9; border-radius: 8px; padding: 8px 10px; margin: 4px 0 2px; line-height: 1.5; }
+    .sb-info small { color: #5f6368; }
+    .sb .bell, .gm-style-iw .bell { border: 1px solid #dadce0; color: #202124; opacity: 0.85; background: #fff; width: 30px; height: 30px; padding: 0; font-size: 14px; }
+    .sb .bell.on, .gm-style-iw .bell.on { border-color: #f9ab00; background: #fef7e0; opacity: 1; }
+    .fav-stop { flex-shrink: 0; border: 1px solid #dadce0; background: #fff; color: #1a73e8; border-radius: 14px; padding: 3px 10px; font-size: 12px;
+      cursor: pointer; white-space: nowrap; font-family: inherit; }
+    .fav-stop.on { color: #e37400; border-color: #fbbc04; background: #fef7e0; }
+
+    /* 「去呢度」：一行三個 + 更多 */
+    .go-box .go-main button { padding: 8px 4px; font-size: 13px; }
+    .go-more { margin-top: 6px; }
+    .go-more summary { font-size: 12px; color: #1a73e8; cursor: pointer; padding: 2px 0; }
+    .go-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .go-grid button { padding: 7px 4px; border-radius: 8px; border: 1px solid #1a73e8; background: #fff; color: #1a73e8; font-size: 12px; cursor: pointer; font-family: inherit; }
+
+    /* 地圖：撳站之後個閃動圈 */
+    .focus-ring { width: 18px; height: 18px; border-radius: 50%; background: rgba(26,115,232,0.9); border: 3px solid #fff; box-shadow: 0 0 0 0 rgba(26,115,232,0.6); transform: translateY(9px); }
+    .focus-ring.go { animation: ring 1.4s ease-out 3; }
+    @keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(26,115,232,0.65); } 100% { box-shadow: 0 0 0 26px rgba(26,115,232,0); } }
+
+    /* 我附近：成格撳得 */
+    .nb-stop { cursor: pointer; border-radius: 8px; }
+    .nb-stop:hover { background: rgba(255,255,255,0.03); }
+
+    /* =================== 追蹤路線：上車／落車 =================== */
+    .tr-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .trip-card { margin-top: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+    .tc-line { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin: 2px 0; }
+    .tc-line .big { font-size: 20px; color: #9fe3a8; }
+    .tc-line small { color: var(--muted); }
+    .tc-sub { font-size: 12px; color: var(--muted); margin: 6px 0 4px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; transform: translateY(1px); }
+    .dot.g { background: #00e676; } .dot.r { background: #ff5252; }
+    .bus-chips { display: flex; gap: 6px; margin-bottom: 6px; }
+    .bus-chip { flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 5px 4px; cursor: pointer;
+      font-family: inherit; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+    .bus-chip b { font-size: 15px; } .bus-chip small { font-size: 11px; color: var(--muted); }
+    .bus-chip.on { border-color: #00e676; background: rgba(0,230,118,0.12); }
+    .tc-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .tc-btns .mini-btn { margin: 0; }
+    .tc-btns .mini-btn.on { border-color: #00e676; }
+
+    .stop-list.v2 { border-left: none; margin-top: 10px; }
+    .stop-list.v2 li { padding: 7px 6px; align-items: center; border-radius: 6px; }
+    .stop-list.v2 li::before { display: none; }
+    .stop-list.v2 li .sn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stop-list.v2 li.before .sn { color: var(--muted); }
+    .stop-list.v2 li.after .sn, .stop-list.v2 li.after .arr { color: var(--muted); opacity: 0.6; }
+    .stop-list.v2 li.board { background: rgba(0,230,118,0.10); }
+    .stop-list.v2 li.alight { background: rgba(255,82,82,0.12); }
+    .pill { flex-shrink: 0; width: 44px; font-size: 11px; padding: 3px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--panel);
+      color: var(--muted); cursor: pointer; font-family: inherit; text-align: center; }
+    .pill:hover { border-color: #00e676; color: var(--text); }
+    .pill.off:hover { border-color: #ff5252; }
+    .pill.on { background: #00c853; border-color: #00c853; color: #fff; font-weight: bold; cursor: default; }
+    .pill.off.on { background: #e53935; border-color: #e53935; }
+    .stop-list.v2 .arr { font-variant-numeric: tabular-nums; font-weight: bold; color: #9fe3a8; white-space: nowrap; }
+    .stop-list.v2 .arr.est { color: #c5e1a5; font-weight: normal; }
+
+    /* =================== 到站提醒：揀班次 =================== */
+    #rem-sheet { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.5); align-items: flex-end; justify-content: center; }
+    #rem-sheet.open { display: flex; }
+    .rs-card { background: var(--panel); color: var(--text); width: 100%; max-width: 440px; border-radius: 16px 16px 0 0; padding: 14px 16px 18px; box-shadow: 0 -8px 30px rgba(0,0,0,0.4); }
+    @media (min-width: 801px) { #rem-sheet { align-items: center; } .rs-card { border-radius: 16px; } }
+    .rs-head { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+    .rs-x { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+    .rs-route { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; }
+    .rs-route span:last-child small { display: block; color: var(--muted); font-size: 12px; }
+    .rs-label { font-size: 12px; color: var(--muted); margin: 10px 0 6px; }
+    .rs-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+    .rs-opt { flex: 1 1 0; min-width: 80px; background: var(--panel2); border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 8px 4px;
+      cursor: pointer; font-family: inherit; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .rs-opt b { font-size: 17px; } .rs-opt small { font-size: 11px; color: var(--muted); }
+    .rs-opt.small { font-size: 12px; min-width: 70px; padding: 8px 2px; }
+    .rs-opt.on { border-color: var(--accent); background: rgba(77,163,255,0.15); }
   </style>
 </head>
 <body>
@@ -4039,11 +4136,10 @@
         return `<tr class="${x.r ? 'tap' : ''}" data-board-row="${i}" title="撳睇呢條線架車而家喺邊">
           <td><span class="rbadge" style="background:${CO_COLOR[x.co] || '#555'}">${esc(x.route)}</span></td>
           <td>往 ${esc(x.dest || '')}<br><small>${esc(CO_LABEL[x.co] || '')}</small></td>
-          <td style="text-align:right;white-space:nowrap">${txt}</td>
-          <td><button class="bell" data-rem='${esc(JSON.stringify({ st, co: x.co, route: x.route, dest: x.dest || '', stopId: x.stopId }))}' title="到站前提醒我">🔔</button></td></tr>`;
+          <td style="text-align:right;white-space:nowrap">${txt}</td></tr>`;
       }).join('');
       openInfo(`<b>🚏 ${esc(st.name)}</b><br><small>之後 3 班．<b>撳路線</b>睇架車而家喺邊．* = 時間表班次</small>
-        <table class="eta-table" style="margin-top:4px">${body || '<tr><td>暫時冇到站資料</td></tr>'}</table>${favStopBtn({ kind: st.co === 'gmb' ? 'gmb' : 'bus', id: st.id, name: st.name, lat: st.lat, lng: st.lng, co: st.co })}${goHtml(st)}`, marker, { lat: st.lat, lng: st.lng });
+        <table class="eta-table" style="margin-top:4px">${body || '<tr><td>暫時冇到站資料</td></tr>'}</table>${goHtml(st)}`, marker, { lat: st.lat, lng: st.lng });
     } catch (e) {
       openInfo(`<b>🚏 ${esc(st.name)}</b><br>⚠️ 讀唔到到站時間：${esc(e.message)}${goHtml(st)}`, marker, { lat: st.lat, lng: st.lng });
     }
@@ -6284,15 +6380,18 @@
     goHere({ name: p.name, lat: p.lat, lng: p.lng }, travelMode || 'transit');
   });
 
-  // 每個資料框（「去呢度」嗰行）下面加：⭐ 收藏、🏠 屋企、🏢 公司
-  const _goHtml = goHtml;
-  goHtml = function (p, opt = {}) {
-    const html = _goHtml(p, opt);
-    if (!html || opt.ends === false || p.isMyLoc) return html;
-    const a = `data-name="${esc(p.name || '地圖上揀嘅位置')}" data-lat="${p.lat}" data-lng="${p.lng}"`;
+  // 「去呢度」：一行三個主要掣；起點／終點／收藏／屋企／公司收埋喺「更多」
+  goHtml = function (p, { ends = true } = {}) {
+    if (!p || !isFinite(p.lat) || !isFinite(p.lng)) return '';
+    const a = `data-name="${esc(p.name || '地圖上揀嘅位置')}" data-lat="${p.lat}" data-lng="${p.lng}"${p.kind ? ` data-kind="${esc(p.kind)}"` : ''}`;
     const starred = fav.places.some(x => Math.abs(x.lat - p.lat) < 1e-5 && Math.abs(x.lng - p.lng) < 1e-5);
-    return html + `<div class="go-row fav-row" ${a}><button class="alt" data-fav="place">${starred ? '⭐ 已收藏' : '☆ 收藏'}</button>
-      <button class="alt" data-fav="home">🏠 設為屋企</button><button class="alt" data-fav="work">🏢 設為公司</button></div>`;
+    const more = !ends || p.isMyLoc ? '' : `<details class="go-more"><summary>更多：設為起點／終點、收藏</summary>
+        <div class="go-grid">
+          <button class="alt" data-set="start">🟢 由呢度出發</button><button class="alt" data-set="end">🔴 設為終點</button>
+          <button class="alt" data-fav="place">${starred ? '⭐ 已收藏' : '☆ 收藏地點'}</button><button class="alt" data-fav="home">🏠 設為屋企</button>
+          <button class="alt" data-fav="work">🏢 設為公司</button></div></details>`;
+    return `<div class="go-box" ${a}><div class="go-row go-main">
+        <button data-go="walk">🚶 行路去</button><button data-go="transit">🚌 搭車去</button><button data-go="drive">🚗 駕駛去</button></div>${more}</div>`;
   };
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-fav]');
@@ -6315,15 +6414,15 @@
   const stopKey = s => (s.kind || 'bus') + ':' + s.id;
   const isFavStop = s => fav.stops.some(x => stopKey(x) === stopKey(s));
   function favStopBtn(s) {
-    return `<div class="go-row"><button class="alt" data-fav-stop='${esc(JSON.stringify(s))}'>${isFavStop(s) ? '⭐ 已收藏呢個站' : '☆ 收藏呢個站（總覽會顯示幾耐有車）'}</button></div>`;
+    return `<button class="fav-stop${isFavStop(s) ? ' on' : ''}" data-fav-stop='${esc(JSON.stringify(s))}' title="收藏：總覽會顯示呢個站幾耐有車">${isFavStop(s) ? '★ 已收藏' : '☆ 收藏'}</button>`;
   }
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-fav-stop]');
     if (!b) return;
     const s = JSON.parse(b.dataset.favStop);
     const i = fav.stops.findIndex(x => stopKey(x) === stopKey(s));
-    if (i >= 0) { fav.stops.splice(i, 1); b.textContent = '☆ 收藏呢個站'; }
-    else { fav.stops.push(s); fav.stops = fav.stops.slice(-6); b.textContent = '⭐ 已收藏呢個站'; toast('已收藏，喺「總覽」會見到幾耐有車', 2500); }
+    if (i >= 0) { fav.stops.splice(i, 1); b.textContent = '☆ 收藏'; b.classList.remove('on'); }
+    else { fav.stops.push(s); fav.stops = fav.stops.slice(-6); b.textContent = '★ 已收藏'; b.classList.add('on'); toast('已收藏，喺「總覽」會見到幾耐有車', 2500); }
     saveFav();
   });
 
@@ -6332,7 +6431,16 @@
   // ---------------------------------------------------------------------
   const busRowsHtml = (rows, max = 5, st = null) => {
     const now = Date.now();
-    const list = rows.filter(x => x.times.some(t => t.t > now - 60000)).slice(0, max);
+    // 同一條線（例如對面站、聯營）合併成一行，時間太近（45 秒內）當同一班
+    const merged = new Map();
+    rows.forEach(x => {
+      const k = `${x.co}|${x.route}|${x.dest || ''}`;
+      const m = merged.get(k);
+      if (!m) merged.set(k, { ...x, times: x.times.slice() }); else m.times.push(...x.times);
+    });
+    merged.forEach(x => { x.times.sort((a, b) => a.t - b.t); x.times = x.times.filter((t, i, a) => i === 0 || t.t - a[i - 1].t > 45000); });
+    const list = [...merged.values()].filter(x => x.times.some(t => t.t > now - 60000))
+      .sort((a, b) => a.times.find(t => t.t > now - 60000).t - b.times.find(t => t.t > now - 60000).t).slice(0, max);
     if (!list.length) return '<div class="src">暫時冇班次</div>';
     return list.map(x => {
       const ts = x.times.filter(t => t.t > now - 60000).slice(0, 2).map(t => { const m = minsFromNow(t.t); return m <= 0 ? '即將到' : m + ' 分'; }).join('、');
@@ -6404,7 +6512,7 @@
         return `<div class="nb-stop" data-nb-stop='${esc(JSON.stringify(st))}'><div class="nb-name">🚏 ${esc(st.name.replace(/\s*\(.*\)$/, ''))} <small>${Math.round(n.d)} 米</small></div>${busRowsHtml(rows, 4, st)}</div>`;
       }));
       if (mtr) blocks.push(`<div class="nb-stop" data-nb-mtr="${mtr}"><div class="nb-name">🚇 ${esc(MTR_ST[mtr][0])}站 <small>${Math.round(md)} 米</small></div>${await mtrRowsHtml(mtr)}</div>`);
-      box.innerHTML = `<div class="nb-card"><div class="nb-head"><b>📍 我附近</b><small>${hhmm(Date.now())} 更新．撳站名睇地圖</small></div>
+      box.innerHTML = `<div class="nb-card"><div class="nb-head"><b>📍 我附近</b><small>${hhmm(Date.now())} 更新．撳個站喺地圖睇</small></div>
         ${blocks.join('') || '<div class="src">你身邊 400 米內冇巴士／小巴站</div>'}</div>`;
       nearbyAt = Date.now();
     } catch (e) {
@@ -6425,13 +6533,12 @@
     box.innerHTML = `<div class="nb-card"><div class="nb-head"><b>⭐ 常用車站</b><small>喺車站資料框撳「☆ 收藏」加入</small></div>${blocks.join('')}</div>`;
   }
   document.addEventListener('click', e => {
-    if (e.target.closest('[data-rem]')) return;
-    const s = e.target.closest('[data-nb-stop] .nb-name');
-    const m = e.target.closest('[data-nb-mtr] .nb-name');
+    if (e.target.closest('[data-rem],button')) return;
+    const s = e.target.closest('[data-nb-stop]');
+    const m = e.target.closest('[data-nb-mtr]');
     if (!map || (!s && !m)) return;
-    if (s) { const st = JSON.parse(s.parentElement.dataset.nbStop); map.setCenter({ lat: st.lat, lng: st.lng }); map.setZoom(18); showStopBoard(st); }
-    else { const c = m.parentElement.dataset.nbMtr; map.setCenter({ lat: MTR_ST[c][2], lng: MTR_ST[c][3] }); map.setZoom(16); showMtrStation(c); }
-    if (isPhone()) document.body.classList.remove('side-big');
+    if (s) { const st = JSON.parse(s.dataset.nbStop); focusPlace(st, 18); showStopBoard(st); }
+    else { const c = m.dataset.nbMtr; focusPlace({ lat: MTR_ST[c][2], lng: MTR_ST[c][3] }, 17); showMtrStation(c); }
   });
 
   function refreshHomeCards() {
@@ -6443,62 +6550,116 @@
   setInterval(() => { nearbyAt = 0; refreshHomeCards(); }, 30000);
 
   // ---------------------------------------------------------------------
-  // 到站提醒：巴士／小巴到站前 N 分鐘通知（網頁要開住）
+  // 到站提醒：揀邊一班車、到站前幾耐提（網頁要開住）
+  //   每次更新都搵返「同一架車」：同上次預計時間最接近嗰班（±6 分鐘內）
   // ---------------------------------------------------------------------
-  let reminders = UXS.get('reminders', []).filter(r => Date.now() - r.created < 2 * 3600e3);
+  let reminders = UXS.get('reminders', []).filter(r => r.tt && Date.now() - r.created < 3 * 3600e3);
   const remKey = r => `${r.stopId}|${r.route}|${r.dest}`;
   const saveRem = () => UXS.set('reminders', reminders);
-  async function addReminder(info) {
-    const k = remKey(info);
-    const i = reminders.findIndex(r => remKey(r) === k);
-    if (i >= 0) { reminders.splice(i, 1); saveRem(); toast('已取消提醒', 2000); refreshHomeCards(); return false; }
-    const lead = +(prompt(`${info.route} 往 ${info.dest}：到站前幾多分鐘提醒你？`, '3') || 0);
-    if (!lead) return false;
-    reminders.push({ ...info, lead: Math.max(1, Math.min(30, lead)), created: Date.now(), fired: [] });
-    saveRem();
-    await askNotify();
-    toast(`🔔 ${info.route} 到站前 ${lead} 分鐘會提醒你（網頁要開住）`, 4000);
-    checkReminders();
-    refreshHomeCards();
-    return true;
+  const shortName = n => String(n || '').replace(/\s*\(.*\)$/, '');
+
+  // 揀班次嘅小視窗
+  async function openRemindPicker(info, preN = 0) {
+    let sheet = $('rem-sheet');
+    if (!sheet) { sheet = document.createElement('div'); sheet.id = 'rem-sheet'; document.body.appendChild(sheet); }
+    const close = () => sheet.classList.remove('open');
+    sheet.classList.add('open');
+    sheet.innerHTML = `<div class="rs-card"><div class="rs-head"><b>🔔 到站提醒</b><button class="rs-x">✕</button></div><div class="rs-body">讀緊班次…</div></div>`;
+    sheet.querySelector('.rs-x').onclick = close;
+    sheet.onclick = e => { if (e.target === sheet) close(); };
+    let times = info.times;
+    if (!times) {
+      try {
+        const rows = await stopBoardRows(info.st);
+        const row = rows.find(x => x.route === info.route && (x.dest === info.dest || !info.dest)) || rows.find(x => x.route === info.route);
+        times = (row?.times || []).map(t => t.t);
+      } catch (e) { times = []; }
+    }
+    const now = Date.now();
+    times = times.filter(t => t > now - 30000).slice(0, 3);
+    const existing = reminders.filter(r => remKey(r) === remKey(info));
+    const body = sheet.querySelector('.rs-body');
+    if (!times.length) { body.innerHTML = '暫時冇呢條線嘅到站時間，遲啲再試。'; return; }
+    let pick = Math.min(preN, times.length - 1), lead = 3;
+    const nth = ['下一班', '第二班', '第三班'];
+    const render = () => {
+      body.innerHTML = `
+        <div class="rs-route"><span class="rbadge" style="background:${CO_COLOR[info.co] || lineColorOf(info) || '#555'}">${esc(info.route)}</span>
+          <span>往 ${esc(info.dest || '')}<small>喺「${esc(shortName(info.st.name))}」上車</small></span></div>
+        <div class="rs-label">想留意邊一班？</div>
+        <div class="rs-opts">${times.map((t, i) => { const m = minsFromNow(t); return `<button class="rs-opt${i === pick ? ' on' : ''}" data-rs-pick="${i}">
+          <b>${m <= 0 ? '即到' : m + ' 分鐘'}</b><small>${nth[i]}．${hhmm(t)}</small></button>`; }).join('')}</div>
+        <div class="rs-label">幾耐之前提我？</div>
+        <div class="rs-opts">${[1, 3, 5, 10].map(m => `<button class="rs-opt small${m === lead ? ' on' : ''}" data-rs-lead="${m}">到站前 ${m} 分鐘</button>`).join('')}</div>
+        <button class="fr-big" data-rs-ok="1">設定提醒</button>
+        ${existing.length ? `<button class="mini-btn" data-rs-off="1" style="margin-top:8px;width:100%">取消呢條線嘅提醒（${existing.length} 個）</button>` : ''}
+        <div class="src" style="margin-top:6px">網頁要開住（可以喺背景）先會響；手機熄咗螢幕可能收唔到。</div>`;
+      body.querySelectorAll('[data-rs-pick]').forEach(b => b.onclick = () => { pick = +b.dataset.rsPick; render(); });
+      body.querySelectorAll('[data-rs-lead]').forEach(b => b.onclick = () => { lead = +b.dataset.rsLead; render(); });
+      body.querySelector('[data-rs-ok]').onclick = async () => {
+        const tt = times[pick];
+        reminders.push({ st: info.st, co: info.co, route: info.route, dest: info.dest, stopId: info.stopId, lead, tt, nth: pick, created: Date.now() });
+        saveRem();
+        close();
+        await askNotify();
+        toast(`🔔 會喺 ${info.route}（${hhmm(tt)} 嗰班）到站前 ${lead} 分鐘提你`, 4000);
+        checkReminders(); refreshHomeCards(); markBells();
+      };
+      const off = body.querySelector('[data-rs-off]');
+      if (off) off.onclick = () => { reminders = reminders.filter(r => remKey(r) !== remKey(info)); saveRem(); close(); toast('已取消提醒', 2000); refreshHomeCards(); markBells(); };
+    };
+    render();
   }
-  document.addEventListener('click', async e => {
+  const lineColorOf = info => info.color || '';
+  function markBells() {
+    document.querySelectorAll('[data-rem]').forEach(b => {
+      try { const k = remKey(JSON.parse(b.dataset.rem)); b.classList.toggle('on', reminders.some(r => remKey(r) === k)); } catch (e) { /* 唔理 */ }
+    });
+  }
+  document.addEventListener('click', e => {
     const b = e.target.closest('[data-rem]');
     if (!b) return;
     e.stopPropagation(); e.preventDefault();
-    const on = await addReminder(JSON.parse(b.dataset.rem));
-    b.classList.toggle('on', on);
+    openRemindPicker(JSON.parse(b.dataset.rem), +(b.dataset.remN || 0));
   }, true);
 
   async function checkReminders() {
-    reminders = reminders.filter(r => Date.now() - r.created < 2 * 3600e3);
+    const now = Date.now();
     for (const r of reminders) {
       try {
         const rows = await stopBoardRows(r.st);
-        const row = rows.find(x => x.route === r.route && (x.dest === r.dest || !r.dest));
-        const next = (row?.times || []).map(t => t.t).find(t => t > Date.now() - 30000);
-        r.next = next || null;
-        if (next && next - Date.now() <= r.lead * 60000 && !r.fired.includes(Math.round(next / 60000))) {
-          r.fired.push(Math.round(next / 60000));
-          const m = Math.max(0, minsFromNow(next));
-          notify(`${r.route} 就到`, `${r.route} 往 ${r.dest} 大約 ${m <= 0 ? '而家' : m + ' 分鐘後'}到「${r.st.name.replace(/\s*\(.*\)$/, '')}」`);
-          r.done = true;
+        const row = rows.find(x => x.route === r.route && (x.dest === r.dest || !r.dest)) || rows.find(x => x.route === r.route);
+        const ts = (row?.times || []).map(t => t.t).filter(t => t > now - 60000);
+        // 搵返同一架車
+        const same = ts.reduce((m, t) => (Math.abs(t - r.tt) < Math.abs(m - r.tt) ? t : m), Infinity);
+        if (isFinite(same) && Math.abs(same - r.tt) < 6 * 60000) r.tt = same;
+        else if (now > r.tt + 3 * 60000) { r.done = true; continue; }        // 架車應該已經走咗
+        if (r.tt - now <= r.lead * 60000 && !r.fired) {
+          r.fired = true; r.done = true;
+          const m = Math.max(0, minsFromNow(r.tt));
+          notify(`${r.route} 就到`, `${r.route} 往 ${r.dest} 大約 ${m <= 0 ? '而家' : m + ' 分鐘後'}（${hhmm(r.tt)}）到「${shortName(r.st.name)}」`);
         }
       } catch (e) { /* 下次再試 */ }
     }
-    reminders = reminders.filter(r => !r.done);
+    reminders = reminders.filter(r => !r.done && now - r.created < 3 * 3600e3);
     saveRem();
     renderReminders();
+    markBells();
   }
-  setInterval(checkReminders, 30000);
+  setInterval(checkReminders, 20000);
   function renderReminders() {
     const box = $('reminder-list');
     if (!box) return;
     box.innerHTML = reminders.length ? `<div class="nb-card"><div class="nb-head"><b>🔔 到站提醒</b><small>網頁要開住先會響</small></div>
-      ${reminders.map(r => `<div class="nb-row"><span class="rbadge" style="background:${CO_COLOR[r.co] || '#555'}">${esc(r.route)}</span>
-        <span class="nb-dest">${esc(r.st.name.replace(/\s*\(.*\)$/, ''))}．到站前 ${r.lead} 分鐘${r.next ? `（下班 ${Math.max(0, minsFromNow(r.next))} 分）` : ''}</span>
-        <button class="bell on" data-rem='${esc(JSON.stringify({ st: r.st, co: r.co, route: r.route, dest: r.dest, stopId: r.stopId }))}' title="取消">✕</button></div>`).join('')}</div>` : '';
+      ${reminders.map((r, i) => `<div class="nb-row"><span class="rbadge" style="background:${CO_COLOR[r.co] || '#555'}">${esc(r.route)}</span>
+        <span class="nb-dest">${esc(shortName(r.st.name))}．${hhmm(r.tt)} 嗰班（${Math.max(0, minsFromNow(r.tt))} 分）．早 ${r.lead} 分鐘提</span>
+        <button class="bell on" data-rem-del="${i}" title="取消">✕</button></div>`).join('')}</div>` : '';
   }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-rem-del]');
+    if (!b) return;
+    reminders.splice(+b.dataset.remDel, 1); saveRem(); renderReminders(); markBells();
+  });
 
   // 朋友就到：對方 3 分鐘內到見面地點就通知一次
   const friendNotified = new Set();
@@ -6547,6 +6708,277 @@
   renderQuick();
   refreshHomeCards();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { nearbyAt = 0; refreshHomeCards(); checkReminders(); } });
+
+  // =====================================================================
+  // 車站資料框重新設計、撳站去地圖、上車／落車站同預計到達時間（好似巴士 app 咁）
+  // =====================================================================
+
+  // 地圖去某個位，加個閃動圈話你知喺邊
+  let focusRing = null;
+  function focusPlace(p, zoom = 17) {
+    if (!map || !p) return;
+    if (isPhone()) document.body.classList.remove('side-big', 'chips-open');
+    map.setCenter({ lat: p.lat, lng: p.lng });
+    if (map.getZoom() < zoom) map.setZoom(zoom);
+    if (!AdvancedMarkerElement) return;
+    if (!focusRing) {
+      const el = document.createElement('div');
+      el.className = 'focus-ring';
+      focusRing = new AdvancedMarkerElement({ map, content: el, zIndex: 2800 });
+    }
+    focusRing.position = { lat: p.lat, lng: p.lng };
+    focusRing.map = map;
+    const el = focusRing.content;
+    el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+  }
+
+  // ---------------------------------------------------------------------
+  // 車站資料框：每條線一行（路線號碼｜目的地｜幾耐到｜🔔）
+  // ---------------------------------------------------------------------
+  const isSched = t => /原定|預定|未開出/.test(t?.rmk || '');
+  showStopBoard = async function (st, marker) {
+    const pos = { lat: st.lat, lng: st.lng };
+    const stInfo = { id: st.id, name: st.name, lat: st.lat, lng: st.lng, co: st.co };
+    const head = sub => `<div class="sb-head"><div class="sb-title"><div class="sb-name">🚏 ${esc(shortName(st.name))}</div><div class="sb-sub">${sub}</div></div>
+      ${favStopBtn({ kind: st.co === 'gmb' ? 'gmb' : 'bus', id: st.id, name: st.name, lat: st.lat, lng: st.lng, co: st.co })}</div>`;
+    openInfo(`<div class="sb">${head('查詢緊到站時間…')}</div>`, marker, pos);
+    try {
+      try { await loadTransitDb(); } catch (e) { /* 冇資料庫都試下九巴 */ }
+      const raw = await stopBoardRows(st);
+      // 同一條線（同公司、同路線、同目的地）只顯示一行
+      const merged = new Map();
+      raw.forEach(x => {
+        const k = `${x.co}|${x.route}|${x.dest || ''}`;
+        const m = merged.get(k);
+        if (!m) merged.set(k, { ...x, times: x.times.slice() });
+        else { m.times.push(...x.times); if (!m.r) { m.r = x.r; m.stopId = x.stopId; } }
+      });
+      const rows = [...merged.values()];
+      rows.forEach(x => { x.times.sort((a, b) => a.t - b.t); x.times = x.times.filter((t, i, a) => i === 0 || t.t - a[i - 1].t > 45000); });
+      const now = Date.now();
+      rows.sort((a, b) => ((a.times.find(t => t.t > now - 60000)?.t) || 9e15) - ((b.times.find(t => t.t > now - 60000)?.t) || 9e15));
+      boardRows = rows;
+      const ops = [...new Set(rows.map(x => CO_LABEL[x.co]).filter(Boolean))].join('、');
+      let anySched = false;
+      const body = rows.map((x, i) => {
+        const ts = x.times.filter(t => t.t > now - 60000).slice(0, 3);
+        const first = ts[0], m = first ? minsFromNow(first.t) : null;
+        if (ts.some(isSched)) anySched = true;
+        const big = !first ? `<span class="sb-none">${esc(x.rmk || '暫無班次')}</span>`
+          : m <= 0 ? `<b class="now">即到</b>` : `<b>${m}</b><small>分${isSched(first) ? '*' : ''}</small>`;
+        const more = ts.slice(1).map(t => `${Math.max(0, minsFromNow(t.t))}${isSched(t) ? '*' : ''}`).join('・');
+        const rem = { st: stInfo, co: x.co, route: x.route, dest: x.dest || '', stopId: x.stopId };
+        return `<div class="sb-row${x.r ? ' tap' : ''}" data-board-row="${i}">
+          <span class="sb-no" style="background:${CO_COLOR[x.co] || '#555'}">${esc(x.route)}</span>
+          <div class="sb-mid"><div class="sb-dest">往 ${esc(x.dest || '')}</div><div class="sb-op">${esc(CO_LABEL[x.co] || '')}</div></div>
+          <div class="sb-t">${big}${more ? `<div class="sb-more">之後 ${more} 分</div>` : ''}</div>
+          ${ts.length ? `<button class="bell" data-rem='${esc(JSON.stringify(rem))}' title="到站提醒">🔔</button>` : '<span></span>'}
+        </div>`;
+      }).join('');
+      openInfo(`<div class="sb">${head(`${ops || '巴士站'}．${rows.length} 條線．撳路線睇架車喺邊`)}
+        <div class="sb-list">${body || '<div class="sb-empty">暫時冇到站資料</div>'}</div>
+        ${anySched ? '<div class="sb-note">* 時間表班次（架車未開出）</div>' : ''}${goHtml(st)}</div>`, marker, pos);
+      markBells();
+    } catch (e) {
+      openInfo(`<div class="sb">${head('⚠️ 讀唔到到站時間：' + esc(e.message))}${goHtml(st)}</div>`, marker, pos);
+    }
+  };
+
+  // ---------------------------------------------------------------------
+  // 追蹤路線：揀上車站同落車站，計你搭嗰班車幾點到每個站
+  // ---------------------------------------------------------------------
+  // 上車站嘅班次（分鐘數由細到大）
+  function boardList(lv) {
+    const now = Date.now(), b = lv.boardIdx;
+    if (b < 0) return [];
+    const bt = (lv.boardTimes || []).map(x => x.t).filter(t => t > now - 30000);
+    return bt.length ? bt : (lv.etas?.[b] || []).filter(t => t > now - 30000);
+  }
+
+  // 你揀嗰班車幾點到上車站之後每個站
+  //   有到站時間（九巴全線都有）：用「排第幾架」對返同一架車
+  //   冇（城巴、小巴只問上車站附近）：按距離同平均車速估，前面有實際數據就按比例調整
+  function arrivalPlan(lv) {
+    const b = lv.boardIdx;
+    const list = boardList(lv);
+    if (b < 0 || !list.length) return null;
+    const now = Date.now();
+    const n = Math.min(lv.pickN || 0, list.length - 1);
+    const Tb = list[n];
+    const sp = OPS[lv.op] || OPS.kmb;
+    const veh = (lv.vehicles || []).filter(v => !v.docked);
+    const at = {};
+    let prev = Tb, scale = 1;
+    for (let j = b + 1; j < lv.stops.length; j++) {
+      const a = lv.stops[j - 1], c = lv.stops[j];
+      const len = lv.segs?.[j - 1]?.len ?? distM(a.lat, a.lng, c.lat, c.lng) * 1.3;
+      const base = (len / sp.speed + sp.dwell) * 1000;
+      const ahead = veh.filter(v => v.k > b && v.k <= j).length;           // 而家喺你前面、會早過你架車到呢個站
+      const cands = (lv.etas?.[j] || []).filter(t => t > now - 30000).slice(ahead + n);
+      const hit = cands.find(t => t > prev + base * 0.3 && t < prev + base * 4 + 180000);
+      let t, est = true;
+      if (hit) { t = hit; est = false; scale = scale * 0.6 + Math.min(2.5, Math.max(0.5, (hit - prev) / base)) * 0.4; }
+      else t = prev + base * scale;
+      at[j] = { t, est };
+      prev = t;
+    }
+    return { Tb, n, list, at };
+  }
+
+  const _renderTrackPanel = renderTrackPanel;
+  renderTrackPanel = function (lv) {
+    if (panelLine !== lv) return;
+    if (lv.op === 'ferry') return _renderTrackPanel(lv);
+    const now = Date.now(), b = lv.boardIdx, al = lv.alightIdx;
+    const plan = arrivalPlan(lv);
+    const vehAt = {};
+    (lv.vehicles || []).forEach(v => { if (v.k !== undefined && !v.docked) vehAt[v.k] = (vehAt[v.k] || 0) + 1; });
+    const icon = OPS[lv.op].icon;
+    const rows = lv.stops.map((s, i) => {
+      let pill, right = '', cls = '';
+      if (b < 0 || i < b) {
+        pill = `<button class="pill" data-tp-board="${i}">上車</button>`;
+        const x = (lv.etas?.[i] || []).find(y => y > now - 30000);
+        if (x) right = `<span class="se">${minsText(x)}</span>`;
+        if (b >= 0) cls = 'before';
+      } else if (i === b) {
+        cls = 'board';
+        pill = '<span class="pill on">上車</span>';
+        right = plan ? `<span class="arr">${hhmm(plan.Tb)}</span>` : '';
+      } else {
+        cls = i === al ? 'alight' : al > b && i > al ? 'after' : '';
+        pill = i === al ? '<span class="pill off on">落車</span>' : `<button class="pill off" data-tp-alight="${i}">落車</button>`;
+        const a = plan?.at[i];
+        if (a) right = `<span class="arr${a.est ? ' est' : ''}">${a.est ? '≈' : ''}${hhmm(a.t)}</span>`;
+      }
+      return `<li class="${cls}" data-si="${i}">${pill}<span class="sn">${i + 1}. ${esc(s.name)}</span>${vehAt[i] ? `<span class="veh">${icon}</span>` : ''}${right}</li>`;
+    }).join('');
+
+    // 上面嗰張卡：上車站、搭邊班、落車站幾點到
+    let card;
+    if (b < 0) card = `<div class="trip-card"><b>👇 揀你喺邊個站上車</b><div class="src">撳站名左邊嘅「上車」，之後再揀「落車」，就會計你幾點到。</div></div>`;
+    else {
+      const bst = lv.stops[b];
+      const chips = plan ? plan.list.slice(0, 3).map((t, k) => { const m = minsFromNow(t); return `<button class="bus-chip${k === plan.n ? ' on' : ''}" data-tp-n="${k}">
+          <b>${m <= 0 ? '即到' : m + ' 分'}</b><small>${hhmm(t)}</small></button>`; }).join('') : '';
+      const alA = plan && al > b ? plan.at[al] : null;
+      const canRemind = ['kmb', 'ctb', 'nlb', 'gmb'].includes(lv.op) && plan;
+      card = `<div class="trip-card">
+        <div class="tc-line"><span class="dot g"></span>喺 <b>${esc(bst.name)}</b> 上車</div>
+        ${plan ? `<div class="tc-sub">搭邊一班？</div><div class="bus-chips">${chips}</div>` : `<div class="tc-sub">${lv.etaError ? '⚠️ ' + esc(lv.etaError) : '暫時冇呢個站嘅班次資料'}${headwayText(lv)}</div>`}
+        ${al > b ? `<div class="tc-line"><span class="dot r"></span>喺 <b>${esc(lv.stops[al].name)}</b> 落車${alA ? `：約 <b class="big">${hhmm(alA.t)}</b> 到<small>（車程 ${Math.max(1, Math.round((alA.t - plan.Tb) / 60000))} 分鐘${alA.est ? '．估計' : ''}）</small>` : ''}</div>`
+          : '<div class="tc-sub">再撳下面站名左邊嘅「落車」，就知幾點到。</div>'}
+        <div class="tc-btns">
+          ${canRemind ? `<button class="mini-btn" data-tp-rem="1">🔔 ${plan.n ? '提我搭呢班' : '到站提醒'}</button>` : ''}
+          ${alA ? `<button class="mini-btn${lv.alightRemind ? ' on' : ''}" data-tp-alrem="1">${lv.alightRemind ? '✅ 落車前會提你' : '🔔 落車前提醒'}</button>` : ''}
+        </div>
+      </div>`;
+      // 落車提醒：預計到落車站前 2 分鐘
+      if (alA && lv.alightRemind && !lv.alightFired && alA.t - now <= 2 * 60000) {
+        lv.alightFired = true;
+        notify('準備落車', `大約 ${Math.max(0, minsFromNow(alA.t))} 分鐘後到「${lv.stops[al].name}」，記得撳鐘`);
+      }
+    }
+    const rev = reverseOf(lv);
+    lv._rev = rev;
+    $('transit-panel').innerHTML = `
+      <div class="tr-head"><span class="rno" style="background:${lv.color}">${esc(lv.short)}</span>
+        <div class="tt"><b>往 ${esc(lv.dest)}</b><small>${esc(lv.opName)}．${lv.stops.length} 個站</small></div></div>
+      <div class="tr-actions">
+        ${rev ? '<button class="mini-btn" data-tp="rev">⇄ 對面方向</button>' : ''}
+        <button class="mini-btn" data-tp="fit">🗺 睇成條線</button>
+        <button class="mini-btn" data-tp="close">✕ 收起</button>
+      </div>
+      ${lv.rtNote ? `<div class="warnbox">${esc(lv.rtNote)}</div>` : ''}
+      ${card}
+      <ul class="stop-list v2">${rows}</ul>
+      <div class="note">撳站名：地圖去嗰個站。時間：綠色係實時到站，「≈」係按距離估計。${icon} 係按到站時間推算嘅車輛位置，唔係 GPS。</div>`;
+  };
+
+  // 改上車站：落車站要喺上車站之後；換站就由下一班計起
+  const _setBoardStop = setBoardStop;
+  setBoardStop = function (lv, i) {
+    lv.pickN = 0;
+    if (lv.alightIdx <= i) lv.alightIdx = -1;
+    lv.alightFired = false;
+    _setBoardStop(lv, i);
+    paintStopDots(lv);
+  };
+  function setAlightStop(lv, i) {
+    lv.alightIdx = lv.alightIdx === i ? -1 : i;
+    lv.alightFired = false;
+    paintStopDots(lv);
+    renderTrackPanel(lv);
+  }
+  function paintStopDots(lv) {
+    (lv.stopMarkers || []).forEach((m, k) => {
+      const d = m.content, on = k === lv.boardIdx, off = k === lv.alightIdx;
+      d.style.borderColor = on ? '#00c853' : off ? '#ff5252' : '';
+      d.style.background = on ? '#b9f6ca' : off ? '#ffcdd2' : '';
+      d.style.width = d.style.height = on || off ? '12px' : '';
+    });
+  }
+
+  // 撳線上面某個站：地圖去嗰度，顯示呢條線喺呢個站嘅資料
+  function openTrackStop(lv, i) {
+    const st = lv.stops[i], now = Date.now(), plan = arrivalPlan(lv);
+    focusPlace(st, 17);
+    const ts = (lv.etas?.[i] || []).filter(t => t > now - 30000).slice(0, 3);
+    const b = lv.boardIdx;
+    const arr = plan && i > b ? plan.at[i] : null;
+    const info = i === b && plan ? `🟢 你嘅上車站．你揀嗰班 <b>${hhmm(plan.Tb)}</b> 到`
+      : arr ? `搭 ${hhmm(plan.Tb)} 嗰班，約 <b>${hhmm(arr.t)}</b> 到呢度<br><small>車程 ${Math.max(1, Math.round((arr.t - plan.Tb) / 60000))} 分鐘${arr.est ? '（估計）' : ''}</small>`
+      : ts.length ? `下一班：<b>${ts.map(t => minsText(t)).join('、')}</b>` : '<span class="sb-none">未有呢個站嘅到站時間</span>';
+    const btns = [
+      i !== b ? `<button class="alt" data-tp-board="${i}">🟢 喺呢度上車</button>` : '',
+      b >= 0 && i > b && i !== lv.alightIdx ? `<button class="alt" data-tp-alight="${i}">🔴 喺呢度落車</button>` : '',
+      lv.op !== 'ferry' ? `<button class="alt" data-tp-allstop="${i}">${lv.op === 'mtr' ? '🚇 睇呢個站' : '🚏 所有路線'}</button>` : ''
+    ].filter(Boolean).join('');
+    openInfo(`<div class="sb"><div class="sb-head"><div class="sb-title"><div class="sb-name">${OPS[lv.op].icon} ${esc(st.name)}</div>
+      <div class="sb-sub">${esc(lv.short)} 往 ${esc(lv.dest)}．第 ${i + 1} 站</div></div></div>
+      <div class="sb-info">${info}</div>${btns ? `<div class="go-row">${btns}</div>` : ''}${goHtml(st)}</div>`,
+      lv.stopMarkers?.[i], { lat: st.lat, lng: st.lng });
+  }
+  const _openLineStop = openLineStop;
+  openLineStop = function (lv, i, mk) {
+    if (lv === panelLine && lv.op !== 'ferry') return openTrackStop(lv, i);
+    return _openLineStop(lv, i, mk);
+  };
+
+  // 追蹤面板同資料框入面嘅掣（喺原本嘅處理之前攔截）
+  document.addEventListener('click', e => {
+    const t = e.target;
+    const lv = panelLine;
+    const hit = sel => t.closest(sel);
+    const inPanel = !!hit('#transit-panel');            // 要喺改畫面之前睇（重畫之後個掣已經唔喺頁面）
+    let el;
+    if ((el = hit('[data-tp-board]')) && lv) { e.stopPropagation(); setBoardStop(lv, +el.dataset.tpBoard); if (!inPanel) openTrackStop(lv, +el.dataset.tpBoard); return; }
+    if ((el = hit('[data-tp-alight]')) && lv) { e.stopPropagation(); setAlightStop(lv, +el.dataset.tpAlight); if (!inPanel) openTrackStop(lv, +el.dataset.tpAlight); return; }
+    if ((el = hit('[data-tp-n]')) && lv) { e.stopPropagation(); lv.pickN = +el.dataset.tpN; lv.alightFired = false; renderTrackPanel(lv); return; }
+    if ((el = hit('[data-tp-allstop]')) && lv) {
+      e.stopPropagation();
+      const st = lv.stops[+el.dataset.tpAllstop];
+      if (lv.op === 'mtr') showMtrStation(st.id); else _openLineStop(lv, +el.dataset.tpAllstop, lv.stopMarkers?.[+el.dataset.tpAllstop]);
+      return;
+    }
+    if (hit('[data-tp-rem]') && lv) {
+      e.stopPropagation();
+      const st = lv.stops[lv.boardIdx];
+      openRemindPicker({ st: { id: st.id, name: st.name, lat: st.lat, lng: st.lng, co: lv.op }, co: lv.op, route: lv.short, dest: lv.dest,
+                         stopId: st.id, times: boardList(lv) }, lv.pickN || 0);
+      return;
+    }
+    if (hit('[data-tp-alrem]') && lv) {
+      e.stopPropagation();
+      lv.alightRemind = !lv.alightRemind; lv.alightFired = false;
+      if (lv.alightRemind) askNotify().then(() => toast('到落車站前 2 分鐘會提你（網頁要開住）', 3500));
+      renderTrackPanel(lv);
+      return;
+    }
+    // 撳站名：去地圖（唔再自動改上車站）
+    const li = hit('#transit-panel .stop-list.v2 li[data-si]');
+    if (li && lv) { e.stopPropagation(); openTrackStop(lv, +li.dataset.si); }
+  }, true);
 </script>
 </body>
 </html>
