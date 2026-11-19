@@ -1,0 +1,15 @@
+{
+  "name": "香港交通情報",
+  "short_name": "香港交通",
+  "description": "香港實時交通、巴士小巴港鐵到站、泊車、隧道費、油價",
+  "lang": "zh-HK",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1720",
+  "theme_color": "#0f1720",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

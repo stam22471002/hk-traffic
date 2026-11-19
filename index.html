@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>香港交通情報</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0f1720">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="香港交通">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="icon-192.png">
   <style>
     :root {
       --bg: #0f1720; --panel: #16212c; --panel2: #1d2a37; --line: #2a3a4a;
@@ -373,6 +380,93 @@
     .item.rthk small a { color: var(--accent); }
     #overview-rthk .item { margin-top: 6px; }
     .pin.incident.works { background: #ef6c00; }
+
+    /* =================== 使用體驗 =================== */
+    #side { position: relative; }
+    .head-btn { background: none; border: 1px solid transparent; color: var(--text); font-size: 16px; padding: 2px 6px; border-radius: 6px; cursor: pointer; }
+    .head-btn:hover { border-color: var(--line); }
+    #ux-grow { display: none; }
+    #ux-settings { display: none; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--panel2); }
+    #ux-settings.open { display: block; }
+    .ux-set-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; font-size: 13px; }
+    .ux-seg { display: inline-flex; }
+    body[data-font="l"] #side { zoom: 1.12; }
+    body[data-font="xl"] #side { zoom: 1.25; }
+    body[data-font="l"] .gm-style-iw { zoom: 1.1; }
+    body[data-font="xl"] .gm-style-iw { zoom: 1.2; }
+
+    /* 分頁：電腦照舊文字；手機變底部圖示列 */
+    #tabs .tab-i { display: none; }
+    #tab-more { display: none; }
+    #more-menu { display: none; }
+
+    /* 屋企／公司／收藏 */
+    #quick-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    #quick-row:empty { display: none; }
+    .qchip { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 3px 10px; font-size: 12px;
+      cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .qchip:hover { border-color: var(--accent); }
+    .qchip.unset { color: var(--muted); border-style: dashed; }
+    .qchip .qx { margin-left: 4px; color: var(--red); }
+    .fav-row button { font-size: 12px; }
+
+    /* 總覽：我附近／常用車站／提醒 */
+    .nb-card { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+    .nb-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+    .nb-head small { color: var(--muted); font-size: 11px; }
+    .nb-stop + .nb-stop { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; }
+    .nb-name { font-weight: bold; cursor: pointer; margin: 2px 0 4px; }
+    .nb-name small { color: var(--muted); font-weight: normal; margin-left: 4px; }
+    .nb-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 13px; }
+    .nb-row .rbadge { min-width: 42px; text-align: center; flex-shrink: 0; }
+    .nb-dest { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+    .nb-t { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .bell { background: none; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; font-size: 12px; padding: 1px 5px; opacity: 0.55; color: var(--text); }
+    .bell.on, .bell:hover { opacity: 1; border-color: var(--amber); }
+    .eta-table .bell { opacity: 0.7; border-color: #ccc; color: #222; }
+
+    /* 資料來源：收埋 */
+    #sources-box { margin-top: 16px; }
+    #sources-box summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 4px 0; }
+    #sources-box .src { margin-top: 6px; }
+
+    /* 停車場預測 */
+    .pred { margin: 6px 0; padding: 6px 8px; background: #f3e8ff; border-radius: 6px; color: #333; }
+
+    #layers-btn { display: none; }
+
+    /* =================== 手機 =================== */
+    @media (max-width: 800px) {
+      #side { height: 50%; }
+      #mapwrap { height: 50%; }
+      body.side-big #side { height: 85%; }
+      body.side-big #mapwrap { height: 15%; }
+      #ux-grow { display: inline-block; }
+      #clock { display: none; }
+      #side-head { padding: 8px 12px; }
+      #side-head h1 { font-size: 15px; }
+
+      #tabs { order: 99; border-bottom: none; border-top: 1px solid var(--line); overflow: visible; background: var(--panel); }
+      #tabs button { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 2px 6px; border-bottom: none; border-top: 2px solid transparent; }
+      #tabs button.on { border-top-color: var(--accent); }
+      #tabs button.sec { display: none; }
+      #tabs .tab-i { display: block; font-size: 18px; line-height: 1.1; }
+      #tabs .tab-l { font-size: 11px; }
+      #tab-more { display: flex; }
+      #more-menu.open { display: block; position: absolute; right: 6px; bottom: 58px; z-index: 60; background: var(--panel); border: 1px solid var(--line);
+        border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); padding: 4px; min-width: 170px; }
+      #more-menu button { display: flex; gap: 10px; width: 100%; background: none; border: none; color: var(--text); padding: 10px 12px; font-size: 14px;
+        text-align: left; cursor: pointer; font-family: inherit; border-radius: 6px; }
+      #more-menu button:hover { background: var(--panel2); }
+
+      /* 圖層：收埋，撳「🗂️ 圖層」先出 */
+      #layers-btn { display: block; position: absolute; top: 10px; left: 10px; z-index: 6; background: rgba(15,23,32,0.92); color: var(--text);
+        border: 1px solid var(--line); border-radius: 18px; padding: 6px 12px; font-size: 13px; font-family: inherit; }
+      #chips { display: none; }
+      body.chips-open #chips { display: flex; flex-wrap: wrap; top: 52px; background: rgba(15,23,32,0.95); padding: 8px; border-radius: 10px;
+        border: 1px solid var(--line); max-height: 60%; overflow-y: auto; z-index: 6; }
+      body.chips-open #layers-btn { border-color: var(--accent); }
+    }
   </style>
 </head>
 <body>
@@ -389,6 +483,7 @@
         <div class="sbox" id="q-box"><input id="q" type="search" placeholder="🔍 搜尋地點、巴士／小巴線、港鐵站、碼頭、停車場" autocomplete="off" enterkeyhint="search"><button class="clear" title="清除">✕</button></div>
         <div class="results" id="q-results"></div>
       </div>
+      <div id="quick-row"></div>
     </div>
     <div id="tabs">
       <button data-tab="overview" class="on">總覽</button>
@@ -402,6 +497,9 @@
     </div>
 
     <section class="tab on" id="tab-overview">
+      <div id="reminder-list"></div>
+      <div id="nearby"></div>
+      <div id="fav-stops"></div>
       <div class="tiles">
         <div class="tile wide" data-go="tolls">
           <div class="lbl">私家車隧道費（而家）</div>
@@ -424,8 +522,8 @@
       </div>
       <h3>最新特別交通消息</h3>
       <div id="overview-news"><div class="empty">載入中…</div></div>
-      <h3>資料來源狀態</h3>
-      <div class="src" id="sources"></div>
+      <details id="sources-box"><summary id="sources-sum">資料來源狀態</summary>
+      <div class="src" id="sources"></div></details>
     </section>
 
     <section class="tab" id="tab-route">
@@ -1006,7 +1104,7 @@
     await google.maps.importLibrary('geometry');
 
     map = new GMap($('map'), {
-      center: { lat: 22.35, lng: 114.12 }, zoom: 11, mapId: 'DEMO_MAP_ID',
+      center: { lat: 22.35, lng: 114.12 }, zoom: 11, mapId: 'DEMO_MAP_ID', colorScheme: (typeof uxMapScheme === 'function' ? uxMapScheme() : 'LIGHT'),
       mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
       clickableIcons: true, gestureHandling: 'greedy'
     });
@@ -3640,7 +3738,7 @@
         html += `<div style="margin-top:6px"><span class="rbadge" style="background:${L.c}">${esc(L.n)}</span> ⚠️ ${esc(e.message)}</div>`;
       }
     }
-    openInfo(`${head}${html}${goHtml({ name: st[0] + '站', lat: st[2], lng: st[3] })}`, marker, pos || { lat: st[2], lng: st[3] });
+    openInfo(`${head}${html}${favStopBtn({ kind: 'mtr', id: code, name: st[0] + '站', lat: st[2], lng: st[3] })}${goHtml({ name: st[0] + '站', lat: st[2], lng: st[3] })}`, marker, pos || { lat: st[2], lng: st[3] });
   }
 
   // 追蹤成條港鐵綫（向住你最近嗰個站嘅方向）
@@ -3941,10 +4039,11 @@
         return `<tr class="${x.r ? 'tap' : ''}" data-board-row="${i}" title="撳睇呢條線架車而家喺邊">
           <td><span class="rbadge" style="background:${CO_COLOR[x.co] || '#555'}">${esc(x.route)}</span></td>
           <td>往 ${esc(x.dest || '')}<br><small>${esc(CO_LABEL[x.co] || '')}</small></td>
-          <td style="text-align:right;white-space:nowrap">${txt}</td></tr>`;
+          <td style="text-align:right;white-space:nowrap">${txt}</td>
+          <td><button class="bell" data-rem='${esc(JSON.stringify({ st, co: x.co, route: x.route, dest: x.dest || '', stopId: x.stopId }))}' title="到站前提醒我">🔔</button></td></tr>`;
       }).join('');
       openInfo(`<b>🚏 ${esc(st.name)}</b><br><small>之後 3 班．<b>撳路線</b>睇架車而家喺邊．* = 時間表班次</small>
-        <table class="eta-table" style="margin-top:4px">${body || '<tr><td>暫時冇到站資料</td></tr>'}</table>${goHtml(st)}`, marker, { lat: st.lat, lng: st.lng });
+        <table class="eta-table" style="margin-top:4px">${body || '<tr><td>暫時冇到站資料</td></tr>'}</table>${favStopBtn({ kind: st.co === 'gmb' ? 'gmb' : 'bus', id: st.id, name: st.name, lat: st.lat, lng: st.lng, co: st.co })}${goHtml(st)}`, marker, { lat: st.lat, lng: st.lng });
     } catch (e) {
       openInfo(`<b>🚏 ${esc(st.name)}</b><br>⚠️ 讀唔到到站時間：${esc(e.message)}${goHtml(st)}`, marker, { lat: st.lat, lng: st.lng });
     }
@@ -5989,6 +6088,465 @@
   gScript.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&language=zh-HK&region=HK&loading=async&callback=initGoogle`;
   gScript.async = true;
   document.head.appendChild(gScript);
+</script>
+<script>
+  // =====================================================================
+  // 使用體驗：手機版面、屋企／公司／收藏、我附近、到站提醒、加到主畫面、設定、停車場預測
+  // =====================================================================
+  const UXS = {
+    get(k, d) { try { const v = localStorage.getItem('ux-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('ux-' + k, JSON.stringify(v)); } catch (e) { /* 私隱模式：唔記得就算 */ } }
+  };
+  const isPhone = () => window.matchMedia('(max-width: 800px)').matches;
+
+  // ---------------------------------------------------------------------
+  // 設定：字體大小、地圖深色／淺色
+  // ---------------------------------------------------------------------
+  const settings = Object.assign({ font: 'm', theme: 'light' }, UXS.get('settings', {}));
+  function applySettings() {
+    document.body.dataset.font = settings.font;
+  }
+  // initGoogle 會用（地圖建立嗰陣先揀到顏色，所以改咗要重新載入）
+  function uxMapScheme() {
+    return { light: 'LIGHT', dark: 'DARK', auto: 'FOLLOW_SYSTEM' }[settings.theme] || 'LIGHT';
+  }
+  applySettings();
+
+  function openSettings() {
+    const box = $('ux-settings');
+    if (box.classList.toggle('open') === false) return;
+    const seg = (key, opts) => `<div class="seg ux-seg">${opts.map(([v, t]) => `<button data-set-${key}="${v}" class="${settings[key] === v ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+    box.innerHTML = `
+      <div class="ux-set-row"><span>字體大小</span>${seg('font', [['m', '標準'], ['l', '大'], ['xl', '特大']])}</div>
+      <div class="ux-set-row"><span>地圖顏色</span>${seg('theme', [['light', '淺色'], ['dark', '深色'], ['auto', '跟手機']])}</div>
+      <div class="ux-set-row"><span>加到主畫面</span><button class="mini-btn" id="ux-install">📲 安裝</button></div>
+      <div class="src" id="ux-install-note"></div>
+      <div class="ux-set-row"><span>通知</span><button class="mini-btn" id="ux-notif">${'Notification' in window && Notification.permission === 'granted' ? '✅ 已開啟' : '🔔 開啟到站通知'}</button></div>`;
+    box.querySelectorAll('[data-set-font]').forEach(b => b.onclick = () => { settings.font = b.dataset.setFont; UXS.set('settings', settings); applySettings(); openSettings(); openSettings(); });
+    box.querySelectorAll('[data-set-theme]').forEach(b => b.onclick = () => {
+      if (settings.theme === b.dataset.setTheme) return;
+      settings.theme = b.dataset.setTheme; UXS.set('settings', settings);
+      toast('地圖顏色要重新載入先生效，而家幫你重新載入…', 2000);
+      setTimeout(() => location.reload(), 1200);
+    });
+    $('ux-install').onclick = installApp;
+    $('ux-notif').onclick = () => askNotify().then(ok => { if (ok) { toast('已開啟通知', 2000); box.classList.remove('open'); } });
+  }
+
+  // ---------------------------------------------------------------------
+  // 加到主畫面（PWA）
+  // ---------------------------------------------------------------------
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+  let swReg = null;
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname)) {
+    navigator.serviceWorker.register('sw.js').then(r => { swReg = r; }).catch(e => console.warn('離線功能', e.message));
+  }
+  async function installApp() {
+    const note = $('ux-install-note');
+    if (window.matchMedia('(display-mode: standalone)').matches) { note.textContent = '已經喺主畫面用緊 ✅'; return; }
+    if (installEvt) { installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null; note.textContent = r.outcome === 'accepted' ? '已加到主畫面 ✅' : ''; return; }
+    note.innerHTML = /iPhone|iPad/.test(navigator.userAgent)
+      ? 'iPhone：撳 Safari 下面嘅「分享」<b>⎙</b>，再揀「加入主畫面」。'
+      : 'Android Chrome：撳右上角 <b>⋮</b>，揀「加到主畫面」或者「安裝應用程式」。';
+  }
+
+  // ---------------------------------------------------------------------
+  // 通知
+  // ---------------------------------------------------------------------
+  async function askNotify() {
+    if (!('Notification' in window)) { toast('呢個瀏覽器唔支援通知，到時會喺網頁上面提你', 4000); return false; }
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') { toast('你封鎖咗通知：請喺網址列左邊嘅圖示開返「通知」', 6000); return false; }
+    return (await Notification.requestPermission()) === 'granted';
+  }
+  function notify(title, body) {
+    toast(`🔔 ${title}：${body}`, 15000);
+    try { navigator.vibrate && navigator.vibrate([250, 120, 250, 120, 400]); } catch (e) { /* 唔支援 */ }
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const opt = { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: title, renotify: true };
+    if (swReg && swReg.showNotification) swReg.showNotification(title, opt).catch(() => {});
+    else try { new Notification(title, opt); } catch (e) { /* Android 一定要經 service worker */ }
+  }
+
+  // ---------------------------------------------------------------------
+  // 資料來源狀態：收埋，有問題先顯示
+  // ---------------------------------------------------------------------
+  const _setSource = setSource;
+  setSource = function (name, ok, note) {
+    _setSource(name, ok, note);
+    updateSourcesSummary();
+  };
+  function updateSourcesSummary() {
+    const all = Object.values(sourceStatus), bad = all.filter(s => !s.ok).length;
+    const sum = $('sources-sum');
+    if (!sum) return;
+    sum.innerHTML = bad ? `<span class="warn">⚠️ ${bad} 個資料來源有問題</span>（撳睇詳情）` : `✅ 資料來源全部正常（${all.length} 個）`;
+    sum.parentElement.classList.toggle('has-bad', !!bad);
+  }
+
+  // ---------------------------------------------------------------------
+  // 手機版面：底部分頁列、「更多」、圖層掣、拉大側欄
+  // ---------------------------------------------------------------------
+  const TAB_ICON = { overview: '🏠', route: '🧭', transit: '🚌', friends: '👥', parking: '🅿️', fuel: '⛽', tolls: '🛣️', incidents: '⚠️' };
+  const TAB_LABEL = { overview: '總覽', route: '路線', transit: '乘車', friends: '朋友', parking: '泊車', fuel: '油價', tolls: '隧道費', incidents: '事故' };
+  const MAIN_TABS = ['overview', 'route', 'transit', 'friends'];
+  function initLayout() {
+    const tabs = $('tabs');
+    tabs.querySelectorAll('button[data-tab]').forEach(b => {
+      const t = b.dataset.tab;
+      b.innerHTML = `<span class="tab-i">${TAB_ICON[t] || ''}</span><span class="tab-l">${b.textContent}</span>`;
+      if (!MAIN_TABS.includes(t)) b.classList.add('sec');
+    });
+    const more = document.createElement('button');
+    more.id = 'tab-more';
+    more.innerHTML = '<span class="tab-i">☰</span><span class="tab-l">更多</span>';
+    tabs.appendChild(more);
+    const menu = document.createElement('div');
+    menu.id = 'more-menu';
+    menu.innerHTML = Object.keys(TAB_LABEL).filter(t => !MAIN_TABS.includes(t))
+      .map(t => `<button data-more-tab="${t}"><span>${TAB_ICON[t]}</span>${t === 'incidents' ? '事故／工程' : TAB_LABEL[t]}</button>`).join('')
+      + '<button data-more-act="settings"><span>⚙️</span>設定</button>';
+    $('side').appendChild(menu);
+    more.onclick = e => { e.stopPropagation(); menu.classList.toggle('open'); };
+    menu.onclick = e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      menu.classList.remove('open');
+      if (b.dataset.moreTab) goTab(b.dataset.moreTab);
+      if (b.dataset.moreAct === 'settings') openSettings();
+    };
+    document.addEventListener('click', e => { if (!e.target.closest('#more-menu,#tab-more')) menu.classList.remove('open'); });
+
+    // 標題列：設定掣 + 手機「拉大／縮細」
+    const head = $('side-head');
+    const gear = document.createElement('button');
+    gear.id = 'ux-gear'; gear.className = 'head-btn'; gear.title = '設定'; gear.textContent = '⚙️';
+    gear.onclick = openSettings;
+    const grow = document.createElement('button');
+    grow.id = 'ux-grow'; grow.className = 'head-btn'; grow.title = '拉大／縮細資料欄'; grow.textContent = '⇕';
+    grow.onclick = () => document.body.classList.toggle('side-big');
+    head.insertBefore(gear, $('refresh-btn'));
+    head.insertBefore(grow, $('refresh-btn'));
+    const setBox = document.createElement('div');
+    setBox.id = 'ux-settings';
+    head.after(setBox);
+    document.addEventListener('click', e => { if (!e.target.closest('#ux-settings,#ux-gear,#more-menu')) setBox.classList.remove('open'); });
+
+    // 地圖：圖層掣（手機先出現）
+    const lb = document.createElement('button');
+    lb.id = 'layers-btn';
+    lb.innerHTML = '🗂️ 圖層';
+    lb.onclick = () => document.body.classList.toggle('chips-open');
+    $('mapwrap').appendChild(lb);
+    $('map').addEventListener('click', () => document.body.classList.remove('chips-open'));
+  }
+  const _goTab = goTab;
+  goTab = function (name) {
+    _goTab(name);
+    $('tab-more')?.classList.toggle('on', !MAIN_TABS.includes(name));
+    if (name === 'overview') refreshHomeCards();
+    if (isPhone() && document.body.classList.contains('side-off')) document.body.classList.remove('side-off');
+  };
+
+  // ---------------------------------------------------------------------
+  // 屋企／公司／收藏地點（存喺呢部機）
+  // ---------------------------------------------------------------------
+  const fav = Object.assign({ home: null, work: null, places: [], stops: [] }, UXS.get('fav', {}));
+  const saveFav = () => { UXS.set('fav', fav); renderQuick(); refreshHomeCards(); };
+  let quickEdit = false;
+  function renderQuick() {
+    const row = $('quick-row');
+    if (!row) return;
+    const chip = (key, icon, label, p, i) => `<button class="qchip${p ? '' : ' unset'}" data-q-key="${key}"${i !== undefined ? ` data-q-i="${i}"` : ''}>
+      ${icon} ${esc(label)}${quickEdit && p ? '<span class="qx">✕</span>' : ''}</button>`;
+    row.innerHTML = chip('home', '🏠', fav.home ? '屋企' : '設定屋企', fav.home) + chip('work', '🏢', fav.work ? '公司' : '設定公司', fav.work)
+      + fav.places.map((p, i) => chip('place', '⭐', p.name.slice(0, 8), p, i)).join('')
+      + (fav.home || fav.work || fav.places.length ? `<button class="qchip edit" data-q-edit="1">${quickEdit ? '✓ 完成' : '✏️'}</button>` : '');
+  }
+  document.addEventListener('click', e => {
+    const ed = e.target.closest('[data-q-edit]');
+    if (ed) { quickEdit = !quickEdit; renderQuick(); return; }
+    const c = e.target.closest('[data-q-key]');
+    if (!c) return;
+    const key = c.dataset.qKey, i = c.dataset.qI;
+    const p = key === 'place' ? fav.places[+i] : fav[key];
+    if (quickEdit && p) {
+      if (key === 'place') fav.places.splice(+i, 1); else fav[key] = null;
+      saveFav();
+      return;
+    }
+    if (!p) {
+      toast(`搜尋一個地點（或者撳地圖上嘅地點），再撳資料框入面「${key === 'home' ? '🏠 設為屋企' : '🏢 設為公司'}」`, 6000);
+      $('q').focus();
+      return;
+    }
+    goHere({ name: p.name, lat: p.lat, lng: p.lng }, travelMode || 'transit');
+  });
+
+  // 每個資料框（「去呢度」嗰行）下面加：⭐ 收藏、🏠 屋企、🏢 公司
+  const _goHtml = goHtml;
+  goHtml = function (p, opt = {}) {
+    const html = _goHtml(p, opt);
+    if (!html || opt.ends === false || p.isMyLoc) return html;
+    const a = `data-name="${esc(p.name || '地圖上揀嘅位置')}" data-lat="${p.lat}" data-lng="${p.lng}"`;
+    const starred = fav.places.some(x => Math.abs(x.lat - p.lat) < 1e-5 && Math.abs(x.lng - p.lng) < 1e-5);
+    return html + `<div class="go-row fav-row" ${a}><button class="alt" data-fav="place">${starred ? '⭐ 已收藏' : '☆ 收藏'}</button>
+      <button class="alt" data-fav="home">🏠 設為屋企</button><button class="alt" data-fav="work">🏢 設為公司</button></div>`;
+  };
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-fav]');
+    if (!b) return;
+    const row = b.closest('[data-lat]');
+    const p = { name: row.dataset.name, lat: +row.dataset.lat, lng: +row.dataset.lng };
+    const k = b.dataset.fav;
+    if (k === 'place') {
+      const i = fav.places.findIndex(x => Math.abs(x.lat - p.lat) < 1e-5 && Math.abs(x.lng - p.lng) < 1e-5);
+      if (i >= 0) { fav.places.splice(i, 1); b.textContent = '☆ 收藏'; toast('已取消收藏', 2000); }
+      else { fav.places.push(p); fav.places = fav.places.slice(-8); b.textContent = '⭐ 已收藏'; toast('已收藏，搜尋欄下面一撳就去', 2500); }
+    } else {
+      fav[k] = p;
+      toast(k === 'home' ? `🏠 屋企：${p.name}` : `🏢 公司：${p.name}`, 2500);
+    }
+    saveFav();
+  });
+
+  // 收藏車站（巴士／小巴站、港鐵站）
+  const stopKey = s => (s.kind || 'bus') + ':' + s.id;
+  const isFavStop = s => fav.stops.some(x => stopKey(x) === stopKey(s));
+  function favStopBtn(s) {
+    return `<div class="go-row"><button class="alt" data-fav-stop='${esc(JSON.stringify(s))}'>${isFavStop(s) ? '⭐ 已收藏呢個站' : '☆ 收藏呢個站（總覽會顯示幾耐有車）'}</button></div>`;
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-fav-stop]');
+    if (!b) return;
+    const s = JSON.parse(b.dataset.favStop);
+    const i = fav.stops.findIndex(x => stopKey(x) === stopKey(s));
+    if (i >= 0) { fav.stops.splice(i, 1); b.textContent = '☆ 收藏呢個站'; }
+    else { fav.stops.push(s); fav.stops = fav.stops.slice(-6); b.textContent = '⭐ 已收藏呢個站'; toast('已收藏，喺「總覽」會見到幾耐有車', 2500); }
+    saveFav();
+  });
+
+  // ---------------------------------------------------------------------
+  // 總覽：我附近、常用車站、提醒
+  // ---------------------------------------------------------------------
+  const busRowsHtml = (rows, max = 5, st = null) => {
+    const now = Date.now();
+    const list = rows.filter(x => x.times.some(t => t.t > now - 60000)).slice(0, max);
+    if (!list.length) return '<div class="src">暫時冇班次</div>';
+    return list.map(x => {
+      const ts = x.times.filter(t => t.t > now - 60000).slice(0, 2).map(t => { const m = minsFromNow(t.t); return m <= 0 ? '即將到' : m + ' 分'; }).join('、');
+      const rid = remKey({ stopId: x.stopId, route: x.route, dest: x.dest });
+      return `<div class="nb-row"><span class="rbadge" style="background:${CO_COLOR[x.co] || '#555'}">${esc(x.route)}</span>
+        <span class="nb-dest">往 ${esc(x.dest || '')}</span><b class="nb-t">${ts}</b>
+        ${st ? `<button class="bell${reminders.some(r => remKey(r) === rid) ? ' on' : ''}" data-rem='${esc(JSON.stringify({ st, co: x.co, route: x.route, dest: x.dest, stopId: x.stopId }))}' title="到站前提醒我">🔔</button>` : ''}</div>`;
+    }).join('');
+  };
+  const mtrRowsHtml = async code => {
+    const parts = [];
+    for (const line of mtrLinesAt(code)) {
+      const L = MTR_LINES[line];
+      try {
+        const sch = await mtrSchedule(line, code);
+        ['UP', 'DOWN'].forEach(dir => {
+          const list = sch[dir].slice(0, 2);
+          if (!list.length) return;
+          parts.push(`<div class="nb-row"><span class="rbadge" style="background:${L.c}">${esc(L.n)}</span>
+            <span class="nb-dest">往 ${esc(MTR_ST[list[0].dest]?.[0] || list[0].dest)}</span><b class="nb-t">${list.map(x => ttntText(x.ttnt)).join('、')}</b></div>`);
+        });
+      } catch (e) { parts.push(`<div class="src">${esc(L.n)}：${esc(e.message)}</div>`); }
+    }
+    return parts.join('') || '<div class="src">暫時冇班次</div>';
+  };
+
+  let nearbyAt = 0, nearbyBusy = false;
+  async function quietLocate() {
+    try {
+      const st = navigator.permissions ? await navigator.permissions.query({ name: 'geolocation' }) : null;
+      if (!st || st.state !== 'granted') return null;
+    } catch (e) { return null; }
+    return new Promise(res => navigator.geolocation.getCurrentPosition(
+      p => { myLoc = { lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }; res(myLoc); },
+      () => res(null), { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }));
+  }
+
+  async function renderNearby(force) {
+    const box = $('nearby');
+    if (!box || nearbyBusy) return;
+    if (!force && Date.now() - nearbyAt < 25000) return;
+    nearbyBusy = true;
+    try {
+      let loc = myLoc || await quietLocate();
+      if (!loc) {
+        box.innerHTML = `<div class="nb-card"><b>📍 我附近</b><div class="src">顯示你身邊巴士站、小巴站、港鐵站幾耐有車。</div>
+          <button class="mini-btn" id="nb-locate" style="margin:6px 0 0">📍 用我嘅位置</button></div>`;
+        $('nb-locate').onclick = async () => { try { await locateMe(); renderNearby(true); } catch (e) { /* 冇位置 */ } };
+        return;
+      }
+      try { await loadTransitDb(); } catch (e) { /* 照顯示港鐵 */ }
+      // 最近 2 個巴士／小巴站（同名嘅當一個）＋ 最近港鐵站
+      const near = [];
+      if (tdb) for (const id in tdb.stops) {
+        const s = tdb.stops[id], d = distM(loc.lat, loc.lng, s.location.lat, s.location.lng);
+        if (d < 400) near.push({ id, d, name: s.name.zh });
+      }
+      near.sort((a, b) => a.d - b.d);
+      const picked = [];
+      near.forEach(n => { if (picked.length < 2 && !picked.some(p => p.name.replace(/\s*\(.*\)$/, '') === n.name.replace(/\s*\(.*\)$/, ''))) picked.push(n); });
+      let mtr = null, md = 900;
+      Object.entries(MTR_ST).forEach(([c, s]) => { const d = distM(loc.lat, loc.lng, s[2], s[3]); if (d < md) { md = d; mtr = c; } });
+      const blocks = await Promise.all(picked.map(async n => {
+        const st = tdbStop(n.id);
+        // 同名站（對面線）一齊計
+        const twins = near.filter(x => x.name.replace(/\s*\(.*\)$/, '') === n.name.replace(/\s*\(.*\)$/, '') && x.d < n.d + 120).slice(0, 3);
+        const rows = (await Promise.all(twins.map(t => stopBoardRows({ ...tdbStop(t.id) }).catch(() => [])))).flat()
+          .sort((a, b) => ((a.times[0]?.t) || 9e15) - ((b.times[0]?.t) || 9e15));
+        return `<div class="nb-stop" data-nb-stop='${esc(JSON.stringify(st))}'><div class="nb-name">🚏 ${esc(st.name.replace(/\s*\(.*\)$/, ''))} <small>${Math.round(n.d)} 米</small></div>${busRowsHtml(rows, 4, st)}</div>`;
+      }));
+      if (mtr) blocks.push(`<div class="nb-stop" data-nb-mtr="${mtr}"><div class="nb-name">🚇 ${esc(MTR_ST[mtr][0])}站 <small>${Math.round(md)} 米</small></div>${await mtrRowsHtml(mtr)}</div>`);
+      box.innerHTML = `<div class="nb-card"><div class="nb-head"><b>📍 我附近</b><small>${hhmm(Date.now())} 更新．撳站名睇地圖</small></div>
+        ${blocks.join('') || '<div class="src">你身邊 400 米內冇巴士／小巴站</div>'}</div>`;
+      nearbyAt = Date.now();
+    } catch (e) {
+      box.innerHTML = `<div class="nb-card"><b>📍 我附近</b><div class="src">⚠️ ${esc(e.message)}</div></div>`;
+    } finally { nearbyBusy = false; }
+  }
+
+  async function renderFavStops() {
+    const box = $('fav-stops');
+    if (!box) return;
+    if (!fav.stops.length) { box.innerHTML = ''; return; }
+    try { await loadTransitDb(); } catch (e) { /* 照試 */ }
+    const blocks = await Promise.all(fav.stops.map(async s => {
+      if (s.kind === 'mtr') return `<div class="nb-stop" data-nb-mtr="${s.id}"><div class="nb-name">🚇 ${esc(s.name)}</div>${await mtrRowsHtml(s.id)}</div>`;
+      const rows = await stopBoardRows(s).catch(() => []);
+      return `<div class="nb-stop" data-nb-stop='${esc(JSON.stringify(s))}'><div class="nb-name">🚏 ${esc(s.name.replace(/\s*\(.*\)$/, ''))}</div>${busRowsHtml(rows, 5, s)}</div>`;
+    }));
+    box.innerHTML = `<div class="nb-card"><div class="nb-head"><b>⭐ 常用車站</b><small>喺車站資料框撳「☆ 收藏」加入</small></div>${blocks.join('')}</div>`;
+  }
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-rem]')) return;
+    const s = e.target.closest('[data-nb-stop] .nb-name');
+    const m = e.target.closest('[data-nb-mtr] .nb-name');
+    if (!map || (!s && !m)) return;
+    if (s) { const st = JSON.parse(s.parentElement.dataset.nbStop); map.setCenter({ lat: st.lat, lng: st.lng }); map.setZoom(18); showStopBoard(st); }
+    else { const c = m.parentElement.dataset.nbMtr; map.setCenter({ lat: MTR_ST[c][2], lng: MTR_ST[c][3] }); map.setZoom(16); showMtrStation(c); }
+    if (isPhone()) document.body.classList.remove('side-big');
+  });
+
+  function refreshHomeCards() {
+    if (!$('tab-overview')?.classList.contains('on') || document.visibilityState !== 'visible') return;
+    renderNearby();
+    renderFavStops();
+    renderReminders();
+  }
+  setInterval(() => { nearbyAt = 0; refreshHomeCards(); }, 30000);
+
+  // ---------------------------------------------------------------------
+  // 到站提醒：巴士／小巴到站前 N 分鐘通知（網頁要開住）
+  // ---------------------------------------------------------------------
+  let reminders = UXS.get('reminders', []).filter(r => Date.now() - r.created < 2 * 3600e3);
+  const remKey = r => `${r.stopId}|${r.route}|${r.dest}`;
+  const saveRem = () => UXS.set('reminders', reminders);
+  async function addReminder(info) {
+    const k = remKey(info);
+    const i = reminders.findIndex(r => remKey(r) === k);
+    if (i >= 0) { reminders.splice(i, 1); saveRem(); toast('已取消提醒', 2000); refreshHomeCards(); return false; }
+    const lead = +(prompt(`${info.route} 往 ${info.dest}：到站前幾多分鐘提醒你？`, '3') || 0);
+    if (!lead) return false;
+    reminders.push({ ...info, lead: Math.max(1, Math.min(30, lead)), created: Date.now(), fired: [] });
+    saveRem();
+    await askNotify();
+    toast(`🔔 ${info.route} 到站前 ${lead} 分鐘會提醒你（網頁要開住）`, 4000);
+    checkReminders();
+    refreshHomeCards();
+    return true;
+  }
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-rem]');
+    if (!b) return;
+    e.stopPropagation(); e.preventDefault();
+    const on = await addReminder(JSON.parse(b.dataset.rem));
+    b.classList.toggle('on', on);
+  }, true);
+
+  async function checkReminders() {
+    reminders = reminders.filter(r => Date.now() - r.created < 2 * 3600e3);
+    for (const r of reminders) {
+      try {
+        const rows = await stopBoardRows(r.st);
+        const row = rows.find(x => x.route === r.route && (x.dest === r.dest || !r.dest));
+        const next = (row?.times || []).map(t => t.t).find(t => t > Date.now() - 30000);
+        r.next = next || null;
+        if (next && next - Date.now() <= r.lead * 60000 && !r.fired.includes(Math.round(next / 60000))) {
+          r.fired.push(Math.round(next / 60000));
+          const m = Math.max(0, minsFromNow(next));
+          notify(`${r.route} 就到`, `${r.route} 往 ${r.dest} 大約 ${m <= 0 ? '而家' : m + ' 分鐘後'}到「${r.st.name.replace(/\s*\(.*\)$/, '')}」`);
+          r.done = true;
+        }
+      } catch (e) { /* 下次再試 */ }
+    }
+    reminders = reminders.filter(r => !r.done);
+    saveRem();
+    renderReminders();
+  }
+  setInterval(checkReminders, 30000);
+  function renderReminders() {
+    const box = $('reminder-list');
+    if (!box) return;
+    box.innerHTML = reminders.length ? `<div class="nb-card"><div class="nb-head"><b>🔔 到站提醒</b><small>網頁要開住先會響</small></div>
+      ${reminders.map(r => `<div class="nb-row"><span class="rbadge" style="background:${CO_COLOR[r.co] || '#555'}">${esc(r.route)}</span>
+        <span class="nb-dest">${esc(r.st.name.replace(/\s*\(.*\)$/, ''))}．到站前 ${r.lead} 分鐘${r.next ? `（下班 ${Math.max(0, minsFromNow(r.next))} 分）` : ''}</span>
+        <button class="bell on" data-rem='${esc(JSON.stringify({ st: r.st, co: r.co, route: r.route, dest: r.dest, stopId: r.stopId }))}' title="取消">✕</button></div>`).join('')}</div>` : '';
+  }
+
+  // 朋友就到：對方 3 分鐘內到見面地點就通知一次
+  const friendNotified = new Set();
+  setInterval(() => {
+    if (typeof FR === 'undefined' || !FR.data || !FR.me) return;
+    const o = FR.me === 'a' ? 'b' : 'a', pd = FR.data.people?.[o], e = FR.ps?.[o]?.eta;
+    const k = FR.id + o;
+    if (pd && e && e.secs != null && e.secs < 180 && !friendNotified.has(k)) {
+      friendNotified.add(k);
+      notify(`${pd.name} 就到`, `${pd.name} 大約 ${e.secs < 60 ? '1 分鐘內' : Math.round(e.secs / 60) + ' 分鐘'}到見面地點`);
+    }
+  }, 10000);
+
+  // ---------------------------------------------------------------------
+  // 停車場：30 分鐘／1 小時後空位估計（要有 predict_carparks.json，由 ml_export.py 整）
+  // ---------------------------------------------------------------------
+  let parkPred = null;
+  fetch('predict_carparks.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => {
+    if (j && j.parks) { parkPred = j; setSource('停車場空位預測', true, `用 ${j.days} 日數據（${j.generated}）`); }
+  }).catch(() => {});
+  function predictPark(p, mins) {
+    const P = parkPred?.parks?.[p.id];
+    if (!P || p.vacType !== 'A' || !(p.vacancy >= 0)) return null;
+    const slot = d => Math.floor((d.getHours() * 60 + d.getMinutes()) / 15);
+    const dt = d => (d.getDay() === 0 || publicHolidays.has(dayKey(d))) ? 2 : d.getDay() === 6 ? 1 : 0;
+    const now = new Date(), later = new Date(Date.now() + mins * 60000);
+    const hNow = P[dt(now)]?.[slot(now)], hLater = P[dt(later)]?.[slot(later)];
+    if (hNow == null || hLater == null) return null;
+    const a = parkPred.alpha?.[mins] ?? 0.5;
+    return Math.max(0, Math.round(hLater + a * (p.vacancy - hNow)));
+  }
+  const _parkHtml = parkHtml;
+  parkHtml = function (p) {
+    const html = _parkHtml(p);
+    const a = predictPark(p, 30), b = predictPark(p, 60);
+    if (a === null) return html;
+    const line = `<div class="pred">🔮 估計：30 分鐘後約 <b>${a}</b> 個位，1 小時後約 <b>${b ?? '?'}</b> 個<br><small>按過去 ${parkPred.days} 日同一時段規律 + 而家空位推算，只供參考</small></div>`;
+    return html.replace('<div>高度限制：', line + '<div>高度限制：');
+  };
+
+  // ---------------------------------------------------------------------
+  // 開始
+  // ---------------------------------------------------------------------
+  initLayout();
+  updateSourcesSummary();
+  renderQuick();
+  refreshHomeCards();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { nearbyAt = 0; refreshHomeCards(); checkReminders(); } });
 </script>
 </body>
 </html>
