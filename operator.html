@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-z3sETt2ll6qn8GsAPkQZCdgNUNnBhPVGJlkgLNGKyeQ=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-7tXdy4sS6Gxbqt53I9KSOz5ME1myN7YSdZq1ozRFPEU=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex">
 <title>ParkSmart 營運商後台</title>
@@ -129,8 +129,8 @@ details.box p { margin: 6px 0; }
 // =====================================================================
 // Supabase 設定：自動讀同一個資料夾入面 index.html 嘅 PS_URL／PS_KEY，呢個檔唔使改。
 // （呢頁有 Content-Security-Policy：改咗入面嘅 JavaScript，瀏覽器會拒絕執行）
-let PS_URL = '';
-let PS_KEY = '';
+let PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
+let PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';
 const PS_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
 const PS_SDK_SRI = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
 const PS_PDPO_VERSION = '2026-11';
@@ -221,11 +221,19 @@ function parseCsv(text) {
 // ---------------------------------------------------------------------
 // 開始：讀設定 → 載入 Supabase → 登入狀態
 // ---------------------------------------------------------------------
+let CFG_INFO = '';
 async function loadConfig() {
   if (PS_URL && PS_KEY) return;
   const html = await fetch(new URL('index.html', location.href), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').catch(() => '');
-  PS_URL = PS_URL || (html.match(/const PS_URL = '([^']+)'/) || [])[1] || '';
-  PS_KEY = PS_KEY || (html.match(/const PS_KEY = '([^']+)'/) || [])[1] || '';
+  const pick = name => ((html.match(new RegExp('(?:const|let|var)\\s+' + name + '\\s*=\\s*([\'"`])\\s*([^\'"`]*?)\\s*\\1')) || [])[2] || '').trim();
+  PS_URL = PS_URL || pick('PS_URL');
+  PS_KEY = PS_KEY || pick('PS_KEY');
+  CFG_INFO = !html ? '讀唔到同一個資料夾嘅 index.html（檔名要啱，同埋要喺同一個資料夾）'
+    : !PS_URL && !PS_KEY ? 'index.html 入面嘅 PS_URL 同 PS_KEY 都係空白'
+    : !PS_URL ? 'index.html 入面嘅 PS_URL 係空白' : !PS_KEY ? 'index.html 入面嘅 PS_KEY 係空白：請喺 Supabase → API Keys 複製 publishable key 貼入引號入面' : '';
+  if (PS_URL && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(PS_URL)) CFG_INFO = `PS_URL 格式唔啱（${PS_URL}）：應該係 https://你的編號.supabase.co，尾唔好有 /`;
+  if (PS_KEY && !/^sb_publishable_|^eyJ/.test(PS_KEY)) CFG_INFO = 'PS_KEY 唔似 publishable key（應該係 sb_publishable_ 開頭）';
+  if (/[^\x21-\x7E]/.test(PS_KEY)) CFG_INFO = 'PS_KEY 入面有唔應該有嘅字（例如「…」、中文、全形符號或者空格）。通常係用滑鼠揀咗 Supabase 顯示嘅縮短版 key。請喺 Supabase → API Keys 撳 key 旁邊嘅「複製」掣，再貼入引號入面。';
 }
 function loadSdk() {
   if (window.supabase?.createClient) return Promise.resolve();
@@ -251,7 +259,11 @@ async function portalStart(opts) {
   const app = $('app');
   try {
     await loadConfig();
-    if (!PS_URL || !PS_KEY) { app.innerHTML = `<div class="card narrow">未設定好 Supabase：請先喺同一個資料夾嘅 <b>index.html</b> 填好 <code>PS_URL</code> 同 <code>PS_KEY</code>。</div>`; return; }
+    if (!PS_URL || !PS_KEY || CFG_INFO) {
+      app.innerHTML = `<div class="card narrow"><h2>未設定好 Supabase</h2><p class="err">${esc(CFG_INFO || '缺少 PS_URL／PS_KEY')}</p>
+        <p class="small muted">後台會自動讀同一個資料夾入面 <b>index.html</b> 嘅設定。改好 index.html 上載之後，等一兩分鐘再按 Ctrl + F5。</p></div>`;
+      return;
+    }
     await loadSdk();
     P.sb = window.supabase.createClient(PS_URL, PS_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
     P.sb.auth.onAuthStateChange((evt, session) => {

@@ -7090,8 +7090,8 @@
   // ParkSmart HK：登入、預約車位、遙距排隊（Supabase）
   // =====================================================================
   // ▼▼▼ 喺 Supabase → Project Settings → API Keys 抄呢兩個值落嚟 ▼▼▼
-  const PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
-  const PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';
+  const PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';   // Project URL，例如 'https://abcdefgh.supabase.co'
+  const PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';   // Publishable key，例如 'sb_publishable_xxxxxxxx'
   // ▲▲▲ Publishable key 本身就係公開嘅；資料安全靠數據庫嘅 Row Level Security ▲▲▲
   // （千祈唔好將 secret key／service_role key 放入網頁）
 
@@ -7156,6 +7156,10 @@
     psHeaderBtn();
     psMountCards();
     if (!PS_URL || !PS_KEY) { setSource('ParkSmart 預約', false, '未設定 Supabase（PS_URL／PS_KEY）'); psRenderCards(); return; }
+    // key／URL 只可以係英文字母、數字同符號；有「…」或者中文，瀏覽器會報 non ISO-8859-1 錯誤
+    const cfgBad = /[^\x21-\x7E]/.test(PS_KEY) ? 'PS_KEY 入面有唔應該有嘅字（例如「…」、中文、全形符號或者空格）。通常係用滑鼠揀咗 Supabase 顯示嘅縮短版 key。請喺 Supabase → API Keys 撳 key 旁邊嘅「複製」掣，再貼入引號入面。'
+      : /[^\x21-\x7E]/.test(PS_URL) || !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(PS_URL) ? 'PS_URL 格式唔啱：應該係 https://你的編號.supabase.co（尾唔好有 /）' : '';
+    if (cfgBad) { PS.cfgErr = cfgBad; setSource('ParkSmart 預約', false, cfgBad); psRenderCards(); return; }
     try {
       await psLoadSdk();
       PS.sb = window.supabase.createClient(PS_URL, PS_KEY, {
@@ -7394,7 +7398,7 @@
   }
 
   async function psOpenBook(id, keep) {
-    if (!PS.sb) { psSheet('ParkSmart').innerHTML = '<div class="ps-note">網頁未設定好 Supabase（index.html 入面嘅 PS_URL／PS_KEY）。</div>'; return; }
+    if (!PS.sb) { psSheet('ParkSmart').innerHTML = `<div class="ps-note">${esc(PS.cfgErr || '網頁未設定好 Supabase（index.html 入面嘅 PS_URL／PS_KEY）。')}</div>`; return; }
     if (!PS.session) { psOpenAccount('login', { note: '要先登入先可以預約或者排隊', after: () => psOpenBook(id) }); return; }
     let body = psSheet('📅 預約車位', 'book');
     if (!keep) body.innerHTML = '<div class="ps-load">讀緊最新空位…</div>';
@@ -7608,7 +7612,7 @@
 
   let psAfterLogin = null;
   async function psOpenAccount(view = 'login', opt = {}) {
-    if (!PS.sb) { psSheet('帳戶').innerHTML = '<div class="ps-note">網頁未設定好 Supabase（index.html 入面嘅 PS_URL／PS_KEY）。</div>'; return; }
+    if (!PS.sb) { psSheet('帳戶').innerHTML = `<div class="ps-note">${esc(PS.cfgErr || '網頁未設定好 Supabase（index.html 入面嘅 PS_URL／PS_KEY）。')}</div>`; return; }
     if (opt.after) psAfterLogin = opt.after;
     if (PS.session && ['login', 'signup'].includes(view)) view = 'account';
     const titles = { login: '登入', signup: '註冊新帳戶', forgot: '忘記密碼', newpass: '設定新密碼', account: '我嘅帳戶', delete: '刪除帳戶' };
