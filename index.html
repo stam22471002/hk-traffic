@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>香港交通情報</title>
+  <title>香港交通情報．ParkSmart 預約</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0f1720">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -564,6 +564,109 @@
     .rs-opt b { font-size: 17px; } .rs-opt small { font-size: 11px; color: var(--muted); }
     .rs-opt.small { font-size: 12px; min-width: 70px; padding: 8px 2px; }
     .rs-opt.on { border-color: var(--accent); background: rgba(77,163,255,0.15); }
+
+    /* =================== ParkSmart 預約 =================== */
+    #ps-acct.in { background: var(--accent); color: #fff; border-radius: 50%; width: 26px; height: 26px; padding: 0; font-size: 13px; font-weight: bold; }
+    .pin.park.ps-on { position: relative; box-shadow: 0 0 0 2px #ffd54f, 0 1px 4px rgba(0,0,0,0.5); }
+    .pin.park.ps-on::after { content: '預約'; position: absolute; top: -10px; right: -12px; background: #ffd54f; color: #222; font-size: 9px;
+      line-height: 1; padding: 2px 3px; border-radius: 6px; font-weight: bold; }
+
+    /* 資料框（白底） */
+    .ps-box { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: #fff8e1; border: 1px solid #ffe082; color: #202124; }
+    .ps-box.off { background: #f1f3f4; border-color: #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+    .ps-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+    .ps-head b { color: #b06000; } .ps-head small { color: #5f6368; }
+    .ps-line { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; font-size: 13px; margin: 3px 0; }
+    .ps-line span { min-width: 72px; color: #5f6368; }
+    .ps-line b.ok { color: #188038; } .ps-line b.full { color: #d93025; } .ps-line small { color: #5f6368; }
+    .ps-btn { width: 100%; margin-top: 6px; padding: 9px; border: none; border-radius: 8px; background: #1a73e8; color: #fff; font-size: 14px;
+      font-weight: 600; cursor: pointer; font-family: inherit; }
+    .ps-btn.queue { background: #e37400; }
+    .ps-btn.ghost { background: transparent; color: var(--accent); border: 1px solid currentColor; }
+    .ps-box .ps-btn.ghost { color: #1a73e8; }
+    .ps-btn:disabled { opacity: 0.6; cursor: default; }
+    .ps-mini { border: 1px solid #1a73e8; background: #fff; color: #1a73e8; border-radius: 12px; padding: 3px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+
+    /* 我嘅預約卡（深色側欄） */
+    .ps-card { position: relative; background: linear-gradient(135deg, #1d2a37, #20354b); border: 1px solid #355070; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .ps-card.called { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255,176,32,0.25); animation: psGlow 1.6s ease-in-out infinite alternate; }
+    @keyframes psGlow { from { box-shadow: 0 0 0 1px rgba(255,176,32,0.15); } to { box-shadow: 0 0 0 4px rgba(255,176,32,0.35); } }
+    .ps-card.in { border-color: #2e7d32; }
+    .ps-card.done { padding-right: 40px; }
+    .ps-card .ps-t, .ps-promo .ps-t { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+    .ps-card .ps-t span:last-child { text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ps-card .ps-big { font-size: 21px; font-weight: bold; margin: 6px 0 2px; line-height: 1.25; }
+    .ps-card .ps-big small { display: block; font-size: 13px; font-weight: normal; color: var(--muted); margin-top: 2px; }
+    .ps-card .ps-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .ps-acts { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .ps-acts .mini-btn { margin: 0; flex: 1; text-align: center; padding: 6px 8px; font-size: 13px; text-decoration: none; }
+    .ps-acts .ps-cancel, .mini-btn.ps-cancel { color: #ff8a80; }
+    .ps-card .ps-x { position: absolute; top: 10px; right: 10px; }
+    .ps-promo { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+    .ps-promo .ps-t b { color: #ffd54f; font-size: 14px; }
+    .ps-promo .mini-btn { margin: 0; }
+    .ps-lrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); cursor: pointer; font-size: 13px; }
+    .ps-lrow:first-of-type { margin-top: 6px; }
+    .ps-lrow small { display: block; color: var(--muted); font-size: 11px; }
+    .ps-lrow b { white-space: nowrap; font-size: 13px; }
+
+    /* 小視窗 */
+    #ps-sheet { display: none; position: fixed; inset: 0; z-index: 2100; background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center; }
+    #ps-sheet.open { display: flex; }
+    #ps-sheet .rs-card { max-height: 92vh; overflow-y: auto; overscroll-behavior: contain; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+    @media (min-width: 801px) { #ps-sheet { align-items: center; } #ps-sheet .rs-card { border-radius: 16px; max-width: 460px; } }
+    #ps-sheet .rs-head { position: sticky; top: -14px; background: var(--panel); padding: 4px 0 6px; margin-top: -4px; z-index: 1; }
+    .ps-load { color: var(--muted); padding: 16px 0; }
+    .ps-place { margin: 6px 0 2px; } .ps-place b { font-size: 16px; display: block; } .ps-place small { color: var(--muted); font-size: 12px; }
+    .ps-hint { float: right; color: var(--accent); }
+    .ps-note { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .ps-err { color: var(--red); font-size: 13px; margin-top: 8px; }
+    .ps-err:empty { display: none; }
+    .ps-done { font-size: 15px; line-height: 1.6; padding: 8px 0; }
+    .ps-queue-info { margin-top: 10px; background: rgba(255,176,32,0.1); border: 1px solid rgba(255,176,32,0.4); border-radius: 10px; padding: 10px; font-size: 14px; line-height: 1.5; }
+    .ps-queue-info small { display: block; color: var(--muted); margin-top: 4px; font-size: 12px; }
+    .ps-terms { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--muted); margin-top: 12px; line-height: 1.5;
+      background: var(--panel2); padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+    .ps-terms input { width: 18px; height: 18px; flex-shrink: 0; margin: 1px 0 0; accent-color: var(--accent); }
+    .ps-terms b { color: var(--text); }
+    .fr-big:disabled { opacity: 0.5; cursor: default; }
+    .fr-big.ps-q { background: #e37400; }
+    .fr-big.ps-danger { background: #c62828; }
+    .ps-form label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+    .ps-form input:not([type=checkbox]), .ps-form select, .ps-select { display: block; width: 100%; margin-top: 4px; background: var(--panel2); border: 1px solid var(--line);
+      color: var(--text); border-radius: 8px; padding: 9px 10px; font-size: 16px; font-family: inherit; }
+    .ps-form input:focus, .ps-form select:focus { border-color: var(--accent); outline: none; }
+    .ps-form.ps-inline { display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px; }
+    .ps-form.ps-inline > input, .ps-form.ps-inline > select { flex: 1 1 140px; margin: 0; }
+    .ps-form.ps-inline > label:not(.ps-chk) { flex: 1 1 100px; margin: 0; }
+    .ps-form.ps-inline .mini-btn { margin: 0; padding: 9px 12px; font-size: 13px; }
+    .ps-chk { display: flex !important; align-items: center; gap: 4px; margin: 0 !important; white-space: nowrap; font-size: 13px !important; color: var(--text) !important; padding: 9px 2px; }
+    .ps-row2 { display: flex; gap: 6px; } .ps-row2 > * { flex: 1; min-width: 0; }
+    .ps-row2 .ps-btn { margin-top: 0; }
+    .ps-links { display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px; }
+    .ps-links a, .ps-link { color: var(--accent); cursor: pointer; font-size: 13px; }
+    .ps-privacy { margin-top: 12px; font-size: 12px; color: var(--muted); background: var(--panel2); border-radius: 8px; padding: 6px 10px; }
+    .ps-privacy summary { cursor: pointer; color: var(--text); padding: 2px 0; }
+    .ps-privacy p { margin: 6px 0; line-height: 1.5; }
+    .ps-me { display: flex; gap: 10px; align-items: center; margin: 4px 0 10px; }
+    .ps-me small { display: block; color: var(--muted); font-size: 12px; }
+    .ps-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 18px; color: #fff; flex-shrink: 0; }
+    .ps-role { font-size: 11px; padding: 1px 7px; border-radius: 8px; background: #355070; margin-left: 6px; vertical-align: 2px; }
+    .ps-sec { border-top: 1px solid var(--line); padding: 6px 0; }
+    .ps-sec summary { cursor: pointer; padding: 6px 0; font-size: 14px; }
+    .ps-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .ps-item > span:last-child { text-align: right; flex-shrink: 0; }
+    .ps-item small { color: var(--muted); display: block; font-size: 11px; }
+    .ps-item.used { opacity: 0.5; }
+    .ps-x { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; cursor: pointer; padding: 3px 8px; font-family: inherit; font-size: 12px; }
+    .ps-op-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0; }
+    .ps-stat { background: var(--panel2); border-radius: 8px; padding: 7px 9px; font-size: 11px; line-height: 1.4; }
+    .ps-stat > small { color: var(--muted); display: block; }
+    .ps-stat b { font-size: 20px; display: block; } .ps-stat b small { font-size: 12px; color: var(--muted); font-weight: normal; }
+    .ps-pill { font-size: 11px; padding: 2px 7px; border-radius: 8px; background: var(--panel2); white-space: nowrap; }
+    .ps-pill.called, .ps-pill.reserved { background: rgba(255,176,32,0.2); color: var(--amber); }
+    .ps-pill.checked_in { background: rgba(52,199,89,0.18); color: var(--green); }
   </style>
 </head>
 <body>
@@ -6979,6 +7082,803 @@
     const li = hit('#transit-panel .stop-list.v2 li[data-si]');
     if (li && lv) { e.stopPropagation(); openTrackStop(lv, +li.dataset.si); }
   }, true);
+</script>
+<script>
+  // =====================================================================
+  // ParkSmart HK：登入、預約車位、遙距排隊（Supabase）
+  // =====================================================================
+  // ▼▼▼ 喺 Supabase → Project Settings → API Keys 抄呢兩個值落嚟 ▼▼▼
+ const PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
+ const PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ_ZUpR1F9';
+  // ▲▲▲ Publishable key 本身就係公開嘅；資料安全靠數據庫嘅 Row Level Security ▲▲▲
+  // （千祈唔好將 secret key／service_role key 放入網頁）
+
+  const PS_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+  const PS_SDK_SRI = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
+  const PS_PDPO_VERSION = '2026-11';
+  const PS_ETA_OPTS = [10, 15, 20, 30, 45, 60, 90, 120];
+  const PS = { sb: null, session: null, me: null, meLoaded: false, locs: [], byExt: {}, byId: {}, markers: {}, opLoc: null, tick: 0 };
+
+  const PS_ERR = {
+    'PS:LOGIN': '請先登入', 'PS:CONSENT': '請先同意私隱政策', 'PS:TERMS': '請先剔「我明白失約條款」',
+    'PS:RATE': '你操作得太密，請一個鐘後再試', 'PS:NEED_CARD': '請先綁定信用卡', 'PS:BAD_INPUT': '資料唔啱，請再檢查',
+    'PS:BAD_ETA': '到達時間要喺 5 至 180 分鐘之內', 'PS:NO_VEHICLE': '請先揀架車', 'PS:NOT_EV': '呢架車唔係電動車，唔可以訂充電車位',
+    'PS:HAS_ACTIVE': '你已經有一個預約／籌號，一次只可以有一個', 'PS:PLATE_BUSY': '呢架車已經有預約／籌號',
+    'PS:NO_LOCATION': '呢個停車場暫時唔接受預約', 'PS:NO_EV': '呢個停車場冇充電車位',
+    'PS:COUPON_INVALID': '優惠碼唔啱或者已經過期', 'PS:COUPON_CLAIMED': '你已經攞過呢張優惠券',
+    'PS:FULL': '啱啱俾人訂晒，可以改為遙距排隊', 'PS:AVAILABLE': '而家有位，可以直接預約，唔使排隊',
+    'PS:IN_PARK': '你架車已經入咗停車場，唔可以取消', 'PS:CHANGED': '狀態啱啱變咗，請再試', 'PS:NOTHING': '你而家冇預約',
+    'PS:BAD_PLATE': '車牌格式唔啱（只可以英文字母同數字，最多 8 個）', 'PS:TOO_MANY': '每人最多登記 5 架車',
+    'PS:VEHICLE_BUSY': '呢架車有預約緊，唔可以刪除', 'PS:NOT_FOUND': '搵唔到', 'PS:FORBIDDEN': '你冇權限做呢樣嘢',
+    'PS:BAD_NAME': '名稱要 2 至 30 個字', 'PS:BAD_PHONE': '電話號碼格式唔啱'
+  };
+  const PS_AUTH_ERR = [
+    [/invalid login credentials/i, '電郵或者密碼唔啱'], [/email not confirmed/i, '未確認電郵：請先去郵箱撳確認連結'],
+    [/already registered|already been registered/i, '呢個電郵已經註冊咗，可以直接登入'],
+    [/password should be at least|weak password|password is too weak/i, '密碼太弱：最少 8 個字，要有英文字母同數字'],
+    [/rate limit|too many requests/i, '寄電郵／登入得太密，請遲啲再試'], [/only request this after/i, '請等一分鐘再試'],
+    [/same password|different from the old/i, '新密碼唔可以同舊密碼一樣'], [/failed to fetch|network/i, '連唔到伺服器，請檢查網絡']
+  ];
+  function psMsg(e) {
+    const m = String(e?.message || e || '');
+    const k = (m.match(/PS:[A-Z_]+/) || [])[0];
+    if (k) return PS_ERR[k] || k;
+    const hit = PS_AUTH_ERR.find(([re]) => re.test(m));
+    return hit ? hit[1] : (m || '出錯，請再試');
+  }
+  async function psRpc(fn, args) {
+    if (!PS.sb) throw new Error('ParkSmart 未設定好');
+    const { data, error } = await PS.sb.rpc(fn, args || {});
+    if (error) throw new Error(psMsg(error));
+    return data;
+  }
+  const psNum = x => { const n = +x || 0; return n % 1 ? n.toFixed(1) : String(n); };
+  const psType = t => t === 'ev' ? '⚡ 充電車位' : '一般車位';
+  const psNav = l => `https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}&travelmode=driving`;
+  const psWait = s => Math.max(1, Math.round((s.queue + 1) * s.turnover_min));
+  const psLeft = t => Math.max(0, minsFromNow(t));
+
+  // ---------------------------------------------------------------------
+  // 開始：載入 Supabase、讀登入狀態
+  // ---------------------------------------------------------------------
+  function psLoadSdk() {
+    if (window.supabase?.createClient) return Promise.resolve();
+    return new Promise((ok, bad) => {
+      const s = document.createElement('script');
+      s.src = PS_SDK; s.integrity = PS_SDK_SRI; s.crossOrigin = 'anonymous';
+      s.onload = ok; s.onerror = () => bad(new Error('載入唔到登入元件'));
+      document.head.appendChild(s);
+    });
+  }
+  async function psInit() {
+    psHeaderBtn();
+    psMountCards();
+    if (!PS_URL || !PS_KEY) { setSource('ParkSmart 預約', false, '未設定 Supabase（PS_URL／PS_KEY）'); psRenderCards(); return; }
+    try {
+      await psLoadSdk();
+      PS.sb = window.supabase.createClient(PS_URL, PS_KEY, {
+        auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      });
+      PS.sb.auth.onAuthStateChange((evt, session) => {
+        PS.session = session;
+        // 唔好喺 callback 入面直接再叫 Supabase（會卡死），用 setTimeout
+        if (evt === 'PASSWORD_RECOVERY') setTimeout(() => psOpenAccount('newpass'), 300);
+        if (['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'].includes(evt)) setTimeout(psRefreshMe, 0);
+      });
+      const { data } = await PS.sb.auth.getSession();
+      PS.session = data.session;
+      psCleanUrl();
+      await Promise.all([psRefreshLocs(), psRefreshMe()]);
+      setSource('ParkSmart 預約', true, `${PS.locs.length} 個停車場可以預約`);
+    } catch (e) {
+      console.error('ParkSmart', e);
+      setSource('ParkSmart 預約', false, psMsg(e));
+    }
+    setInterval(psTick, 30000);
+  }
+  // 確認電郵／重設密碼連結返嚟之後，清走網址上面嘅 code／錯誤
+  function psCleanUrl() {
+    const u = new URL(location.href);
+    const h = new URLSearchParams(u.hash.slice(1));
+    const err = u.searchParams.get('error_description') || h.get('error_description');
+    if (err) toast('⚠️ ' + (/expired|invalid/i.test(err) ? '條連結過咗期或者用過咗，請再試一次' : err), 6000);
+    let changed = false;
+    ['code', 'error', 'error_code', 'error_description'].forEach(k => { if (u.searchParams.has(k)) { u.searchParams.delete(k); changed = true; } });
+    if (h.has('error') || h.has('access_token')) { u.hash = ''; changed = true; }
+    if (changed) history.replaceState(null, '', u.toString());
+  }
+
+  async function psRefreshLocs() {
+    if (!PS.sb) return;
+    try { PS.locs = (await psRpc('ps_locations')) || []; } catch (e) { console.warn('ParkSmart 停車場', e.message); return; }
+    PS.byExt = {}; PS.byId = {};
+    PS.locs.forEach(l => { PS.byId[l.id] = l; if (l.ext_park_id) PS.byExt[l.ext_park_id] = l; });
+    psDecorateParks();
+    psRefreshBoxes();
+    psRenderCards();
+  }
+
+  async function psRefreshMe() {
+    if (!PS.sb) return;
+    const prev = PS.me?.active, first = !PS.meLoaded;
+    if (!PS.session) { PS.me = null; PS.meLoaded = true; psAfterMe(); return; }
+    try { PS.me = await psRpc('ps_me'); } catch (e) { console.warn('ParkSmart 帳戶', e.message); if (/登入/.test(e.message)) PS.me = null; }
+    PS.meLoaded = true;
+    if (!first) psNotifyChange(prev, PS.me?.active);
+    psAfterMe();
+  }
+  function psAfterMe() {
+    psHeaderBtn();
+    psRefreshBoxes();
+    psRenderCards();
+    // 帳戶視窗開住：資料有變先重畫，而且唔好喺用戶打緊字嗰陣重畫
+    const json = JSON.stringify(PS.me), changed = json !== PS.meJson;
+    PS.meJson = json;
+    const sheet = $('ps-sheet'), typing = sheet?.contains(document.activeElement) && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
+    if (changed && !typing && sheet?.classList.contains('open') && sheet.dataset.view === 'account') psOpenAccount('account');
+  }
+
+  // 狀態變咗就通知（叫號、入閘、失約、離場）
+  function psNotifyChange(prev, cur) {
+    if (!prev) return;
+    const same = cur && cur.kind === prev.kind && cur.id === prev.id;
+    if (prev.kind === 'ticket' && prev.status === 'waiting' && same && cur.status === 'called') {
+      notify('ParkSmart：輪到你', `請喺 ${hhmm(cur.respond_by)} 前到「${cur.location.name}」（籌號 ${cur.ticket_no}）`);
+    } else if (cur && cur.kind === 'booking' && cur.status === 'checked_in' && !(same && prev.status === 'checked_in')) {
+      toast(`🅿️ 已入閘：${cur.location.name}`, 5000);
+    } else if (!cur) {
+      const h = (PS.me?.history || []).find(x => x.kind === prev.kind && x.id === prev.id);
+      if (!h) return;
+      if (h.status === 'no_show') notify('ParkSmart：失約', `冇喺時限內到「${h.location.name}」，扣咗 HK$${psNum(h.no_show_fee)}`);
+      else if (h.status === 'completed') notify('ParkSmart：已離場', `「${h.location.name}」收費 $${psNum(h.total_cost)}${+h.discount ? `（已減 $${psNum(h.discount)}）` : ''}`);
+      else if (h.status === 'expired') notify('ParkSmart：排隊過期', `「${h.location.name}」排咗太耐，籌號已經取消`);
+    }
+  }
+
+  function psTick() {
+    PS.tick++;
+    if (PS.session) psRefreshMe();
+    const parkingOn = $('tab-parking')?.classList.contains('on');
+    if (parkingOn || document.querySelector('[data-ps-box]') || PS.tick % 4 === 0) psRefreshLocs();
+    else psRenderCards();
+  }
+
+  // ---------------------------------------------------------------------
+  // 地圖：有 ParkSmart 嘅停車場加「預約」標記；資料框加預約區
+  // ---------------------------------------------------------------------
+  const _psRenderParks = renderParks;
+  renderParks = function () { _psRenderParks(); psDecorateParks(); };
+  function psColor(l) {
+    if (!l) return '#6b7c8c';
+    const f = l.regular.free + (l.ev?.free || 0);
+    return f > 0 ? (f < 3 ? '#f29900' : '#188038') : '#e53935';
+  }
+  function psDecorateParks() {
+    parks.forEach(p => { if (p.el) p.el.classList.toggle('ps-on', !!PS.byExt[p.id]); });
+    if (typeof map === 'undefined' || !map || !AdvancedMarkerElement) return;
+    PS.locs.forEach(l => {
+      if (l.ext_park_id && parkById[l.ext_park_id]) return;   // 用返運輸署嗰粒標記
+      let m = PS.markers[l.id];
+      if (!m) {
+        const el = document.createElement('div');
+        el.className = 'pin park ps-on';
+        m = new AdvancedMarkerElement({ position: { lat: l.lat, lng: l.lng }, content: el, title: l.name });
+        m.psEl = el;
+        onMarkerClick(m, () => psOpenLocPopup(l.id));
+        PS.markers[l.id] = m;
+      }
+      const free = l.regular.free + (l.ev?.free || 0);
+      m.psEl.innerHTML = `<span class="ico">P</span><span class="lbl">${free > 0 ? free : '滿'}</span>`;
+      m.psEl.style.background = psColor(l);
+      if (m.map !== map) m.map = map;
+    });
+  }
+  function psBoxInner(l) {
+    const line = (s, label) => s ? `<div class="ps-line"><span>${label}</span>${s.free > 0
+      ? `<b class="ok">可預約 ${s.free} 個</b>`
+      : `<b class="full">已滿</b><small>${s.queue ? `排緊 ${s.queue} 人．` : ''}約等 ${psWait(s)} 分鐘</small>`}</div>` : '';
+    const a = PS.me?.active;
+    const mine = a && a.location?.id === l.id;
+    const anyFree = l.regular.free > 0 || (l.ev && l.ev.free > 0);
+    const btn = mine
+      ? `<button class="ps-btn ghost" data-ps-mine="1">查看我嘅${a.kind === 'ticket' ? '籌號' : '預約'}</button>`
+      : `<button class="ps-btn${anyFree ? '' : ' queue'}" data-ps-open="${l.id}">${anyFree ? '📅 預約車位' : '🎫 遙距排隊（唔使喺街等）'}</button>`;
+    return `<div class="ps-head"><b>ParkSmart 預約</b><small>$${psNum(l.hourly_rate)}／小時</small></div>${line(l.regular, '一般車位')}${line(l.ev, '⚡ 充電車位')}${btn}`;
+  }
+  function psParkBox(p) {
+    const l = PS.byExt[p.id];
+    if (l) return `<div class="ps-box" data-ps-box="${l.id}">${psBoxInner(l)}</div>`;
+    if (PS.me?.user?.role === 'admin') return `<div class="ps-box off"><small>未加入 ParkSmart</small> <button class="ps-mini" data-ps-onboard="${esc(p.id)}">＋ 加入試點</button></div>`;
+    return '';
+  }
+  const _psParkHtml = parkHtml;
+  parkHtml = function (p) {
+    const html = _psParkHtml(p);
+    const box = psParkBox(p);
+    return box ? html.replace('<div>私家車空位：', box + '<div>私家車空位：') : html;
+  };
+  function psRefreshBoxes() {
+    document.querySelectorAll('[data-ps-box]').forEach(el => { const l = PS.byId[el.dataset.psBox]; if (l) el.innerHTML = psBoxInner(l); });
+  }
+  function psOpenLocPopup(id) {
+    const l = PS.byId[id];
+    if (!l) return;
+    const p = l.ext_park_id && parkById[l.ext_park_id];
+    if (p) { map.setCenter({ lat: p.lat, lng: p.lng }); map.setZoom(17); setTimeout(() => { renderParks(); if (p.marker) openPark(p); }, 400); return; }
+    openInfo(`<div class="park-pop"><b style="font-size:15px">🅿️ ${esc(l.name)}</b><br><small>${esc(l.address || '')}</small>
+      <div class="ps-box" data-ps-box="${l.id}">${psBoxInner(l)}</div>
+      ${l.pricing_info ? `<div><small>${esc(l.pricing_info)}</small></div>` : ''}
+      ${goHtml({ name: l.name, lat: l.lat, lng: l.lng, kind: 'park' })}</div>`, PS.markers[l.id], { lat: l.lat, lng: l.lng });
+  }
+  function psFocusLoc(id) {
+    const l = PS.byId[id];
+    if (!l || !map) return;
+    document.body.classList.remove('side-big');
+    map.setCenter({ lat: l.lat, lng: l.lng }); map.setZoom(17);
+    setTimeout(() => psOpenLocPopup(id), 300);
+  }
+
+  // 資料框入面嘅掣（Google 資料框會食咗 click，所以用 capture）
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-ps-open],[data-ps-onboard],[data-ps-mine],[data-ps-acct],[data-ps-focus],[data-ps-cancel],[data-ps-dismiss]');
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (b.dataset.psOpen) psOpenBook(+b.dataset.psOpen);
+    else if (b.dataset.psOnboard) psOpenOnboard(b.dataset.psOnboard);
+    else if (b.dataset.psMine || b.dataset.psAcct) psOpenAccount(PS.session ? 'account' : 'login');
+    else if (b.dataset.psFocus) psFocusLoc(+b.dataset.psFocus);
+    else if (b.dataset.psCancel) psCancel(b);
+    else if (b.dataset.psDismiss) { UXS.set('ps-dismiss', b.dataset.psDismiss); psRenderCards(); }
+  }, true);
+
+  // ---------------------------------------------------------------------
+  // 小視窗（預約、帳戶共用）
+  // ---------------------------------------------------------------------
+  function psSheet(title, view) {
+    let sheet = $('ps-sheet');
+    if (!sheet) {
+      sheet = document.createElement('div');
+      sheet.id = 'ps-sheet';
+      sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true');
+      sheet.innerHTML = `<div class="rs-card"><div class="rs-head"><b class="ps-title"></b><button class="rs-x" aria-label="關閉">✕</button></div><div class="ps-body"></div></div>`;
+      document.body.appendChild(sheet);
+      sheet.querySelector('.rs-x').onclick = psCloseSheet;
+      sheet.addEventListener('click', e => { if (e.target === sheet) psCloseSheet(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheet.classList.contains('open')) psCloseSheet(); });
+    }
+    sheet.querySelector('.ps-title').textContent = title;
+    sheet.dataset.view = view || '';
+    sheet.classList.add('open');
+    return sheet.querySelector('.ps-body');
+  }
+  function psCloseSheet() { const s = $('ps-sheet'); if (s) { s.classList.remove('open'); s.dataset.view = ''; } }
+  const psFormData = f => Object.fromEntries(new FormData(f).entries());
+  async function psBusy(btn, fn) {
+    if (btn.disabled) return;
+    const t = btn.textContent;
+    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();   // 等做完之後可以重畫
+    btn.disabled = true; btn.textContent = '處理緊…';
+    try { return await fn(); } finally { if (btn.isConnected) { btn.disabled = false; btn.textContent = t; } }
+  }
+
+  // ---------------------------------------------------------------------
+  // 預約／遙距排隊（跟流程圖：揀車位種類 → 有位就預約、滿咗就排隊 → 揀車 → 失約條款 → 確認）
+  // ---------------------------------------------------------------------
+  function psGuessEta(l) {
+    if (!myLoc) return null;
+    const km = distM(myLoc.lat, myLoc.lng, l.lat, l.lng) * 1.4 / 1000;   // 直線 × 1.4 當行車距離
+    const m = Math.round(km / 22 * 60 + 3);                              // 市區平均時速約 22 公里
+    return { m, opt: PS_ETA_OPTS.find(o => o >= m) || 120 };
+  }
+
+  async function psOpenBook(id, keep) {
+    if (!PS.sb) { psSheet('ParkSmart').innerHTML = '<div class="ps-note">網頁未設定好 Supabase（index.html 入面嘅 PS_URL／PS_KEY）。</div>'; return; }
+    if (!PS.session) { psOpenAccount('login', { note: '要先登入先可以預約或者排隊', after: () => psOpenBook(id) }); return; }
+    let body = psSheet('📅 預約車位', 'book');
+    if (!keep) body.innerHTML = '<div class="ps-load">讀緊最新空位…</div>';
+    await Promise.all([psRefreshLocs(), psRefreshMe()]);
+    body = psSheet('📅 預約車位', 'book');
+    const l = PS.byId[id], me = PS.me;
+    if (!l || !me) { body.innerHTML = '<div class="ps-note">呢個停車場暫時唔接受預約。</div>'; return; }
+    if (me.active) {
+      body.innerHTML = `<div class="ps-note" style="margin-bottom:8px">你已經有一個${me.active.kind === 'ticket' ? '籌號' : '預約'}，一次只可以有一個。</div>${psActiveHtml(me.active, true)}`;
+      return;
+    }
+    if (!me.user.consent) { psConsentView(body, () => psOpenBook(id)); return; }
+    const guess = psGuessEta(l);
+    const v0 = me.vehicles[0];
+    const st = keep || {
+      // 預設一般車位；除非架車係電動車、一般位滿咗而充電位有空
+      type: v0?.is_ev && l.ev?.free > 0 && !(l.regular.free > 0) ? 'ev' : 'regular',
+      eta: guess ? guess.opt : 30, vehicle: v0?.id || null, coupon: '', agree: false, addCar: !me.vehicles.length
+    };
+    const render = (errMsg) => {
+      const s = st.type === 'ev' ? l.ev : l.regular;
+      const mode = s && s.free > 0 ? 'book' : 'queue';
+      const v = me.vehicles.find(x => x.id === st.vehicle);
+      const evBad = st.type === 'ev' && v && !v.is_ev;
+      const coupons = me.coupons.filter(c => !c.used && (!c.location_id || c.location_id === l.id));
+      const eta = new Date(Date.now() + st.eta * 60000), until = new Date(eta.getTime() + l.grace_min * 60000);
+      const typeOpt = (t, label, sp) => sp ? `<button class="rs-opt${st.type === t ? ' on' : ''}" data-t="${t}"><b>${label}</b>
+        <small>${sp.free > 0 ? `有 ${sp.free} 個位` : `滿咗．${sp.queue} 人排緊`}</small></button>` : '';
+      const needCard = me.require_payment && !me.has_payment_method;
+      body.innerHTML = `
+        <div class="ps-place"><b>${esc(l.name)}</b><small>${esc(l.address || '')}．$${psNum(l.hourly_rate)}／小時</small></div>
+        <div class="rs-label">車位種類</div>
+        <div class="rs-opts">${typeOpt('regular', '🚗 一般', l.regular)}${typeOpt('ev', '⚡ 充電', l.ev)}</div>
+        ${mode === 'book' ? `
+          <div class="rs-label">幾耐到？${guess ? `<span class="ps-hint">📍 按你位置估計約 ${guess.m} 分鐘</span>` : ''}</div>
+          <div class="rs-opts">${PS_ETA_OPTS.map(m => `<button class="rs-opt small${st.eta === m ? ' on' : ''}" data-eta="${m}">${m < 60 ? m + ' 分鐘' : m / 60 + ' 小時'}</button>`).join('')}</div>
+          <div class="ps-note">車位會留到 <b>${hhmm(until)}</b>（預計 ${hhmm(eta)} 到 + ${l.grace_min} 分鐘寬限）</div>`
+        : `<div class="ps-queue-info">🚦 ${psType(st.type)}已滿．前面有 <b>${s.queue}</b> 人．估計等 <b>${psWait(s)}</b> 分鐘
+            <small>唔使喺街上排隊：可以慢慢駛過去，輪到你會通知你，之後 ${me.call_window_min} 分鐘內入閘就得。</small></div>`}
+        <div class="rs-label">邊架車？</div>
+        <div class="rs-opts">${me.vehicles.map(x => `<button class="rs-opt small${x.id === st.vehicle ? ' on' : ''}" data-v="${x.id}"><b>${esc(x.plate)}</b><small>${x.is_ev ? '⚡ 電動車' : '私家車'}</small></button>`).join('')}
+          <button class="rs-opt small${st.addCar ? ' on' : ''}" data-addcar="1"><b>＋</b><small>加車</small></button></div>
+        ${st.addCar ? `<form class="ps-form ps-inline" data-f="car"><input name="plate" placeholder="車牌，例如 AB1234" maxlength="10" autocomplete="off" required>
+          <label class="ps-chk"><input type="checkbox" name="ev"> 電動車</label><button class="mini-btn">加入</button></form>` : ''}
+        ${evBad ? '<div class="ps-err">呢架車唔係電動車：揀電動車，或者改揀一般車位。</div>' : ''}
+        ${coupons.length ? `<div class="rs-label">優惠券</div><div class="rs-opts"><button class="rs-opt small${!st.coupon ? ' on' : ''}" data-c="">唔用</button>
+          ${coupons.map(c => `<button class="rs-opt small${String(c.id) === String(st.coupon) ? ' on' : ''}" data-c="${c.id}"><b>${c.discount_type === 'percent' ? psNum(c.discount_value) + '% off' : '減 $' + psNum(c.discount_value)}</b><small>${esc(c.merchant || c.code)}</small></button>`).join('')}</div>` : ''}
+        <div class="rs-label">付款</div>
+        <div class="ps-note">${needCard ? '⚠️ 要先綁定信用卡（功能整緊）' : me.require_payment ? '💳 用你綁定咗嘅信用卡' : '🧪 示範模式：未接駁 Stripe，唔使綁卡，唔會真係收錢'}</div>
+        <label class="ps-terms"><input type="checkbox" data-agree ${st.agree ? 'checked' : ''}>
+          <span>我明白：${mode === 'book' ? `如果 ${hhmm(until)} 之前都未入閘` : `叫到號之後 ${me.call_window_min} 分鐘內唔到`}，會預先授權並收取 <b>HK$${psNum(me.noshow_fee)}</b> 失約費。準時到或者提早取消就唔收。</span></label>
+        <div class="ps-err" data-err>${errMsg ? esc(errMsg) : ''}</div>
+        <button class="fr-big${mode === 'queue' ? ' ps-q' : ''}" data-go ${!st.vehicle || evBad || needCard ? 'disabled' : ''}>${mode === 'book' ? '確認預約' : '確認遙距排隊'}</button>`;
+
+      body.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { st.type = b.dataset.t; render(); });
+      body.querySelectorAll('[data-eta]').forEach(b => b.onclick = () => { st.eta = +b.dataset.eta; render(); });
+      body.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { st.vehicle = +b.dataset.v; st.addCar = false; render(); });
+      body.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { st.coupon = b.dataset.c; render(); });
+      body.querySelector('[data-addcar]').onclick = () => { st.addCar = !st.addCar; render(); };
+      body.querySelector('[data-agree]').onchange = e => { st.agree = e.target.checked; body.querySelector('[data-err]').textContent = ''; };
+      const carForm = body.querySelector('[data-f="car"]');
+      if (carForm) carForm.onsubmit = async e => {
+        e.preventDefault();
+        const f = psFormData(carForm);
+        await psBusy(carForm.querySelector('button'), async () => {
+          try {
+            const v2 = await psRpc('ps_add_vehicle', { p_plate: f.plate, p_is_ev: !!f.ev });
+            await psRefreshMe();
+            Object.assign(me, PS.me);
+            st.vehicle = v2.id; st.addCar = false;
+            if (v2.is_ev && l.ev && st.type === 'regular' && l.regular.free <= 0 && l.ev.free > 0) st.type = 'ev';
+            render();
+          } catch (err) { render(err.message); }
+        });
+      };
+      body.querySelector('[data-go]').onclick = e => psBusy(e.currentTarget, async () => {
+        if (!st.agree) { body.querySelector('[data-err]').textContent = '請先剔「我明白」失約條款'; return; }
+        const args = { p_location: l.id, p_vehicle: st.vehicle, p_space_type: st.type, p_user_coupon: st.coupon ? +st.coupon : null, p_accept_terms: true };
+        try {
+          const r = mode === 'book' ? await psRpc('ps_book', { ...args, p_eta_min: st.eta }) : await psRpc('ps_join_queue', args);
+          psCloseSheet();
+          toast(r.kind === 'ticket' ? `🎫 攞咗籌：${r.ticket_no}，第 ${r.position} 位，估計等 ${r.est_wait_min} 分鐘` : `✅ 已預約「${l.name}」，請喺 ${hhmm(r.hold_until)} 前入閘`, 6000);
+          await Promise.all([psRefreshMe(), psRefreshLocs()]);
+          goTab('parking');
+          if ('Notification' in window && Notification.permission === 'default') askNotify();   // 叫號時要通知
+        } catch (err) {
+          if (/訂晒|唔使排隊/.test(err.message)) { toast(err.message, 4000); psOpenBook(id, st); return; }   // 空位啱啱變咗：重新讀
+          render(err.message);
+        }
+      });
+    };
+    render();
+  }
+
+  async function psCancel(btn) {
+    if (btn.dataset.sure !== '1') { btn.dataset.sure = '1'; btn.textContent = '再撳一次確認取消'; setTimeout(() => { if (btn.isConnected) { btn.dataset.sure = ''; btn.textContent = '取消'; } }, 4000); return; }
+    await psBusy(btn, async () => {
+      try { await psRpc('ps_cancel'); toast('已取消，唔會收費', 3000); } catch (e) { toast('⚠️ ' + e.message, 4000); }
+      await Promise.all([psRefreshMe(), psRefreshLocs()]);
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // 我嘅預約／籌號卡（總覽 + 泊車分頁）
+  // ---------------------------------------------------------------------
+  function psActiveHtml(a, inSheet) {
+    const L = a.location;
+    const acts = `<div class="ps-acts"><a class="mini-btn" href="${psNav(L)}" target="_blank" rel="noopener">🧭 導航</a>
+      ${inSheet ? '' : `<button class="mini-btn" data-ps-focus="${L.id}">🗺️ 地圖</button>`}
+      ${a.status === 'checked_in' ? '' : '<button class="mini-btn ps-cancel" data-ps-cancel="1">取消</button>'}</div>`;
+    const sub = `${psType(a.space_type)}${a.plate ? '．' + esc(a.plate) : ''}${a.coupon ? '．🎟️ ' + esc(a.coupon) : ''}`;
+    if (a.kind === 'ticket' && a.status === 'called') return `<div class="ps-card called">
+      <div class="ps-t"><span>🔔 輪到你！籌號 ${esc(a.ticket_no)}</span><span>${esc(L.name)}</span></div>
+      <div class="ps-big">請喺 ${hhmm(a.respond_by)} 前入閘</div>
+      <div class="ps-sub">仲有 ${psLeft(a.respond_by)} 分鐘．${sub}．閘口會自動認車牌</div>${acts}</div>`;
+    if (a.kind === 'ticket') return `<div class="ps-card">
+      <div class="ps-t"><span>🎫 遙距排隊．${esc(a.ticket_no)}</span><span>${esc(L.name)}</span></div>
+      <div class="ps-big">第 ${a.position} 位<small>估計等 ${a.est_wait_min} 分鐘（約 ${hhmm(Date.now() + a.est_wait_min * 60000)}）</small></div>
+      <div class="ps-sub">${sub}．可以慢慢駛過去，唔使喺街上等；輪到你會通知你</div>${acts}</div>`;
+    if (a.status === 'checked_in') {
+      const mins = Math.max(1, Math.ceil((Date.now() - Date.parse(a.start_time)) / 60000));
+      const fee = Math.max(1, Math.ceil(mins / 60)) * (+a.hourly_rate || 0);
+      return `<div class="ps-card in">
+        <div class="ps-t"><span>🅿️ 泊緊車</span><span>${esc(L.name)}</span></div>
+        <div class="ps-big">${mins < 60 ? mins + ' 分鐘' : Math.floor(mins / 60) + ' 小時 ' + (mins % 60) + ' 分'}<small>${hhmm(a.start_time)} 入閘．而家約 $${psNum(fee)}${a.coupon ? '（未減優惠）' : ''}</small></div>
+        <div class="ps-sub">${sub}．出閘時自動計錢</div>${acts}</div>`;
+    }
+    return `<div class="ps-card">
+      <div class="ps-t"><span>📅 已預約</span><span>${esc(L.name)}</span></div>
+      <div class="ps-big">請喺 ${hhmm(a.hold_until)} 前入閘<small>仲有 ${psLeft(a.hold_until)} 分鐘</small></div>
+      <div class="ps-sub">${sub}．閘口會自動認車牌</div>${acts}</div>`;
+  }
+  function psRecentHtml() {
+    const h = PS.me?.history?.[0];
+    if (!h || PS.me.active) return '';
+    const end = Date.parse(h.end_time || h.closed_at || h.hold_until || h.created_at || h.joined_at);
+    const key = h.kind + h.id;
+    if (!(Date.now() - end < 3 * 3600e3) || UXS.get('ps-dismiss', '') === key || h.status === 'cancelled') return '';
+    const msg = h.status === 'completed' ? `✅ 已離場「${esc(h.location.name)}」．收費 <b>$${psNum(h.total_cost)}</b>${+h.discount ? `（已減 $${psNum(h.discount)}）` : ''}`
+      : h.status === 'no_show' ? `❌ 冇喺時限內到「${esc(h.location.name)}」．扣咗 HK$${psNum(h.no_show_fee)} 失約費`
+      : h.status === 'expired' ? `⌛「${esc(h.location.name)}」排隊過期，冇收費` : '';
+    return msg ? `<div class="ps-card done"><div class="ps-sub" style="color:var(--text)">${msg}</div><button class="ps-x" data-ps-dismiss="${key}" aria-label="收埋">✕</button></div>` : '';
+  }
+  function psMountCards() {
+    const ov = $('tab-overview'), pk = $('tab-parking');
+    if (ov && !$('ps-home')) { const d = document.createElement('div'); d.id = 'ps-home'; ov.prepend(d); }
+    if (pk && !$('ps-park')) { const d = document.createElement('div'); d.id = 'ps-park'; pk.prepend(d); }
+  }
+  function psRenderCards() {
+    const a = PS.me?.active;
+    const card = a ? psActiveHtml(a) : psRecentHtml();
+    if ($('ps-home')) $('ps-home').innerHTML = card;
+    if (!$('ps-park')) return;
+    const ref = myLoc || (typeof map !== 'undefined' && map ? { lat: map.getCenter().lat(), lng: map.getCenter().lng() } : null);
+    const list = PS.locs.slice().sort((x, y) => ref ? distM(ref.lat, ref.lng, x.lat, x.lng) - distM(ref.lat, ref.lng, y.lat, y.lng) : 0).slice(0, 5);
+    const rows = list.map(l => {
+      const f = l.regular.free + (l.ev?.free || 0), q = l.regular.queue + (l.ev?.queue || 0);
+      return `<div class="ps-lrow" data-ps-focus="${l.id}"><span>${esc(l.name)}<small>${esc(l.district || '')}${ref ? '．' + (distM(ref.lat, ref.lng, l.lat, l.lng) / 1000).toFixed(1) + ' 公里' : ''}</small></span>
+        <b style="color:${psColor(l)}">${f > 0 ? `可預約 ${f}` : `已滿${q ? `．${q} 人排` : ''}`}</b></div>`;
+    }).join('');
+    const who = PS.me?.user;
+    $('ps-park').innerHTML = `${card}<div class="ps-promo"><div class="ps-t"><b>🅿️ ParkSmart 預約</b>
+      <button class="mini-btn" data-ps-acct="1">${who ? '👤 ' + esc(who.username || who.email.split('@')[0]) : '登入／註冊'}</button></div>
+      ${PS.sb ? (rows || '<div class="ps-note">未有停車場加入</div>') : '<div class="ps-note">網頁未設定好 Supabase</div>'}
+      <div class="ps-note">有黃框「預約」標記嘅停車場：有位可以預約；滿咗可以遙距排隊，唔使喺街上等。</div></div>`;
+  }
+
+  // ---------------------------------------------------------------------
+  // 帳戶：登入、註冊、忘記密碼、我嘅車、優惠券、記錄、私隱、營運商工具
+  // ---------------------------------------------------------------------
+  function psHeaderBtn() {
+    let b = $('ps-acct');
+    if (!b) {
+      b = document.createElement('button');
+      b.id = 'ps-acct'; b.className = 'head-btn'; b.dataset.psAcct = '1';
+      const gear = $('ux-gear') || $('refresh-btn');
+      gear.parentNode.insertBefore(b, gear);
+    }
+    const u = PS.me?.user;
+    b.classList.toggle('in', !!u);
+    b.textContent = u ? (u.username || u.email || '?').trim().charAt(0).toUpperCase() : '👤';
+    b.title = u ? `${u.username || u.email}（帳戶／預約）` : '登入／註冊';
+  }
+
+  const PS_PRIVACY = `<details class="ps-privacy"><summary>私隱政策（重點）</summary>
+    <p>收集咩：電郵、用戶名、電話（可以唔填）、車牌、預約同排隊記錄。</p>
+    <p>做咩用：處理預約、排隊、計泊車費同失約費、防止濫用。唔會賣畀第三方，唔會用嚟賣廣告。</p>
+    <p>點保護：密碼經雜湊處理；預約同出入閘記錄入面嘅車牌只存加密雜湊；用戶只可以睇到自己嘅資料。你嘅位置只喺你部機計到達時間，唔會上載。</p>
+    <p>存放：Supabase 雲端數據庫（新加坡）。你可以隨時喺「帳戶 → 私隱」下載或者刪除自己嘅資料（《個人資料（私隱）條例》第 486 章）。</p>
+    <p>呢個係 University of West London 畢業專題嘅原型系統。</p></details>`;
+
+  function psConsentView(body, after) {
+    body.innerHTML = `<div class="ps-note">用 ParkSmart 預約之前，請先睇吓同同意私隱政策。</div>${PS_PRIVACY}
+      <label class="ps-terms"><input type="checkbox" data-c1> <span>我已閱讀並同意私隱政策</span></label>
+      <div class="ps-err" data-err></div><button class="fr-big" data-ok>同意，繼續</button>`;
+    body.querySelector('details').open = true;
+    body.querySelector('[data-ok]').onclick = e => psBusy(e.currentTarget, async () => {
+      if (!body.querySelector('[data-c1]').checked) { body.querySelector('[data-err]').textContent = '要剔咗先可以繼續'; return; }
+      try { await psRpc('ps_give_consent', { p_version: PS_PDPO_VERSION }); await psRefreshMe(); after(); }
+      catch (err) { body.querySelector('[data-err]').textContent = err.message; }
+    });
+  }
+
+  function psPwProblem(pw, email) {
+    if (pw.length < 8) return '密碼最少 8 個字';
+    if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return '密碼要有英文字母同數字';
+    if (email && pw.toLowerCase().includes(email.split('@')[0].toLowerCase())) return '密碼唔好包含電郵名';
+    if (/^(password|12345678|qwerty|abc12345|11111111)/i.test(pw)) return '呢個密碼太常見';
+    return '';
+  }
+
+  let psAfterLogin = null;
+  async function psOpenAccount(view = 'login', opt = {}) {
+    if (!PS.sb) { psSheet('帳戶').innerHTML = '<div class="ps-note">網頁未設定好 Supabase（index.html 入面嘅 PS_URL／PS_KEY）。</div>'; return; }
+    if (opt.after) psAfterLogin = opt.after;
+    if (PS.session && ['login', 'signup'].includes(view)) view = 'account';
+    const titles = { login: '登入', signup: '註冊新帳戶', forgot: '忘記密碼', newpass: '設定新密碼', account: '我嘅帳戶', delete: '刪除帳戶' };
+    const body = psSheet(titles[view] || '帳戶', view === 'account' ? 'account' : view);
+    const redirect = location.origin + location.pathname;
+    const errBox = () => body.querySelector('[data-err]');
+    const links = (...ls) => `<div class="ps-links">${ls.map(([v, t]) => `<a data-view="${v}">${t}</a>`).join('')}</div>`;
+    const bindLinks = () => body.querySelectorAll('[data-view]').forEach(a => a.onclick = () => psOpenAccount(a.dataset.view));
+
+    if (view === 'login') {
+      body.innerHTML = `${opt.note ? `<div class="ps-note" style="margin-bottom:6px">${esc(opt.note)}</div>` : ''}
+        <form class="ps-form" data-f="login">
+          <label>電郵<input type="email" name="email" autocomplete="email" required></label>
+          <label>密碼<input type="password" name="pw" autocomplete="current-password" required></label>
+          <div class="ps-err" data-err></div><button class="fr-big">登入</button></form>
+        ${links(['signup', '未有帳戶？註冊'], ['forgot', '忘記密碼'])}`;
+      bindLinks();
+      const f = body.querySelector('form');
+      f.onsubmit = e => { e.preventDefault(); psBusy(f.querySelector('.fr-big'), async () => {
+        const d = psFormData(f);
+        const { error } = await PS.sb.auth.signInWithPassword({ email: d.email.trim(), password: d.pw });
+        if (error) { errBox().textContent = psMsg(error); return; }
+        const { data } = await PS.sb.auth.getSession(); PS.session = data.session;
+        await psRefreshMe();
+        toast('✅ 已登入', 2500);
+        const next = psAfterLogin; psAfterLogin = null;
+        if (next) next(); else psOpenAccount('account');
+      }); };
+      return;
+    }
+
+    if (view === 'signup') {
+      body.innerHTML = `<form class="ps-form" data-f="signup">
+          <label>用戶名（2 至 30 個字）<input name="username" maxlength="30" autocomplete="nickname" required></label>
+          <label>電郵<input type="email" name="email" autocomplete="email" required></label>
+          <label>手機號碼（可以唔填，用嚟通知你）<input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="9123 4567"></label>
+          <label>密碼（最少 8 個字，要有英文字母同數字）<input type="password" name="pw" autocomplete="new-password" required></label>
+          <label>再輸入一次密碼<input type="password" name="pw2" autocomplete="new-password" required></label>
+          ${PS_PRIVACY}
+          <label class="ps-terms"><input type="checkbox" name="consent"> <span>我已閱讀並同意私隱政策</span></label>
+          <div class="ps-err" data-err></div><button class="fr-big">註冊</button></form>
+        ${links(['login', '已經有帳戶？登入'])}`;
+      bindLinks();
+      const f = body.querySelector('form');
+      f.onsubmit = e => { e.preventDefault(); psBusy(f.querySelector('.fr-big'), async () => {
+        const d = psFormData(f), email = d.email.trim();
+        const bad = d.username.trim().length < 2 ? '用戶名最少 2 個字' : psPwProblem(d.pw, email) || (d.pw !== d.pw2 ? '兩次密碼唔一樣' : '') || (!d.consent ? '要同意私隱政策先可以註冊' : '');
+        if (bad) { errBox().textContent = bad; return; }
+        const { data, error } = await PS.sb.auth.signUp({ email, password: d.pw, options: {
+          emailRedirectTo: redirect,
+          data: { username: d.username.trim(), phone_number: d.phone.replace(/\s/g, ''), pdpo_consent: true, pdpo_version: PS_PDPO_VERSION } } });
+        if (error) { errBox().textContent = psMsg(error); return; }
+        if (data.session) { PS.session = data.session; await psRefreshMe(); toast('✅ 註冊成功', 3000); const next = psAfterLogin; psAfterLogin = null; if (next) next(); else psOpenAccount('account'); return; }
+        body.innerHTML = `<div class="ps-done">📧 差少少就完成！<br>我哋寄咗確認電郵去 <b>${esc(email)}</b>，撳入面條連結就完成註冊。
+          <div class="ps-note">搵唔到？睇吓「垃圾郵件」。如果呢個電郵之前註冊過，就唔會再收到，可以直接登入。</div></div>${links(['login', '去登入'])}`;
+        bindLinks();
+      }); };
+      return;
+    }
+
+    if (view === 'forgot') {
+      body.innerHTML = `<form class="ps-form"><label>你註冊用嘅電郵<input type="email" name="email" autocomplete="email" required></label>
+        <div class="ps-err" data-err></div><button class="fr-big">寄重設密碼連結</button></form>${links(['login', '返去登入'])}`;
+      bindLinks();
+      const f = body.querySelector('form');
+      f.onsubmit = e => { e.preventDefault(); psBusy(f.querySelector('.fr-big'), async () => {
+        const { error } = await PS.sb.auth.resetPasswordForEmail(psFormData(f).email.trim(), { redirectTo: redirect });
+        if (error && !/not found/i.test(error.message)) { errBox().textContent = psMsg(error); return; }
+        body.innerHTML = '<div class="ps-done">📧 如果有呢個帳戶，我哋已經寄咗重設密碼連結。喺同一部機撳條連結就可以設定新密碼。</div>';
+      }); };
+      return;
+    }
+
+    if (view === 'newpass') {
+      body.innerHTML = `<form class="ps-form"><label>新密碼<input type="password" name="pw" autocomplete="new-password" required></label>
+        <label>再輸入一次<input type="password" name="pw2" autocomplete="new-password" required></label>
+        <div class="ps-err" data-err></div><button class="fr-big">更新密碼</button></form>`;
+      const f = body.querySelector('form');
+      f.onsubmit = e => { e.preventDefault(); psBusy(f.querySelector('.fr-big'), async () => {
+        const d = psFormData(f);
+        const bad = psPwProblem(d.pw, PS.session?.user?.email) || (d.pw !== d.pw2 ? '兩次密碼唔一樣' : '');
+        if (bad) { errBox().textContent = bad; return; }
+        const { error } = await PS.sb.auth.updateUser({ password: d.pw });
+        if (error) { errBox().textContent = psMsg(error); return; }
+        toast('✅ 密碼已更新', 3000); psOpenAccount('account');
+      }); };
+      return;
+    }
+
+    if (view === 'delete') {
+      body.innerHTML = `<div class="ps-note">會永久刪除你嘅帳戶、車輛同優惠券。以前嘅預約記錄會保留作會計用途，但會同你斷開（車牌本身只係雜湊）。</div>
+        <form class="ps-form"><label>輸入「刪除」確認<input name="sure" autocomplete="off" required></label>
+        <div class="ps-err" data-err></div><button class="fr-big ps-danger">永久刪除我嘅帳戶</button></form>${links(['account', '唔刪，返去'])}`;
+      bindLinks();
+      const f = body.querySelector('form');
+      f.onsubmit = e => { e.preventDefault(); psBusy(f.querySelector('.fr-big'), async () => {
+        if (psFormData(f).sure.trim() !== '刪除') { errBox().textContent = '請輸入「刪除」兩個字'; return; }
+        try { await psRpc('ps_delete_my_account'); } catch (err) { errBox().textContent = err.message; return; }
+        await PS.sb.auth.signOut().catch(() => {});
+        PS.session = null; PS.me = null; psAfterMe(); psCloseSheet();
+        toast('帳戶已刪除', 4000);
+      }); };
+      return;
+    }
+
+    // ---------- 我嘅帳戶 ----------
+    if (!PS.me) { body.innerHTML = '<div class="ps-load">讀緊…</div>'; await psRefreshMe(); if (!PS.me) { psOpenAccount('login'); return; } }
+    const me = PS.me, u = me.user;
+    if (!u.consent) { psConsentView(body, () => psOpenAccount('account')); return; }
+    const roleName = { driver: '', operator: '營運商', merchant: '商戶', admin: '管理員' }[u.role];
+    const openSecs = new Set([...body.querySelectorAll('details[open][data-sec]')].map(d => d.dataset.sec));
+    const sec = (k, title, html, open) => `<details class="ps-sec" data-sec="${k}" ${openSecs.has(k) || (!openSecs.size && open) ? 'open' : ''}><summary>${title}</summary>${html}</details>`;
+    body.innerHTML = `
+      <div class="ps-me"><div class="ps-avatar">${esc((u.username || u.email).charAt(0).toUpperCase())}</div>
+        <div><b>${esc(u.username || '（未有名）')}</b>${roleName ? `<span class="ps-role">${roleName}</span>` : ''}<small>${esc(u.email)}</small></div></div>
+      ${me.active ? psActiveHtml(me.active, true) : '<div class="ps-note">而家冇預約。喺地圖撳有黃框「預約」嘅停車場就可以預約或者排隊。</div>'}
+      ${sec('car', `🚗 我嘅車（${me.vehicles.length}）`, `${me.vehicles.map(v => `<div class="ps-item"><span><b>${esc(v.plate)}</b><small>${v.is_ev ? '⚡ 電動車' : '私家車'}</small></span>
+          <button class="ps-x" data-delcar="${v.id}">刪除</button></div>`).join('')}
+        <form class="ps-form ps-inline" data-f="car"><input name="plate" placeholder="車牌，例如 AB1234" maxlength="10" autocomplete="off" required>
+          <label class="ps-chk"><input type="checkbox" name="ev"> 電動車</label><button class="mini-btn">加入</button></form><div class="ps-err" data-err-car></div>`, !me.vehicles.length)}
+      ${sec('coupon', `🎟️ 優惠券（${me.coupons.filter(c => !c.used).length}）`, `${me.coupons.map(c => `<div class="ps-item${c.used ? ' used' : ''}"><span>${esc(c.description)}
+          <small>${esc(c.merchant || '')}${c.expiry_date ? '．' + esc(c.expiry_date) + ' 到期' : ''}</small></span><span>${c.used ? '用咗' : c.discount_type === 'percent' ? psNum(c.discount_value) + '% off' : '$' + psNum(c.discount_value)}</span></div>`).join('')}
+        <form class="ps-form ps-inline" data-f="coupon"><input name="code" placeholder="輸入優惠碼" maxlength="30" autocomplete="off" required><button class="mini-btn">領取</button></form>
+        <div class="ps-err" data-err-coupon></div>`)}
+      ${sec('hist', '🧾 記錄', me.history.length ? me.history.map(psHistItem).join('') : '<div class="ps-note">未有記錄</div>')}
+      ${me.operates.length || u.role === 'admin' ? sec('op', '🏢 營運商工具', '<div data-op><div class="ps-load">讀緊…</div></div>', true) : ''}
+      ${sec('prof', '👤 個人資料', `<form class="ps-form" data-f="prof"><label>用戶名<input name="username" maxlength="30" value="${esc(u.username || '')}"></label>
+        <label>手機號碼<input type="tel" name="phone" value="${esc(u.phone_number || '')}"></label><div class="ps-err" data-err-prof></div>
+        <button class="mini-btn" style="margin:8px 0 0">儲存</button> <a class="ps-link" data-view="newpass">改密碼</a></form>`)}
+      ${sec('priv', '🔒 私隱', `${PS_PRIVACY}<div class="ps-acts"><button class="mini-btn" data-export="1">⬇️ 下載我嘅資料</button>
+        <button class="mini-btn ps-cancel" data-view="delete">刪除帳戶</button></div>`)}
+      <button class="ps-btn ghost" data-logout="1" style="margin-top:12px">登出</button>`;
+    bindLinks();
+
+    const carForm = body.querySelector('[data-f="car"]');
+    carForm.onsubmit = e => { e.preventDefault(); psBusy(carForm.querySelector('button'), async () => {
+      const d = psFormData(carForm);
+      try { await psRpc('ps_add_vehicle', { p_plate: d.plate, p_is_ev: !!d.ev }); await psRefreshMe(); }
+      catch (err) { body.querySelector('[data-err-car]').textContent = err.message; }
+    }); };
+    body.querySelectorAll('[data-delcar]').forEach(b => b.onclick = () => psBusy(b, async () => {
+      try { await psRpc('ps_delete_vehicle', { p_id: +b.dataset.delcar }); await psRefreshMe(); }
+      catch (err) { body.querySelector('[data-err-car]').textContent = err.message; }
+    }));
+    const cf = body.querySelector('[data-f="coupon"]');
+    cf.onsubmit = e => { e.preventDefault(); psBusy(cf.querySelector('button'), async () => {
+      try {
+        const r = await psRpc('ps_claim_coupon', { p_code: psFormData(cf).code });
+        if (!r.ok) { body.querySelector('[data-err-coupon]').textContent = psMsg(r.error); return; }
+        toast('🎟️ 已領取：' + r.description, 3000); await psRefreshMe();
+      } catch (err) { body.querySelector('[data-err-coupon]').textContent = err.message; }
+    }); };
+    const pf = body.querySelector('[data-f="prof"]');
+    pf.onsubmit = e => { e.preventDefault(); psBusy(pf.querySelector('button'), async () => {
+      const d = psFormData(pf);
+      try { await psRpc('ps_update_profile', { p_username: d.username, p_phone: d.phone }); toast('已儲存', 2000); await psRefreshMe(); }
+      catch (err) { body.querySelector('[data-err-prof]').textContent = err.message; }
+    }); };
+    body.querySelector('[data-export]').onclick = e => psBusy(e.currentTarget, async () => {
+      try {
+        const j = await psRpc('ps_export_my_data');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 2)], { type: 'application/json' }));
+        a.download = 'parksmart-my-data.json'; document.body.appendChild(a); a.click(); a.remove();
+      } catch (err) { toast('⚠️ ' + err.message, 4000); }
+    });
+    body.querySelector('[data-logout]').onclick = async () => {
+      await PS.sb.auth.signOut().catch(() => {});
+      PS.session = null; PS.me = null; psAfterMe(); psCloseSheet(); toast('已登出', 2000);
+    };
+    const opBox = body.querySelector('[data-op]');
+    if (opBox) psOpRender(opBox);
+  }
+
+  function psHistItem(h) {
+    const t = h.kind === 'ticket' ? h.joined_at : h.created_at;
+    const when = `${new Date(t).toLocaleDateString('zh-HK', { month: 'numeric', day: 'numeric' })} ${hhmm(t)}`;
+    const st = { completed: `✅ $${psNum(h.total_cost)}`, cancelled: '↩️ 取消咗', no_show: `❌ 失約 −$${psNum(h.no_show_fee)}`, expired: '⌛ 過期' }[h.status] || esc(h.status);
+    const how = h.kind === 'ticket' ? '排隊 ' + esc(h.ticket_no) : h.source === 'queue' ? '排隊入場' : '預約';
+    return `<div class="ps-item"><span>${esc(h.location.name)}<small>${when}．${how}．${psType(h.space_type)}</small></span><span>${st}</span></div>`;
+  }
+
+  // ---------- 營運商：閘口模擬（代替車牌辨識鏡頭）、空位、隊伍 ----------
+  async function psOpRender(box) {
+    const ids = PS.me.operates;
+    if (!ids.length) { box.innerHTML = '<div class="ps-note">未有停車場。喺地圖撳運輸署停車場 → 「＋ 加入試點」。</div>' + psRoleForm(); psBindRoleForm(box); return; }
+    if (!ids.includes(PS.opLoc)) PS.opLoc = ids[0];
+    let q;
+    try { q = await psRpc('ps_op_queue', { p_location: PS.opLoc }); } catch (e) { box.innerHTML = `<div class="ps-err">${esc(e.message)}</div>`; return; }
+    const L = q.location;
+    const stat = (label, s) => `<div class="ps-stat"><small>${label}</small><b>${s.available}<small>／${s.total} 空</small></b>
+      <small>已答應 ${s.held}．可預約 ${s.free}．排隊 ${s.queue}．每 ${psNum(s.turnover_min)} 分鐘走一架</small></div>`;
+    const plate = x => esc(x.plate || '—');
+    box.innerHTML = `
+      ${ids.length > 1 ? `<select class="ps-select" data-op-loc>${ids.map(id => `<option value="${id}"${id === PS.opLoc ? ' selected' : ''}>${esc(PS.byId[id]?.name || '#' + id)}</option>`).join('')}</select>` : `<b>${esc(L.name)}</b>`}
+      <div class="ps-op-grid">${stat('一般車位', L.regular)}${L.ev ? stat('充電車位', L.ev) : ''}</div>
+      <div class="rs-label">閘口模擬（代替車牌辨識鏡頭）</div>
+      <form class="ps-form" data-f="gate">
+        <div class="ps-row2"><input name="plate" placeholder="車牌，例如 AB1234" maxlength="10" autocomplete="off" required>
+          <select name="t"><option value="">冇預約嘅車：一般位</option>${L.ev ? '<option value="ev">冇預約嘅車：充電位</option>' : ''}</select></div>
+        <div class="ps-row2" style="margin-top:6px"><button class="ps-btn" data-k="entry">🚗 入閘</button><button class="ps-btn queue" data-k="exit">出閘 🚗</button></div>
+      </form>
+      <div class="ps-note" data-op-res>${esc(PS.opMsg || '')}</div>
+      <form class="ps-form ps-inline" data-f="spots"><label>一般空位<input type="number" name="a" min="0" max="${L.regular.total}" value="${L.regular.available}"></label>
+        ${L.ev ? `<label>充電空位<input type="number" name="e" min="0" max="${L.ev.total}" value="${L.ev.available}"></label>` : ''}<button class="mini-btn">更新空位</button></form>
+      <div class="rs-label">隊伍（${q.tickets.length}）</div>
+      ${q.tickets.map(t => `<div class="ps-item"><span>${esc(t.ticket_no)}<small>${plate(t)}．${psType(t.space_type)}</small></span>
+        <span class="ps-pill ${t.status}">${t.status === 'called' ? `已叫號．${hhmm(t.respond_by)} 前到` : `第 ${t.position} 位`}</span></div>`).join('') || '<div class="ps-note">冇人排隊</div>'}
+      <div class="rs-label">預約／泊緊（${q.bookings.length}）</div>
+      ${q.bookings.map(b => `<div class="ps-item"><span>${plate(b)}<small>${psType(b.space_type)}．${b.source === 'queue' ? '排隊' : '預約'}</small></span>
+        <span class="ps-pill ${b.status}">${b.status === 'checked_in' ? `${hhmm(b.start_time)} 入咗` : `${hhmm(b.hold_until)} 前到`}</span></div>`).join('') || '<div class="ps-note">冇</div>'}
+      <div class="rs-label">最近出入閘</div>
+      <div class="ps-note">${q.events.map(e => `${hhmm(e.at)} ${e.kind === 'entry' ? '入' : '出'}${e.booked ? '（App）' : ''}`).join('．') || '未有'}</div>
+      ${PS.me.user.role === 'admin' ? psRoleForm() : ''}
+      <button class="mini-btn" data-op-refresh style="margin:10px 0 0">⟳ 更新</button>`;
+    const sel = box.querySelector('[data-op-loc]');
+    if (sel) sel.onchange = () => { PS.opLoc = +sel.value; psOpRender(box); };
+    box.querySelector('[data-op-refresh]').onclick = () => psOpRender(box);
+    const gf = box.querySelector('[data-f="gate"]');
+    gf.onsubmit = e => {
+      e.preventDefault();
+      const btn = e.submitter || gf.querySelector('[data-k="entry"]');
+      psBusy(btn, async () => {
+        const d = psFormData(gf), res = box.querySelector('[data-op-res]');
+        try {
+          const r = await psRpc('ps_op_gate', { p_location: PS.opLoc, p_kind: btn.dataset.k, p_plate: d.plate, p_space_type: d.t || null });
+          const b = r.booking;
+          const msg = btn.dataset.k === 'entry'
+            ? { booking: '✅ 認到預約，開閘', queue: '✅ 認到排隊籌號，開閘', walk_in: r.warning ? '⚠️ 冇預約嘅車，而且冇位（有人預約緊）' : '🚗 冇預約嘅車，開閘' }[r.result]
+            : b ? `✅ 出閘．泊咗 ${Math.max(1, Math.round((Date.parse(b.end_time) - Date.parse(b.start_time)) / 60000))} 分鐘．收 $${psNum(b.total_cost)}${+b.discount ? `（減咗 $${psNum(b.discount)}）` : ''}` : '🚗 冇預約嘅車出閘';
+          PS.opMsg = `${d.plate.toUpperCase().replace(/[^A-Z0-9]/g, '')}：${msg}`;
+          await Promise.all([psRefreshMe(), psRefreshLocs()]);     // 可能係自己架車：上面張卡都要更新
+          if (box.isConnected) await psOpRender(box);
+        } catch (err) { res.textContent = '⚠️ ' + err.message; }
+      });
+    };
+    const sf = box.querySelector('[data-f="spots"]');
+    sf.onsubmit = e => { e.preventDefault(); psBusy(sf.querySelector('button'), async () => {
+      const d = psFormData(sf);
+      try { await psRpc('ps_op_set_spots', { p_location: PS.opLoc, p_available: +d.a, p_ev_available: d.e === undefined ? null : +d.e }); await psOpRender(box); psRefreshLocs(); }
+      catch (err) { box.querySelector('[data-op-res]').textContent = '⚠️ ' + err.message; }
+    }); };
+    psBindRoleForm(box);
+  }
+  function psRoleForm() {
+    return `<div class="rs-label">管理員：設定用戶角色</div><form class="ps-form ps-inline" data-f="role">
+      <input type="email" name="email" placeholder="用戶電郵" required><select name="role"><option value="operator">營運商（呢個停車場）</option>
+      <option value="driver">普通用戶</option><option value="admin">管理員</option></select><button class="mini-btn">設定</button></form><div class="ps-note" data-role-res></div>`;
+  }
+  function psBindRoleForm(box) {
+    const rf = box.querySelector('[data-f="role"]');
+    if (!rf) return;
+    rf.onsubmit = e => { e.preventDefault(); psBusy(rf.querySelector('button'), async () => {
+      const d = psFormData(rf);
+      try { await psRpc('ps_admin_set_role', { p_email: d.email, p_role: d.role, p_location: d.role === 'operator' ? PS.opLoc : null }); box.querySelector('[data-role-res]').textContent = '✅ 已設定（對方重新整理網頁就見到）'; }
+      catch (err) { box.querySelector('[data-role-res]').textContent = '⚠️ ' + err.message; }
+    }); };
+  }
+
+  // ---------- 管理員：將運輸署停車場加入試點 ----------
+  function psOpenOnboard(parkId) {
+    const p = parkById[parkId];
+    if (!p) return;
+    const rate = +((p.car.hourlyCharges || [])[0]?.price) || 20;
+    const total = +p.car.space || 100, ev = +p.car.spaceEV || 0;
+    const body = psSheet('＋ 加入 ParkSmart 試點', 'onboard');
+    body.innerHTML = `<div class="ps-place"><b>${esc(p.name)}</b><small>${esc(p.address || '')}．運輸署編號 ${esc(p.id)}</small></div>
+      <form class="ps-form"><div class="ps-row2"><label>一般車位總數<input type="number" name="total" min="1" value="${total}" required></label>
+        <label>而家空位<input type="number" name="avail" min="0" value="${p.vacancy >= 0 ? p.vacancy : 0}" required></label></div>
+        <div class="ps-row2"><label>充電車位總數<input type="number" name="ev" min="0" value="${ev}"></label>
+        <label>充電空位<input type="number" name="evav" min="0" value="${p.vacancyEV >= 0 ? p.vacancyEV : 0}"></label></div>
+        <label>每小時收費（$）<input type="number" name="rate" min="0" step="0.5" value="${rate}"></label>
+        <div class="ps-note">試點階段：空位由營運商工具（閘口模擬）更新，唔會自動跟運輸署數字。</div>
+        <div class="ps-err" data-err></div><button class="fr-big">加入</button></form>`;
+    const f = body.querySelector('form');
+    f.onsubmit = e => { e.preventDefault(); psBusy(f.querySelector('.fr-big'), async () => {
+      const d = psFormData(f);
+      try {
+        await psRpc('ps_admin_onboard', { p_ext_id: p.id, p_name: p.name, p_address: p.address || '', p_district: p.district || '', p_lat: p.lat, p_lng: p.lng,
+          p_total: +d.total, p_available: +d.avail, p_ev: +d.ev || 0, p_ev_available: +d.evav || 0, p_rate: +d.rate || 0 });
+        psCloseSheet(); toast(`✅ 「${p.name}」已加入試點`, 3000);
+        await Promise.all([psRefreshLocs(), psRefreshMe()]);
+        openPark(p);
+      } catch (err) { body.querySelector('[data-err]').textContent = err.message; }
+    }); };
+  }
+
+  // 去泊車分頁就更新一次
+  const _psGoTab = goTab;
+  goTab = function (name) { _psGoTab(name); if (name === 'parking') psRefreshLocs(); };
+
+  psInit();
 </script>
 </body>
 </html>
