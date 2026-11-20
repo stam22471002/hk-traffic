@@ -598,6 +598,9 @@
     .ps-card .ps-big { font-size: 21px; font-weight: bold; margin: 6px 0 2px; line-height: 1.25; }
     .ps-card .ps-big small { display: block; font-size: 13px; font-weight: normal; color: var(--muted); margin-top: 2px; }
     .ps-card .ps-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .ps-card .ps-bay { display: inline-flex; align-items: baseline; gap: 8px; margin: 6px 0 4px; padding: 4px 12px; border: 2px solid currentColor; border-radius: 10px; }
+    .ps-card .ps-bay span, .ps-card .ps-bay small { font-size: 12px; color: var(--muted); }
+    .ps-card .ps-bay b { font-size: 22px; letter-spacing: 0.5px; }
     .ps-acts { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
     .ps-acts .mini-btn { margin: 0; flex: 1; text-align: center; padding: 6px 8px; font-size: 13px; text-decoration: none; }
     .ps-acts .ps-cancel, .mini-btn.ps-cancel { color: #ff8a80; }
@@ -7112,7 +7115,8 @@
     'PS:IN_PARK': '你架車已經入咗停車場，唔可以取消', 'PS:CHANGED': '狀態啱啱變咗，請再試', 'PS:NOTHING': '你而家冇預約',
     'PS:BAD_PLATE': '車牌格式唔啱（只可以英文字母同數字，最多 8 個）', 'PS:TOO_MANY': '每人最多登記 5 架車',
     'PS:VEHICLE_BUSY': '呢架車有預約緊，唔可以刪除', 'PS:NOT_FOUND': '搵唔到', 'PS:FORBIDDEN': '你冇權限做呢樣嘢',
-    'PS:BAD_NAME': '名稱要 2 至 30 個字', 'PS:BAD_PHONE': '電話號碼格式唔啱'
+    'PS:BAD_NAME': '名稱要 2 至 30 個字', 'PS:BAD_PHONE': '電話號碼格式唔啱',
+    'PS:BAY_MODE': '呢個停車場用緊平面圖，車位數由平面圖計', 'PS:BAY_BUSY': '呢個車位有車或者已預留'
   };
   const PS_AUTH_ERR = [
     [/invalid login credentials/i, '電郵或者密碼唔啱'], [/email not confirmed/i, '未確認電郵：請先去郵箱撳確認連結'],
@@ -7510,9 +7514,10 @@
       ${inSheet ? '' : `<button class="mini-btn" data-ps-focus="${L.id}">🗺️ 地圖</button>`}
       ${a.status === 'checked_in' ? '' : '<button class="mini-btn ps-cancel" data-ps-cancel="1">取消</button>'}</div>`;
     const sub = `${psType(a.space_type)}${a.plate ? '．' + esc(a.plate) : ''}${a.coupon ? '．🎟️ ' + esc(a.coupon) : ''}`;
+    const bay = a.bay ? `<div class="ps-bay"><span>你嘅車位</span><b>${esc(a.bay.code)}</b><small>${esc(a.bay.level)} 層</small></div>` : '';
     if (a.kind === 'ticket' && a.status === 'called') return `<div class="ps-card called">
       <div class="ps-t"><span>🔔 輪到你！籌號 ${esc(a.ticket_no)}</span><span>${esc(L.name)}</span></div>
-      <div class="ps-big">請喺 ${hhmm(a.respond_by)} 前入閘</div>
+      <div class="ps-big">請喺 ${hhmm(a.respond_by)} 前入閘</div>${bay}
       <div class="ps-sub">仲有 ${psLeft(a.respond_by)} 分鐘．${sub}．閘口會自動認車牌</div>${acts}</div>`;
     if (a.kind === 'ticket') return `<div class="ps-card">
       <div class="ps-t"><span>🎫 遙距排隊．${esc(a.ticket_no)}</span><span>${esc(L.name)}</span></div>
@@ -7524,11 +7529,11 @@
       return `<div class="ps-card in">
         <div class="ps-t"><span>🅿️ 泊緊車</span><span>${esc(L.name)}</span></div>
         <div class="ps-big">${mins < 60 ? mins + ' 分鐘' : Math.floor(mins / 60) + ' 小時 ' + (mins % 60) + ' 分'}<small>${hhmm(a.start_time)} 入閘．而家約 $${psNum(fee)}${a.coupon ? '（未減優惠）' : ''}</small></div>
-        <div class="ps-sub">${sub}．出閘時自動計錢</div>${acts}</div>`;
+        ${bay}<div class="ps-sub">${sub}．出閘時自動計錢</div>${acts}</div>`;
     }
     return `<div class="ps-card">
       <div class="ps-t"><span>📅 已預約</span><span>${esc(L.name)}</span></div>
-      <div class="ps-big">請喺 ${hhmm(a.hold_until)} 前入閘<small>仲有 ${psLeft(a.hold_until)} 分鐘</small></div>
+      <div class="ps-big">請喺 ${hhmm(a.hold_until)} 前入閘<small>仲有 ${psLeft(a.hold_until)} 分鐘</small></div>${bay}
       <div class="ps-sub">${sub}．閘口會自動認車牌</div>${acts}</div>`;
   }
   function psRecentHtml() {
@@ -7799,8 +7804,8 @@
     const op = me.partner?.operator, mc = me.partner?.merchant, admin = me.user.role === 'admin';
     const row = (href, icon, title, sub, status) => `<a class="ps-item ps-plink" href="${href}" target="_blank" rel="noopener">
       <span>${icon} <b>${title}</b><small>${sub}</small></span><span>${status ? `<span class="ps-pill${status === 'approved' ? ' checked_in' : status === 'pending' ? ' called' : ''}">${st[status]}</span>` : ''} ↗</span></a>`;
-    return (admin ? row('operator.html#admin', '🛠️', '管理員後台', '審批營運商、商戶、新停車場', '') : '')
-      + row('operator.html', '🏢', '營運商後台', op ? '管理停車場、閘口、隊伍同報表' : '你係停車場營運商？申請加入', op)
+    return (admin ? row('admin.html', '🛠️', '平台管理員後台', '審批營運商、商戶、新停車場', '') : '')
+      + row('carpark.html', '🅿️', '停車場管理系統', op ? '平面圖、閘口車牌辨識、遙距排隊、報表' : '你係停車場營運商？申請加入', op)
       + row('merchant.html', '🏪', '商戶後台', mc ? '管理泊車優惠券' : '開舖做生意？開泊車優惠券吸引客人', mc);
   }
 

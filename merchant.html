@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-fFnIbMdOTcG0hjEiTvDXLUhVp6THh/OyrfjgNymZDsg=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-S4RProvpQ9Y1mx5OTUWcHPjj1z2ZEoqIIbm5W+Ee9Gc=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex">
 <title>ParkSmart 商戶後台</title>
@@ -107,6 +107,7 @@ details.box p { margin: 6px 0; }
 .loading { color: var(--muted); padding: 40px 0; text-align: center; }
 .status-card { text-align: center; padding: 28px 16px; }
 .status-card .big { font-size: 40px; }
+@media (max-width: 560px) { .top-in { gap: 8px; } .brand small { display: none; } .who { display: none; } .tabs { overflow-x: auto; white-space: nowrap; } }
 
 :root { --accent: #c2410c; --accent-soft: #ffedd5; }
 #poster { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(15, 20, 30, 0.6); overflow-y: auto; padding: 24px 12px; }
@@ -182,7 +183,10 @@ const PS_ERR = {
   'PS:NOT_APPROVED': '要等管理員批准咗先可以用', 'PS:BAD_ROWS': '檔案冇資料，或者多過 200 行', 'PS:HAS_BOOKINGS': '有人預約緊或者排緊隊，暫時唔可以停用',
   'PS:ROW_INVALID': '有一行資料已經唔啱（例如運輸署編號俾人用咗），請拒絕後叫營運商重新上載',
   'PS:BAD_CODE': '優惠碼要 4 至 20 個英文字母或數字', 'PS:CODE_TAKEN': '呢個優惠碼已經有人用，請換一個', 'PS:TOO_MANY': '數量已經到上限',
-  'PS:NO_LOCATION': '搵唔到呢個停車場', 'PS:BAD_PLATE': '車牌格式唔啱', 'PS:NAME': '名稱要 2 至 30 個字'
+  'PS:NO_LOCATION': '搵唔到呢個停車場', 'PS:BAD_PLATE': '車牌格式唔啱', 'PS:NAME': '名稱要 2 至 30 個字',
+  'PS:BAY_MODE': '呢個停車場用緊平面圖，車位數由平面圖計，請去「平面圖編輯」改', 'PS:BAY_BUSY': '呢個車位有車或者已預留，而家唔可以咁做',
+  'PS:USE_EXIT': '預約車要經出閘收費，請用「模擬出閘」', 'PS:HAS_LAYOUT': '已經有平面圖', 'PS:BAD_LAYOUT': '平面圖資料唔啱（樓層大細 200–4000，車位編號只可以用英文字母、數字同 -）',
+  'PS:DUP_CODE': '車位編號重複', 'PS:BAD_IMAGE': '背景圖唔啱：只接受 PNG／JPG／WebP，最大約 1 MB'
 };
 const PS_AUTH_ERR = [
   [/invalid login credentials/i, '電郵或者密碼唔啱'], [/email not confirmed/i, '未確認電郵：請先去郵箱撳確認連結'],

@@ -1,0 +1,1583 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-4kposbFkaVck36IfilhGF4u9SjfLufqR0LAFaYyuzrk=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex">
+<title>ParkSmart 停車場管理系統</title>
+<style>
+:root {
+  --bg: #f4f6f9; --card: #ffffff; --ink: #1c2430; --muted: #66707d; --line: #e3e7ed; --soft: #f0f3f7;
+  --accent: #0b63c5; --accent-ink: #ffffff; --accent-soft: #e6f0fb;
+  --ok: #1e8e3e; --ok-soft: #e6f4ea; --warn: #b26a00; --warn-soft: #fff4e0; --bad: #c62828; --bad-soft: #fdecea;
+  --radius: 12px; --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 -apple-system, "Segoe UI", "Noto Sans TC", "PingFang HK", "Microsoft JhengHei", sans-serif; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* 頂部 */
+.top { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1180px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; white-space: nowrap; }
+.brand .logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 16px; }
+.brand small { font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+.top .sp { flex: 1; }
+.who { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34vw; }
+.tabs { max-width: 1180px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+.tabs button { background: none; border: none; border-bottom: 3px solid transparent; padding: 10px 12px; cursor: pointer; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs .badge { background: var(--bad); color: #fff; border-radius: 999px; font-size: 11px; padding: 0 6px; margin-left: 4px; }
+
+main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 60px; }
+h1 { font-size: 22px; margin: 4px 0 14px; }
+h2 { font-size: 17px; margin: 0 0 10px; }
+h3 { font-size: 15px; margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.card-head h2 { margin: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 860px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.narrow { max-width: 460px; margin: 30px auto; }
+
+/* 數字格 */
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.kpi { background: var(--soft); border-radius: 10px; padding: 10px 12px; }
+.kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 640px) { .kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.25; }
+.kpi .v small { font-size: 13px; color: var(--muted); font-weight: 500; }
+.kpi.ok { background: var(--ok-soft); } .kpi.warn { background: var(--warn-soft); } .kpi.bad { background: var(--bad-soft); }
+
+/* 表格 */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { background: var(--soft); font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); padding: 14px; text-align: center; }
+
+/* 標籤 */
+.pill { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+.pill.ok, .pill.approved, .pill.checked_in { background: var(--ok-soft); color: var(--ok); }
+.pill.warn, .pill.pending, .pill.called, .pill.reserved, .pill.waiting { background: var(--warn-soft); color: var(--warn); }
+.pill.bad, .pill.rejected { background: var(--bad-soft); color: var(--bad); }
+
+/* 表單 */
+.form { display: grid; gap: 12px; }
+.form .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+label.f input, label.f select, label.f textarea, .inp { width: 100%; border: 1px solid #cfd6df; border-radius: 8px; padding: 9px 11px; background: #fff; color: var(--ink); font-size: 15px; }
+label.f input:focus, label.f select:focus, .inp:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--muted); }
+.check input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--accent); flex-shrink: 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid transparent; border-radius: 8px; padding: 9px 16px;
+  background: var(--accent); color: var(--accent-ink); font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn:hover { filter: brightness(1.06); }
+.btn:disabled { opacity: 0.55; cursor: default; filter: none; }
+.btn.ghost { background: #fff; color: var(--ink); border-color: #cfd6df; }
+.btn.ok { background: var(--ok); } .btn.bad { background: var(--bad); } .btn.warn { background: #e37400; }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+.btn.block { width: 100%; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.err { color: var(--bad); font-size: 14px; }
+.err:empty { display: none; }
+.okmsg { color: var(--ok); font-size: 14px; }
+.okmsg:empty { display: none; }
+.links { display: flex; justify-content: space-between; font-size: 14px; margin-top: 12px; }
+.links a { cursor: pointer; }
+details.box { background: var(--soft); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+details.box summary { cursor: pointer; color: var(--ink); }
+details.box p { margin: 6px 0; }
+
+/* 提示訊息 */
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; transition: 0.2s; background: #1c2430; color: #fff;
+  padding: 10px 16px; border-radius: 10px; z-index: 100; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); pointer-events: none; }
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+.loading { color: var(--muted); padding: 40px 0; text-align: center; }
+.status-card { text-align: center; padding: 28px 16px; }
+.status-card .big { font-size: 40px; }
+@media (max-width: 560px) { .top-in { gap: 8px; } .brand small { display: none; } .who { display: none; } .tabs { overflow-x: auto; white-space: nowrap; } }
+
+/* ===== 停車場管理系統：深色控制室 ===== */
+:root {
+  --bg: #0b1016; --card: #121a23; --ink: #e6edf5; --muted: #8b9bb0; --line: #243243; --soft: #182330;
+  --accent: #3987e5; --accent-ink: #ffffff; --accent-soft: rgba(57, 135, 229, 0.16);
+  --ok: #0ca30c; --ok-soft: rgba(12, 163, 12, 0.16); --warn: #fab219; --warn-soft: rgba(250, 178, 25, 0.14);
+  --bad: #d03b3b; --bad-soft: rgba(208, 59, 59, 0.16); --serious: #ec835a;
+  --s1: #3987e5; --s2: #d95926; --grid: #1f2b38; --axis: #33465c;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+body { background: radial-gradient(1200px 600px at 70% -10%, #13202e 0%, var(--bg) 60%) fixed; }
+.top { background: rgba(11, 16, 22, 0.92); backdrop-filter: blur(6px); }
+.top-in, .tabs, main { max-width: 1680px; }
+.btn.ghost { background: var(--soft); color: var(--ink); border-color: var(--line); }
+label.f input, label.f select, label.f textarea, .inp { background: #0e151d; color: var(--ink); border-color: #2a394b; }
+th { background: #151f2a; }
+.pill { background: #1c2836; }
+details.box { background: var(--soft); }
+#toast { background: #e6edf5; color: #0b1016; }
+
+/* 狀態列 */
+.cbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.live-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.live-dot::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(12, 163, 12, 0.6); animation: blink 1.6s infinite; }
+.live-dot.off::before { background: #5b6b7f; animation: none; }
+@keyframes blink { 0% { box-shadow: 0 0 0 0 rgba(12, 163, 12, 0.55); } 100% { box-shadow: 0 0 0 8px rgba(12, 163, 12, 0); } }
+.cbar .sp { flex: 1; }
+.clock { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { background: transparent; border: none; color: var(--muted); padding: 6px 10px; cursor: pointer; font-size: 13px; }
+.seg button.on { background: var(--accent-soft); color: var(--ink); }
+
+/* 數字格 */
+.kstrip { display: grid; grid-template-columns: 1.3fr repeat(4, 1fr) repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+@media (max-width: 1280px) { .kstrip { grid-template-columns: repeat(5, 1fr); } }
+@media (max-width: 720px) { .kstrip { grid-template-columns: repeat(2, 1fr); } }
+.kt { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.kt .k { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kt .v { font-size: 24px; font-weight: 700; line-height: 1.2; margin-top: 2px; }
+.kt .v small { font-size: 13px; color: var(--muted); font-weight: 500; }
+.kt.hero .v { font-size: 34px; }
+.meter { height: 6px; border-radius: 3px; background: rgba(57, 135, 229, 0.18); margin-top: 8px; overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.6s; }
+.meter.warn i { background: var(--warn); } .meter.bad i { background: var(--bad); }
+
+/* 版面 */
+.cgrid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 14px; }
+.cgrid2b { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 14px; margin-top: 14px; }
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.col .grow { flex: 1; }
+@media (max-width: 1180px) { .cgrid, .cgrid2b { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 12px; min-width: 0; }
+.ph { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; }
+.ph h2 { font-size: 14px; margin: 0; display: flex; align-items: center; gap: 8px; }
+.ph h2::before { content: ''; width: 3px; height: 14px; border-radius: 2px; background: var(--accent); }
+.ph .small { color: var(--muted); }
+
+/* 平面圖 */
+.fp-wrap { position: relative; background: #0d141c; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.fp-wrap svg { display: block; width: 100%; height: auto; touch-action: manipulation; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 2px solid; }
+.lvtabs { display: inline-flex; gap: 4px; }
+.lvtabs button { background: var(--soft); border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 13px; }
+.lvtabs button.on { color: var(--ink); border-color: var(--accent); }
+.bay { cursor: pointer; }
+.bay rect.b { stroke-width: 2; rx: 4; transition: fill 0.4s, stroke 0.4s; }
+.bay.free rect.b { fill: rgba(12, 163, 12, 0.14); stroke: #0ca30c; }
+.bay.reserved rect.b { fill: rgba(250, 178, 25, 0.18); stroke: #fab219; }
+.bay.occupied rect.b { fill: rgba(208, 59, 59, 0.30); stroke: #d03b3b; }
+.bay.disabled rect.b { fill: url(#hatch); stroke: #5b6b7f; }
+.bay:hover rect.b, .bay.sel rect.b { stroke-width: 3.5; filter: brightness(1.25); }
+.bay text { fill: #ffffff; pointer-events: none; font-family: inherit; }
+.bay .code { font-weight: 700; }
+.bay .sub { fill: #d6e0ea; }
+.bay.flash rect.b { animation: flash 1.2s ease-out 2; }
+@keyframes flash { 0% { filter: brightness(2.2); } 100% { filter: brightness(1); } }
+.fp-tip { position: absolute; pointer-events: none; background: #e6edf5; color: #0b1016; border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); max-width: 240px; z-index: 5; display: none; }
+.fp-tip b { font-size: 14px; }
+.bay-detail { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--soft); display: none; }
+.bay-detail.on { display: block; }
+
+/* 鏡頭牆 */
+.camwall { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cam { position: relative; background: #070b10; border: 1px solid #1d2a38; border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 10; }
+.cam canvas { width: 100%; height: 100%; display: block; }
+.cam .cl { position: absolute; left: 8px; top: 6px; right: 70px; font-size: 11px; color: #cfe0f2; text-shadow: 0 1px 2px #000; display: flex; gap: 6px; align-items: center; white-space: nowrap; overflow: hidden; }
+.cam .cl b { background: rgba(0, 0, 0, 0.55); padding: 1px 6px; border-radius: 4px; }
+.cam .cl .rec { color: #ff6b6b; animation: rec 1.6s steps(2) infinite; }
+@keyframes rec { 50% { opacity: 0.25; } }
+@media (max-width: 720px) { .camwall { grid-template-columns: 1fr; } .ocr { grid-template-columns: 1fr 1fr; } }
+.cam .cr { position: absolute; right: 8px; top: 6px; font-size: 11px; color: #9fb3c8; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000; }
+.cam.off::after { content: '鏡頭停用'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); background: rgba(0, 0, 0, 0.6); }
+.ocr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.ocr figure { margin: 0; background: #0d141c; border: 1px solid var(--line); border-radius: 8px; padding: 6px; text-align: center; }
+.ocr figcaption { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.ocr canvas { width: 100%; height: auto; display: block; border-radius: 4px; }
+.ocr-res { grid-column: 1 / -1; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.ocr-res b { color: var(--ink); font-size: 14px; }
+
+/* 紀錄 */
+.tbl-wrap.dark { border-color: var(--line); max-height: 330px; overflow-y: auto; }
+.tbl-wrap.dark table { font-size: 13px; }
+.tbl-wrap.dark td, .tbl-wrap.dark th { border-color: #1c2735; padding: 6px 8px; }
+.tbl-wrap.dark tr.new td { animation: rowin 1.6s ease-out; }
+@keyframes rowin { 0% { background: rgba(57, 135, 229, 0.28); } 100% { background: transparent; } }
+.r-ok { color: #4cc94c; } .r-warn { color: var(--warn); } .r-bad { color: #ff7b7b; } .r-mute { color: var(--muted); }
+.mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+.syslog { background: #070b10; border: 1px solid #1d2a38; border-radius: 8px; padding: 8px 10px; height: 150px; overflow-y: auto; font-size: 12px; line-height: 1.6; color: #a9bfd4; }
+.syslog .t { color: #5f7690; }
+
+/* 圖表 */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .tt { position: absolute; pointer-events: none; background: #e6edf5; color: #0b1016; border-radius: 8px; padding: 6px 9px; font-size: 12px; display: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); white-space: nowrap; z-index: 3; }
+.chart .tt b { font-size: 14px; }
+.chart .tt .key { display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin-right: 6px; border-radius: 1px; }
+.ckey { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 2px 0 4px; }
+.ckey span::before { content: ''; display: inline-block; width: 14px; height: 2px; margin-right: 6px; vertical-align: middle; background: var(--c); border-radius: 1px; }
+
+/* 平面圖編輯 */
+.ed-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; }
+@media (max-width: 1000px) { .ed-grid { grid-template-columns: 1fr; } }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.tools button.on { border-color: var(--accent); background: var(--accent-soft); }
+.ed-svg { cursor: crosshair; }
+.ed-svg .bay { cursor: move; }
+.ed-svg .handle { fill: #e6edf5; stroke: #0b1016; cursor: nwse-resize; }
+.ed-svg .bay rect.b { fill: rgba(57, 135, 229, 0.16); stroke: #3987e5; }
+.ed-svg .bay.ev rect.b { fill: rgba(57, 135, 229, 0.32); }
+.ed-svg .bay.moto rect.b { fill: rgba(217, 89, 38, 0.18); stroke: #d95926; }
+.ed-svg .bay.sel rect.b { stroke: #e6edf5; }
+.ed-svg .bay.lock rect.b { stroke-dasharray: 5 3; }
+.panel { position: relative; }
+.btn.ghost.on { border-color: var(--accent); background: var(--accent-soft); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="logo">P</span>ParkSmart <small>停車場管理系統</small></div>
+    <span class="sp"></span>
+    <span class="who" id="who"></span>
+    <button class="btn ghost sm" id="logout" hidden>登出</button>
+    <a class="btn ghost sm" href="./">用家網站</a>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main id="app"><div class="loading">載入緊…</div></main>
+<script>
+// =====================================================================
+// ParkSmart 後台共用：設定、登入、工具
+// =====================================================================
+// Supabase 設定：自動讀同一個資料夾入面 index.html 嘅 PS_URL／PS_KEY，呢個檔唔使改。
+// （呢頁有 Content-Security-Policy：改咗入面嘅 JavaScript，瀏覽器會拒絕執行）
+let PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
+let PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';
+const PS_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+const PS_SDK_SRI = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
+const PS_PDPO_VERSION = '2026-11';
+const MAIN_URL = new URL('./', location.href).href;   // 用家網站
+const P = { sb: null, session: null };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = x => { const n = +x || 0; return n % 1 ? n.toFixed(1) : String(n); };
+const money = x => '$' + (+x || 0).toLocaleString('en-HK', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+const hhmm = t => t ? new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Hong_Kong' }) : '—';
+const dmy = t => t ? new Date(t).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Hong_Kong' }) : '—';
+const dt = t => t ? `${dmy(t)} ${hhmm(t)}` : '—';
+const formData = f => Object.fromEntries(new FormData(f).entries());
+const STATUS = { pending: '審批中', approved: '已批准', rejected: '已拒絕', waiting: '排隊中', called: '已叫號', reserved: '已預約', checked_in: '泊緊',
+  completed: '完成', cancelled: '取消', no_show: '失約', expired: '過期', arrived: '已到' };
+const pill = s => `<span class="pill ${esc(s)}">${esc(STATUS[s] || s)}</span>`;
+
+function toast(msg, ms = 2600) {
+  let t = $('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), ms);
+}
+
+const PS_ERR = {
+  'PS:LOGIN': '請先登入', 'PS:CONSENT': '請先同意私隱政策', 'PS:RATE': '操作得太密，請遲啲再試', 'PS:BAD_INPUT': '資料唔啱，請再檢查',
+  'PS:FORBIDDEN': '你冇權限做呢樣嘢', 'PS:NOT_FOUND': '搵唔到', 'PS:CHANGED': '狀態啱啱變咗，請重新整理',
+  'PS:BAD_EMAIL': '電郵格式唔啱', 'PS:BAD_PHONE': '電話號碼格式唔啱', 'PS:ALREADY': '你已經申請咗（審批中或者已批准）',
+  'PS:NOT_APPROVED': '要等管理員批准咗先可以用', 'PS:BAD_ROWS': '檔案冇資料，或者多過 200 行', 'PS:HAS_BOOKINGS': '有人預約緊或者排緊隊，暫時唔可以停用',
+  'PS:ROW_INVALID': '有一行資料已經唔啱（例如運輸署編號俾人用咗），請拒絕後叫營運商重新上載',
+  'PS:BAD_CODE': '優惠碼要 4 至 20 個英文字母或數字', 'PS:CODE_TAKEN': '呢個優惠碼已經有人用，請換一個', 'PS:TOO_MANY': '數量已經到上限',
+  'PS:NO_LOCATION': '搵唔到呢個停車場', 'PS:BAD_PLATE': '車牌格式唔啱', 'PS:NAME': '名稱要 2 至 30 個字',
+  'PS:BAY_MODE': '呢個停車場用緊平面圖，車位數由平面圖計，請去「平面圖編輯」改', 'PS:BAY_BUSY': '呢個車位有車或者已預留，而家唔可以咁做',
+  'PS:USE_EXIT': '預約車要經出閘收費，請用「模擬出閘」', 'PS:HAS_LAYOUT': '已經有平面圖', 'PS:BAD_LAYOUT': '平面圖資料唔啱（樓層大細 200–4000，車位編號只可以用英文字母、數字同 -）',
+  'PS:DUP_CODE': '車位編號重複', 'PS:BAD_IMAGE': '背景圖唔啱：只接受 PNG／JPG／WebP，最大約 1 MB'
+};
+const PS_AUTH_ERR = [
+  [/invalid login credentials/i, '電郵或者密碼唔啱'], [/email not confirmed/i, '未確認電郵：請先去郵箱撳確認連結'],
+  [/password should be at least|weak password|password is too weak/i, '密碼太弱：最少 8 個字，要有英文字母同數字'],
+  [/rate limit|too many requests/i, '操作得太密，請遲啲再試'], [/only request this after/i, '請等一分鐘再試'],
+  [/invalid api key/i, 'Supabase key 唔啱：請檢查 index.html 入面嘅 PS_KEY'], [/failed to fetch|network/i, '連唔到伺服器，請檢查網絡']
+];
+function msgOf(e) {
+  const m = String(e?.message || e || '');
+  const k = (m.match(/PS:[A-Z_]+/) || [])[0];
+  if (k) return PS_ERR[k] || k;
+  const hit = PS_AUTH_ERR.find(([re]) => re.test(m));
+  return hit ? hit[1] : (m || '出錯，請再試');
+}
+async function rpc(fn, args) {
+  const { data, error } = await P.sb.rpc(fn, args || {});
+  if (error) throw new Error(msgOf(error));
+  return data;
+}
+async function busy(btn, fn) {
+  if (!btn || btn.disabled) return;
+  const t = btn.textContent;
+  btn.disabled = true; btn.textContent = '處理緊…';
+  try { return await fn(); } finally { if (btn.isConnected) { btn.disabled = false; btn.textContent = t; } }
+}
+function download(name, text, type = 'text/csv;charset=utf-8') {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([type.startsWith('text/csv') ? '﻿' + text : text], { type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+const csvCell = v => /[",\n]/.test(String(v ?? '')) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? '');
+
+// 讀 CSV（支援引號、逗號、換行；第一行係標題）
+function parseCsv(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  const clean = rows.filter(r => r.some(x => x.trim() !== ''));
+  if (!clean.length) return [];
+  const head = clean[0].map(h => h.trim().toLowerCase());
+  return clean.slice(1).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+}
+
+// ---------------------------------------------------------------------
+// 開始：讀設定 → 載入 Supabase → 登入狀態
+// ---------------------------------------------------------------------
+let CFG_INFO = '';
+async function loadConfig() {
+  if (PS_URL && PS_KEY) return;
+  const html = await fetch(new URL('index.html', location.href), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').catch(() => '');
+  const pick = name => ((html.match(new RegExp('(?:const|let|var)\\s+' + name + '\\s*=\\s*([\'"`])\\s*([^\'"`]*?)\\s*\\1')) || [])[2] || '').trim();
+  PS_URL = PS_URL || pick('PS_URL');
+  PS_KEY = PS_KEY || pick('PS_KEY');
+  CFG_INFO = !html ? '讀唔到同一個資料夾嘅 index.html（檔名要啱，同埋要喺同一個資料夾）'
+    : !PS_URL && !PS_KEY ? 'index.html 入面嘅 PS_URL 同 PS_KEY 都係空白'
+    : !PS_URL ? 'index.html 入面嘅 PS_URL 係空白' : !PS_KEY ? 'index.html 入面嘅 PS_KEY 係空白：請喺 Supabase → API Keys 複製 publishable key 貼入引號入面' : '';
+  if (PS_URL && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(PS_URL)) CFG_INFO = `PS_URL 格式唔啱（${PS_URL}）：應該係 https://你的編號.supabase.co，尾唔好有 /`;
+  if (PS_KEY && !/^sb_publishable_|^eyJ/.test(PS_KEY)) CFG_INFO = 'PS_KEY 唔似 publishable key（應該係 sb_publishable_ 開頭）';
+  if (/[^\x21-\x7E]/.test(PS_KEY)) CFG_INFO = 'PS_KEY 入面有唔應該有嘅字（例如「…」、中文、全形符號或者空格）。通常係用滑鼠揀咗 Supabase 顯示嘅縮短版 key。請喺 Supabase → API Keys 撳 key 旁邊嘅「複製」掣，再貼入引號入面。';
+}
+function loadSdk() {
+  if (window.supabase?.createClient) return Promise.resolve();
+  return new Promise((ok, bad) => {
+    const s = document.createElement('script');
+    s.src = PS_SDK; s.integrity = PS_SDK_SRI; s.crossOrigin = 'anonymous';
+    s.onload = ok; s.onerror = () => bad(new Error('載入唔到登入元件'));
+    document.head.appendChild(s);
+  });
+}
+function cleanUrl() {
+  const u = new URL(location.href), h = new URLSearchParams(u.hash.slice(1));
+  const err = u.searchParams.get('error_description') || h.get('error_description');
+  if (err) toast('⚠️ ' + (/expired|invalid/i.test(err) ? '條連結過咗期或者用過咗，請再試一次' : err), 6000);
+  let changed = false;
+  ['code', 'error', 'error_code', 'error_description'].forEach(k => { if (u.searchParams.has(k)) { u.searchParams.delete(k); changed = true; } });
+  if (h.has('error') || h.has('access_token')) { u.hash = ''; changed = true; }
+  if (changed) history.replaceState(null, '', u.toString());
+}
+
+// opts: { title, intro, onReady(), onSignedOut() }
+async function portalStart(opts) {
+  const app = $('app');
+  try {
+    await loadConfig();
+    if (!PS_URL || !PS_KEY || CFG_INFO) {
+      app.innerHTML = `<div class="card narrow"><h2>未設定好 Supabase</h2><p class="err">${esc(CFG_INFO || '缺少 PS_URL／PS_KEY')}</p>
+        <p class="small muted">後台會自動讀同一個資料夾入面 <b>index.html</b> 嘅設定。改好 index.html 上載之後，等一兩分鐘再按 Ctrl + F5。</p></div>`;
+      return;
+    }
+    await loadSdk();
+    P.sb = window.supabase.createClient(PS_URL, PS_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    P.sb.auth.onAuthStateChange((evt, session) => {
+      P.session = session;
+      if (evt === 'PASSWORD_RECOVERY') setTimeout(() => renderAuth(opts, 'newpass'), 200);
+      if (evt === 'SIGNED_OUT') setTimeout(() => { renderWho(); renderAuth(opts, 'login'); opts.onSignedOut?.(); }, 0);
+    });
+    P.session = (await P.sb.auth.getSession()).data.session;
+    cleanUrl();
+  } catch (e) { app.innerHTML = `<div class="card narrow err">${esc(msgOf(e))}</div>`; return; }
+  renderWho();
+  if (P.session) opts.onReady(); else renderAuth(opts, 'login');
+}
+function renderWho() {
+  const w = $('who'), lo = $('logout');
+  if (w) w.textContent = P.session?.user?.email || '';
+  if (lo) { lo.hidden = !P.session; lo.onclick = async () => { await P.sb.auth.signOut().catch(() => {}); P.session = null; toast('已登出'); }; }
+}
+
+const PRIVACY = `<details class="box"><summary>私隱政策（重點）</summary>
+  <p>收集：電郵、名稱、聯絡電話、你提交嘅公司／商戶同停車場資料。用途：審批、營運停車場或者優惠券、防止濫用。</p>
+  <p>保護：密碼經雜湊處理；數據庫用 Row Level Security，每個帳戶只睇到自己有權睇嘅資料；所有操作都有審計記錄。</p>
+  <p>存放：Supabase 雲端數據庫（新加坡）。你可以喺用家網站「帳戶 → 私隱」下載或者刪除自己嘅資料（《個人資料（私隱）條例》第 486 章）。</p>
+  <p>呢個係 University of West London 畢業專題嘅原型系統。</p></details>`;
+
+function pwProblem(pw, email) {
+  if (pw.length < 8) return '密碼最少 8 個字';
+  if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return '密碼要有英文字母同數字';
+  if (email && pw.toLowerCase().includes(email.split('@')[0].toLowerCase())) return '密碼唔好包含電郵名';
+  return '';
+}
+
+function renderAuth(opts, view) {
+  const app = $('app');
+  const redirect = location.origin + location.pathname;
+  const links = (...ls) => `<div class="links">${ls.map(([v, t]) => `<a data-v="${v}">${t}</a>`).join('')}</div>`;
+  const intro = `<div class="muted small" style="margin-bottom:12px">${opts.intro}</div>`;
+  const forms = {
+    login: `<h1>登入${esc(opts.title)}</h1>${intro}<form class="form"><label class="f">電郵<input type="email" name="email" autocomplete="email" required></label>
+      <label class="f">密碼<input type="password" name="pw" autocomplete="current-password" required></label>
+      <div class="err" data-err></div><button class="btn block">登入</button></form>${links(['signup', '未有帳戶？註冊'], ['forgot', '忘記密碼'])}
+      <p class="small muted" style="margin-top:14px">用家網站同後台用同一個帳戶。</p>`,
+    signup: `<h1>註冊帳戶</h1>${intro}<form class="form"><label class="f">名稱（2 至 30 個字）<input name="username" maxlength="30" required></label>
+      <label class="f">電郵<input type="email" name="email" autocomplete="email" required></label>
+      <label class="f">密碼（最少 8 個字，要有英文字母同數字）<input type="password" name="pw" autocomplete="new-password" required></label>
+      <label class="f">再輸入一次密碼<input type="password" name="pw2" autocomplete="new-password" required></label>
+      ${PRIVACY}<label class="check"><input type="checkbox" name="consent"> 我已閱讀並同意私隱政策</label>
+      <div class="err" data-err></div><button class="btn block">註冊</button></form>${links(['login', '已經有帳戶？登入'])}`,
+    forgot: `<h1>忘記密碼</h1><form class="form"><label class="f">註冊用嘅電郵<input type="email" name="email" required></label>
+      <div class="err" data-err></div><button class="btn block">寄重設連結</button></form>${links(['login', '返去登入'])}`,
+    newpass: `<h1>設定新密碼</h1><form class="form"><label class="f">新密碼<input type="password" name="pw" autocomplete="new-password" required></label>
+      <label class="f">再輸入一次<input type="password" name="pw2" autocomplete="new-password" required></label>
+      <div class="err" data-err></div><button class="btn block">更新密碼</button></form>`
+  };
+  app.innerHTML = `<div class="card narrow">${forms[view]}</div>`;
+  app.querySelectorAll('[data-v]').forEach(a => a.onclick = () => renderAuth(opts, a.dataset.v));
+  const f = app.querySelector('form'), errBox = app.querySelector('[data-err]');
+  f.onsubmit = e => { e.preventDefault(); busy(f.querySelector('button'), async () => {
+    const d = formData(f);
+    if (view === 'login') {
+      const { error } = await P.sb.auth.signInWithPassword({ email: d.email.trim(), password: d.pw });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      P.session = (await P.sb.auth.getSession()).data.session; renderWho(); opts.onReady();
+    } else if (view === 'signup') {
+      const email = d.email.trim();
+      const bad = d.username.trim().length < 2 ? '名稱最少 2 個字' : pwProblem(d.pw, email) || (d.pw !== d.pw2 ? '兩次密碼唔一樣' : '') || (!d.consent ? '要同意私隱政策先可以註冊' : '');
+      if (bad) { errBox.textContent = bad; return; }
+      const { data, error } = await P.sb.auth.signUp({ email, password: d.pw, options: { emailRedirectTo: redirect,
+        data: { username: d.username.trim(), pdpo_consent: true, pdpo_version: PS_PDPO_VERSION } } });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      if (data.session) { P.session = data.session; renderWho(); opts.onReady(); return; }
+      app.innerHTML = `<div class="card narrow status-card"><div class="big">📧</div><h2>差少少就完成</h2>
+        <p>我哋寄咗確認電郵去 <b>${esc(email)}</b>，撳入面條連結就完成註冊。</p><p class="small muted">搵唔到？睇吓垃圾郵件。</p>
+        <button class="btn ghost" data-v="login">去登入</button></div>`;
+      app.querySelector('[data-v]').onclick = () => renderAuth(opts, 'login');
+    } else if (view === 'forgot') {
+      const { error } = await P.sb.auth.resetPasswordForEmail(d.email.trim(), { redirectTo: redirect });
+      if (error && !/not found/i.test(error.message)) { errBox.textContent = msgOf(error); return; }
+      app.innerHTML = '<div class="card narrow status-card"><div class="big">📧</div><p>如果有呢個帳戶，我哋已經寄咗重設密碼連結。</p></div>';
+    } else if (view === 'newpass') {
+      const bad = pwProblem(d.pw, P.session?.user?.email) || (d.pw !== d.pw2 ? '兩次密碼唔一樣' : '');
+      if (bad) { errBox.textContent = bad; return; }
+      const { error } = await P.sb.auth.updateUser({ password: d.pw });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      toast('✅ 密碼已更新'); opts.onReady();
+    }
+  }); };
+}
+
+// 未同意私隱政策（例如喺數據庫建立之前註冊）
+function renderConsent(after) {
+  const app = $('app');
+  app.innerHTML = `<div class="card narrow"><h1>同意私隱政策</h1>${PRIVACY}
+    <label class="check" style="margin-top:12px"><input type="checkbox" data-c> 我已閱讀並同意私隱政策</label>
+    <div class="err" data-err style="margin-top:8px"></div><button class="btn block" style="margin-top:12px" data-ok>同意，繼續</button></div>`;
+  app.querySelector('details').open = true;
+  app.querySelector('[data-ok]').onclick = e => busy(e.currentTarget, async () => {
+    if (!app.querySelector('[data-c]').checked) { app.querySelector('[data-err]').textContent = '要剔咗先可以繼續'; return; }
+    try { await rpc('ps_give_consent', { p_version: PS_PDPO_VERSION }); after(); } catch (err) { app.querySelector('[data-err]').textContent = err.message; }
+  });
+}
+
+// 申請表（營運商／商戶共用）：fields = [[name, label, type, required, placeholder]]
+function applyFormHtml(title, intro, fields, note) {
+  return `<div class="card narrow"><h1>${title}</h1><p class="muted small">${intro}</p>
+    ${note ? `<div class="err" style="margin-bottom:10px">${note}</div>` : ''}
+    <form class="form">${fields.map(([n, l, t, req, ph]) => `<label class="f">${l}<input name="${n}" type="${t}" ${req ? 'required' : ''} placeholder="${esc(ph || '')}" maxlength="120"></label>`).join('')}
+    <div class="err" data-err></div><button class="btn block">提交申請</button></form>
+    <p class="small muted" style="margin-top:12px">提交之後，管理員會審批。批准咗就可以用晒所有功能。</p></div>`;
+}
+
+// =====================================================================
+// 停車場管理系統（每個停車場嘅職員用）
+// 控制台：平面圖 + 閘口鏡頭（車牌辨識模擬）+ 即時紀錄 + 圖表
+// =====================================================================
+const CP = {
+  home: null, loc: null, tab: 'console', live: null, lvSel: null, bg: {}, poll: null, clock: null, simT: null,
+  sim: { speed: 0, next: 0, booked: false }, cams: [], log: [], seenReads: null, prevBays: {}, pending: [], sel: null,
+  days: 7, csvRows: null, csvName: '', ed: null, refreshing: false, refreshAgain: false
+};
+const AUTH_OPTS = {
+  title: '停車場管理系統', intro: '停車場職員用：平面圖即時車位、閘口車牌辨識、遙距排隊、報表。',
+  onReady: () => cpLoad(), onSignedOut: () => { stopAll(); renderTabs([]); }
+};
+const KIND = { regular: '一般', ev: '⚡ 充電', motorcycle: '🏍️ 電單車' };
+const BAYST = { free: '空位', reserved: '已預留', occupied: '有車', disabled: '停用' };
+const SRC = { booking: '預約', queue: '遙距排隊', walk_in: '冇預約' };
+const RES = {
+  booking: ['✅ 預約 → 開閘', 'r-ok'], queue: ['✅ 排隊籌號 → 開閘', 'r-ok'], walk_in: ['🚗 冇預約 → 開閘', 'r-ok'],
+  full: ['🚫 已滿，唔開閘', 'r-bad'], already_in: ['↺ 重複讀取', 'r-mute'], low_conf: ['⚠️ 信心低，等人手確認', 'r-warn'],
+  exit_booking: ['💳 出閘收費', 'r-ok'], exit_walk_in: ['⬆️ 出閘', 'r-ok'], manual_clear: ['✋ 人手清走', 'r-mute'], manual_occupy: ['✋ 人手標記', 'r-mute']
+};
+const minsSince = t => t ? Math.max(0, Math.round((Date.now() - Date.parse(t)) / 60000)) : 0;
+const dur = m => m < 60 ? `${m} 分鐘` : `${Math.floor(m / 60)} 小時 ${m % 60} 分`;
+
+function stopAll() { clearInterval(CP.poll); clearInterval(CP.clock); clearInterval(CP.simT); CP.cams.forEach(c => cancelAnimationFrame(c.raf)); CP.cams = []; }
+function syslog(msg, kind = '') {
+  CP.log.unshift(`<div class="${kind}"><span class="t">[${hhmm(Date.now())}:${String(new Date().getSeconds()).padStart(2, '0')}]</span> ${esc(msg)}</div>`);
+  CP.log = CP.log.slice(0, 120);
+  const el = $('syslog'); if (el) el.innerHTML = CP.log.join('');
+}
+
+// ---------------------------------------------------------------------
+// 載入：權限、申請、分頁
+// ---------------------------------------------------------------------
+async function cpLoad(keepTab) {
+  const app = $('app');
+  if (!CP.home) app.innerHTML = '<div class="loading">讀緊…</div>';
+  try { CP.home = await rpc('ps_op_home'); } catch (e) { app.innerHTML = `<div class="card narrow err">${esc(e.message)}</div>`; return; }
+  const h = CP.home, u = h.user;
+  if (!u.consent) { renderTabs([]); renderConsent(() => cpLoad()); return; }
+  const approved = h.providers.filter(p => p.status === 'approved');
+  if (!approved.length && !u.is_admin) { renderTabs([]); renderApply(); return; }
+  if (!h.locations.some(l => l.id === CP.loc)) CP.loc = h.locations[0]?.id ?? null;
+  renderTabs([['console', '🖥️ 控制台'], ['editor', '🗺️ 平面圖編輯'], ['report', '📊 報表'], ['settings', '⚙️ 設定']]);
+  if (!keepTab) renderTab();
+}
+function renderTabs(tabs) {
+  const el = $('tabs');
+  el.innerHTML = tabs.map(([k, t]) => `<button data-t="${k}" class="${k === CP.tab ? 'on' : ''}">${t}</button>`).join('')
+    + (CP.home?.user?.is_admin ? '<a class="btn ghost sm" href="admin.html" style="margin:6px 0 6px auto">🛠️ 平台管理員後台</a>' : '');
+  el.querySelectorAll('button').forEach(b => b.onclick = () => { CP.tab = b.dataset.t; renderTabs(tabs); renderTab(); });
+}
+function renderTab() {
+  stopAll();
+  ({ console: renderConsole, editor: renderEditor, report: renderReport, settings: renderSettings })[CP.tab]();
+}
+function renderApply() {
+  const app = $('app'), h = CP.home;
+  const pend = h.providers.find(p => p.status === 'pending');
+  if (pend) {
+    app.innerHTML = `<div class="card narrow status-card"><div class="big">⏳</div><h2>申請審批中</h2><p><b>${esc(pend.company_name)}</b><br>
+      <span class="muted small">${dt(pend.created_at)} 提交</span></p><p class="muted small">平台管理員批准之後，重新整理呢頁就可以開始用。</p>
+      <button class="btn ghost" data-r>重新整理</button></div>`;
+    app.querySelector('[data-r]').onclick = () => cpLoad();
+    return;
+  }
+  const rej = h.providers.find(p => p.status === 'rejected');
+  app.innerHTML = applyFormHtml('申請加入 ParkSmart（停車場營運商）', '加入之後，司機可以預約你嘅車位；滿咗可以遙距排隊，唔使喺街上等。你會有呢套停車場管理系統。',
+    [['company', '公司／停車場營運者名稱', 'text', true, '例如：好停車有限公司'], ['person', '聯絡人', 'text', false, ''],
+     ['phone', '聯絡電話', 'tel', false, '2345 6789'], ['email', '聯絡電郵', 'email', false, '']],
+    rej ? `上次申請被拒絕${rej.review_note ? '：' + esc(rej.review_note) : ''}。可以修改後再申請。` : '');
+  const f = app.querySelector('form');
+  f.onsubmit = e => { e.preventDefault(); busy(f.querySelector('button'), async () => {
+    const d = formData(f);
+    try { await rpc('ps_op_apply', { p_company: d.company, p_contact_person: d.person, p_contact_phone: d.phone, p_contact_email: d.email }); toast('✅ 已提交申請'); cpLoad(); }
+    catch (err) { app.querySelector('[data-err]').textContent = err.message; }
+  }); };
+}
+function locSelect() {
+  const ls = CP.home.locations;
+  if (!ls.length) return '';
+  return `<select class="inp" data-loc style="width:auto;max-width:340px;padding:6px 10px">${ls.map(l => `<option value="${l.id}" ${l.id === CP.loc ? 'selected' : ''}>${esc(l.name)}${l.is_active ? '' : '（暫停）'}${CP.home.user.is_admin ? '．' + esc(l.provider) : ''}</option>`).join('')}</select>`;
+}
+function bindLocSelect(root, rerender) {
+  const s = root.querySelector('[data-loc]');
+  if (s) s.onchange = () => { CP.loc = +s.value; CP.live = null; CP.seenReads = null; CP.prevBays = {}; CP.lvSel = null; CP.sel = null; stopAll(); rerender(); };
+}
+const noLoc = () => `<div class="card status-card"><div class="big">🅿️</div><h2>未有停車場</h2><p class="muted">去「⚙️ 設定」新增停車場或者上載 CSV，平台管理員批准之後就會出現。</p></div>`;
+
+// ---------------------------------------------------------------------
+// 控制台
+// ---------------------------------------------------------------------
+async function renderConsole() {
+  const app = $('app');
+  if (!CP.loc) { app.innerHTML = noLoc(); return; }
+  app.innerHTML = `
+    <div class="cbar"><span class="live-dot" id="ld">監控中</span>${locSelect()}<span class="clock" id="clk"></span><span class="sp"></span>
+      <span class="small muted">模擬車流</span>
+      <div class="seg" id="simseg">${[[0, '⏸ 停止'], [1, '▶ 1×'], [2, '2×'], [4, '4×']].map(([v, t]) => `<button data-sim="${v}" class="${CP.sim.speed === v ? 'on' : ''}">${t}</button>`).join('')}</div>
+      <label class="check small" title="預設只模擬冇預約嘅車出閘，免得影響真司機"><input type="checkbox" id="simbooked" ${CP.sim.booked ? 'checked' : ''}> 模擬埋預約車出閘</label></div>
+    <div class="kstrip" id="kstrip"></div>
+    <div class="cgrid">
+      <div class="col"><section class="panel"><div class="ph"><h2>車位平面圖</h2><div class="lvtabs" id="lvtabs"></div>
+        <div class="legend"><span><i style="border-color:#0ca30c;background:rgba(12,163,12,.14)"></i>空位</span><span><i style="border-color:#fab219;background:rgba(250,178,25,.18)"></i>已預留</span>
+          <span><i style="border-color:#d03b3b;background:rgba(208,59,59,.3)"></i>有車</span><span><i style="border-color:#5b6b7f;background:#1c2836"></i>停用</span></div></div>
+        <div class="fp-wrap" id="fp"><div class="loading">讀緊…</div></div><div class="fp-tip" id="fptip"></div><div class="bay-detail" id="baydet"></div></section>
+        <section class="panel grow"><div class="ph"><h2>遙距排隊</h2><span class="small" id="qnote"></span></div><div id="queue"></div></section></div>
+      <section class="panel"><div class="ph"><h2>閘口鏡頭．車牌辨識</h2><span class="small" id="camnote"></span></div>
+        <div class="camwall" id="camwall"></div>
+        <div class="ocr"><figure><figcaption>① 鏡頭斜拍車牌</figcaption><canvas id="ocr1" width="240" height="80"></canvas></figure>
+          <figure><figcaption>② 透視校正（Perspective Warp）</figcaption><canvas id="ocr2" width="240" height="80"></canvas></figure>
+          <div class="ocr-res" id="ocrres"><span>等待車輛…</span></div></div>
+        <div id="pending"></div>
+        <form class="form" id="manual" style="margin-top:10px"><div class="row" style="grid-template-columns:1.2fr 1.4fr 1fr auto;align-items:end">
+          <label class="f">車牌<input name="plate" class="inp" maxlength="10" placeholder="例如 ZH385" autocomplete="off" required></label>
+          <label class="f">鏡頭<select name="cam" id="mcam"></select></label>
+          <label class="f">車種<select name="type"><option value="">按鏡頭</option><option value="regular">一般</option><option value="ev">⚡ 充電</option><option value="motorcycle">🏍️ 電單車</option></select></label>
+          <button class="btn">模擬車輛到達</button></div>
+          <p class="hint" style="margin:0">輸入司機 App 預約或者排隊用嘅車牌，就可以示範「認到預約 → 開閘 → 分配車位」。</p></form></section>
+    </div>
+    <div class="cgrid2b">
+      <section class="panel"><div class="ph"><h2>即時通行紀錄</h2><div class="btns"><span class="small">車牌只顯示頭尾</span><button class="btn ghost sm" id="readcsv">⬇️ CSV</button></div></div>
+        <div class="tbl-wrap dark" id="reads"></div></section>
+      <section class="panel"><div class="ph"><h2>今日每小時出入（架次）</h2></div>
+        <div class="ckey"><span style="--c:var(--s1)">入閘</span><span style="--c:var(--s2)">出閘</span></div><div class="chart" id="ch1"></div>
+        <div class="ph" style="margin-top:12px"><h2>車位佔用率（%）</h2></div><div class="chart" id="ch2"></div>
+        <details style="margin-top:8px"><summary class="small muted">數據表</summary><div id="chtbl"></div></details></section>
+    </div>
+    <section class="panel" style="margin-top:14px"><div class="ph"><h2>系統狀態與即時紀錄</h2><span class="small">只喺呢部電腦顯示</span></div><div class="syslog mono" id="syslog"></div></section>`;
+  bindLocSelect(app, renderConsole);
+  app.querySelectorAll('[data-sim]').forEach(b => b.onclick = () => {
+    CP.sim.speed = +b.dataset.sim; CP.sim.next = 0;
+    app.querySelectorAll('[data-sim]').forEach(x => x.classList.toggle('on', x === b));
+    syslog(CP.sim.speed ? `▶ 開始模擬車流（${CP.sim.speed}×）` : '⏸ 停止模擬車流');
+  });
+  $('simbooked').onchange = e => { CP.sim.booked = e.target.checked; };
+  $('readcsv').onclick = () => {
+    const rs = CP.live?.reads || [];
+    download('lpr-reads.csv', ['時間,鏡頭,方向,車牌,信心,結果,車位,收費'].concat(rs.map(r => [dt(r.at), r.camera || '人手', r.direction === 'entry' ? '入' : '出',
+      r.plate || '', r.confidence ?? '', (RES[r.result] || [r.result])[0], r.bay || '', r.fee ?? ''].map(csvCell).join(','))).join('\n'));
+  };
+  $('manual').onsubmit = e => {
+    e.preventDefault();
+    const d = formData(e.target), cam = CP.cams.find(c => String(c.cfg.id) === d.cam);
+    const plate = d.plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!cam || !/^[A-Z0-9]{1,8}$/.test(plate)) { toast('⚠️ 車牌格式唔啱', 3000); return; }
+    spawn(cam, { plate, type: d.type || cam.cfg.default_type, conf: 0.97, manual: true });
+    e.target.plate.value = '';
+  };
+  syslog('連接 Supabase，開始監控');
+  CP.seenReads = null;
+  await refresh();
+  CP.poll = setInterval(() => { if (!document.hidden) refresh(); }, 5000);
+  CP.clock = setInterval(() => { const c = $('clk'); if (c) c.textContent = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Hong_Kong', hour12: false }); }, 1000);
+  CP.simT = setInterval(simTick, 400);
+}
+
+let refreshTimer = null;
+function refreshSoon() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 250); }
+async function refresh() {
+  if (CP.refreshing) { CP.refreshAgain = true; return; }
+  CP.refreshing = true;
+  try {
+    const L = await rpc('ps_cp_live', { p_location: CP.loc });
+    if (CP.tab !== 'console' || !$('kstrip')) return;
+    CP.live = L;
+    $('ld').classList.remove('off'); $('ld').textContent = '監控中';
+    renderKpis(L); renderLevels(L); renderFloor(L); renderReads(L); renderQueue(L); renderCharts(L); setupCams(L); renderDetail();
+  } catch (e) {
+    const ld = $('ld'); if (ld) { ld.classList.add('off'); ld.textContent = '連線中斷'; }
+    syslog('⚠️ 讀取失敗：' + e.message, 'r-bad');
+  } finally {
+    CP.refreshing = false;
+    if (CP.refreshAgain) { CP.refreshAgain = false; refreshSoon(); }
+  }
+}
+
+function renderKpis(L) {
+  const loc = L.location, r = loc.regular, ev = loc.ev;
+  const moto = L.bays.filter(b => b.kind === 'motorcycle' && b.status !== 'disabled');
+  const total = r.total + (ev ? ev.total : 0), occ = total - r.available - (ev ? ev.available : 0);
+  const pct = total ? Math.round(occ / total * 100) : 0, held = r.held + (ev ? ev.held : 0), q = r.queue + (ev ? ev.queue : 0);
+  const tile = (k, v, cls = '', extra = '') => `<div class="kt ${cls}"><div class="k">${k}</div><div class="v">${v}</div>${extra}</div>`;
+  $('kstrip').innerHTML =
+    tile('車位佔用率（汽車）', `${pct}<small>%</small>`, 'hero', `<div class="meter ${pct >= 95 ? 'bad' : pct >= 80 ? 'warn' : ''}"><i style="width:${pct}%"></i></div>`)
+    + tile('一般空位', `${r.free}<small> ／ ${r.total}</small>`)
+    + tile('⚡ 充電空位', ev ? `${ev.free}<small> ／ ${ev.total}</small>` : '—')
+    + tile('🏍️ 電單車空位', moto.length ? `${moto.filter(b => b.status === 'free').length}<small> ／ ${moto.length}</small>` : '—')
+    + tile('已預留（未到）', held)
+    + tile('遙距排隊中', `${q}<small> 人</small>`)
+    + tile('今日入／出', `${L.today.entries}<small> ／ ${L.today.exits}</small>`)
+    + tile('今日收入', money(L.today.revenue))
+    + tile('平均排隊等候', L.today.avg_wait_min == null ? '—' : `${L.today.avg_wait_min}<small> 分鐘</small>`);
+}
+
+function renderLevels(L) {
+  if (!L.levels.some(l => l.id === CP.lvSel)) CP.lvSel = L.levels[0]?.id ?? null;
+  const el = $('lvtabs');
+  el.innerHTML = L.levels.length > 1 ? L.levels.map(l => `<button data-lv="${l.id}" class="${l.id === CP.lvSel ? 'on' : ''}">${esc(l.name)}</button>`).join('')
+    : L.levels.length ? `<span class="small muted">${esc(L.levels[0].name)} 層</span>` : '';
+  el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { CP.lvSel = +b.dataset.lv; renderLevels(CP.live); renderFloor(CP.live); });
+}
+
+// ---------- 平面圖（SVG） ----------
+const SHAPE_STYLE = {
+  outline: 'fill="none" stroke="#33465c" stroke-width="3"', wall: 'fill="#33465c"', core: 'fill="#121b25" stroke="#2c3b4d" stroke-width="2"',
+  lift: 'fill="#17222e" stroke="#33465c"', room: 'fill="#111922" stroke="#2c3b4d" stroke-width="1.5"', stair: 'fill="url(#stairs)" stroke="#2c3b4d"',
+  ramp: 'fill="#0f1a24" stroke="#3987e5" stroke-dasharray="8 6" stroke-width="1.5"'
+};
+function shapesSvg(shapes) {
+  return (shapes || []).map(s => {
+    if (s.t === 'rect') {
+      const lab = s.label ? `<text x="${+s.x + +s.w / 2}" y="${+s.y + +s.h / 2}" fill="#7f93aa" font-size="${Math.max(9, Math.min(14, +s.w / 7))}" text-anchor="middle" dominant-baseline="middle">${esc(s.label)}</text>` : '';
+      return `<rect x="${+s.x}" y="${+s.y}" width="${+s.w}" height="${+s.h}" rx="2" ${SHAPE_STYLE[s.style] || SHAPE_STYLE.room}/>${lab}`;
+    }
+    if (s.t === 'path') return `<path d="${esc(s.d)}" fill="none" stroke="#4b5d73" stroke-width="2" stroke-dasharray="7 7"/>`;
+    if (s.t === 'text') return `<text x="${+s.x}" y="${+s.y}" fill="#8b9bb0" font-size="${+s.size || 12}" text-anchor="middle">${esc(s.label)}</text>`;
+    if (s.t === 'arrow') {
+      const x = +s.x, y = +s.y, d = { right: [[-7, -7], [7, 0], [-7, 7]], left: [[7, -7], [-7, 0], [7, 7]], up: [[-7, 7], [0, -7], [7, 7]], down: [[-7, -7], [0, 7], [7, -7]] }[s.dir] || [];
+      return `<polygon points="${d.map(([a, b]) => `${x + a},${y + b}`).join(' ')}" fill="none" stroke="#6f839b" stroke-width="1.5"/>`;
+    }
+    return '';
+  }).join('');
+}
+function bayLabel(b) {
+  if (b.status === 'occupied') return b.plate || '有車';
+  if (b.status === 'reserved') return b.source === 'queue' ? '排隊留位' : '預約';
+  if (b.status === 'disabled') return '停用';
+  return b.kind === 'ev' ? '⚡' : '';
+}
+function baysSvg(bays, opts = {}) {
+  return bays.map(b => {
+    const x = +b.x, y = +b.y, w = +b.w, h = +b.h, fs = Math.max(7, Math.min(17, Math.min(w, h) * 0.3));
+    const sub = opts.editor ? ({ ev: '⚡', motorcycle: '🏍️' }[b.kind] || '') : bayLabel(b);
+    const subFs = Math.max(6, Math.min(11, fs * 0.62));
+    const showSub = sub && Math.min(w, h) >= 30;
+    const cls = opts.editor ? (b.kind === 'ev' ? 'free ev' : b.kind === 'motorcycle' ? 'free moto' : 'free') + (['occupied', 'reserved'].includes(b.status) ? ' lock' : '') : b.status;
+    return `<g class="bay ${cls}${CP.sel === b.id && !opts.editor ? ' sel' : ''}" data-bay="${b.id ?? b._k}">
+      <rect class="b" x="${x + 1}" y="${y + 1}" width="${Math.max(1, w - 2)}" height="${Math.max(1, h - 2)}"/>
+      <text class="code" x="${x + w / 2}" y="${y + h / 2 - (showSub ? subFs * 0.55 : 0)}" font-size="${fs}" text-anchor="middle" dominant-baseline="middle">${esc(b.code)}</text>
+      ${showSub ? `<text class="sub" x="${x + w / 2}" y="${y + h / 2 + fs * 0.75}" font-size="${subFs}" text-anchor="middle" dominant-baseline="middle">${esc(sub)}</text>` : ''}</g>`;
+  }).join('');
+}
+const SVG_DEFS = `<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#16202b"/><line x1="0" y1="0" x2="0" y2="8" stroke="#3a4a5e" stroke-width="3"/></pattern>
+  <pattern id="stairs" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#111922"/><line x1="0" y1="0" x2="10" y2="0" stroke="#2c3b4d" stroke-width="2"/></pattern></defs>`;
+async function bgHref(levelId) {
+  if (!(levelId in CP.bg)) { CP.bg[levelId] = null; try { CP.bg[levelId] = await rpc('ps_cp_level_bg', { p_level: levelId }); } catch (e) { CP.bg[levelId] = null; } }
+  return CP.bg[levelId];
+}
+async function renderFloor(L) {
+  const fp = $('fp');
+  if (!L.location.bay_mode || !L.levels.length) {
+    fp.innerHTML = `<div class="status-card"><div class="big">🗺️</div><h2>未有平面圖</h2><p class="muted small">而家用「計數模式」：只知道有幾多個空位，唔知邊個位。<br>
+      開平面圖之後，每個車位都會即時顯示，車入閘會自動分配車位。</p>
+      <div class="btns" style="justify-content:center"><button class="btn" id="gen">⚡ 按車位數自動生成</button><button class="btn ghost" id="toed">✏️ 自己畫／上載平面圖</button></div></div>`;
+    $('gen').onclick = e => busy(e.currentTarget, async () => {
+      try { await rpc('ps_cp_generate_layout', { p_location: CP.loc }); syslog('🗺️ 已自動生成平面圖'); toast('✅ 已生成平面圖'); refresh(); } catch (err) { toast('⚠️ ' + err.message, 4000); }
+    });
+    $('toed').onclick = () => { CP.tab = 'editor'; renderTabs([['console', '🖥️ 控制台'], ['editor', '🗺️ 平面圖編輯'], ['report', '📊 報表'], ['settings', '⚙️ 設定']]); renderTab(); };
+    return;
+  }
+  const lv = L.levels.find(l => l.id === CP.lvSel) || L.levels[0];
+  const bays = L.bays.filter(b => b.level_id === lv.id);
+  const img = lv.has_bg ? await bgHref(lv.id) : null;
+  if (CP.tab !== 'console' || !$('fp')) return;
+  const changed = new Set(bays.filter(b => CP.prevBays[b.id] && CP.prevBays[b.id] !== b.status).map(b => b.id));
+  L.bays.forEach(b => { CP.prevBays[b.id] = b.status; });
+  fp.innerHTML = `<svg viewBox="0 0 ${lv.width} ${lv.height}" role="img" aria-label="${esc(lv.name)} 層車位平面圖">${SVG_DEFS}
+    ${img ? `<image href="${esc(img)}" x="0" y="0" width="${lv.width}" height="${lv.height}" preserveAspectRatio="xMidYMid meet" opacity="0.5"/>` : ''}
+    ${shapesSvg(lv.shapes)}${baysSvg(bays)}</svg>`;
+  changed.forEach(id => fp.querySelector(`[data-bay="${id}"]`)?.classList.add('flash'));
+  const tip = $('fptip');
+  fp.querySelectorAll('.bay').forEach(g => {
+    const b = bays.find(x => String(x.id) === g.dataset.bay);
+    g.onpointermove = ev => {
+      const r = $('fp').getBoundingClientRect(), pr = $('fp').parentElement.getBoundingClientRect();
+      tip.innerHTML = `<b>${esc(b.code)}</b>．${KIND[b.kind]}<br>${BAYST[b.status]}${b.source ? '．' + SRC[b.source] : ''}${b.plate && b.status !== 'free' ? '．' + esc(b.plate) : ''}
+        ${b.status === 'occupied' && b.since ? `<br>泊咗 ${dur(minsSince(b.since))}` : ''}${b.deadline ? `<br>${hhmm(b.deadline)} 前到` : ''}`;
+      tip.style.display = 'block';
+      tip.style.left = Math.min(ev.clientX - pr.left + 14, pr.width - 250) + 'px';
+      tip.style.top = (ev.clientY - pr.top + 14) + 'px';
+    };
+    g.onpointerleave = () => { tip.style.display = 'none'; };
+    g.onclick = () => { CP.sel = b.id; fp.querySelectorAll('.bay').forEach(x => x.classList.toggle('sel', x === g)); renderDetail(); };
+  });
+}
+
+function renderDetail() {
+  const el = $('baydet');
+  if (!el) return;
+  const b = CP.live?.bays.find(x => x.id === CP.sel);
+  if (!b) { el.classList.remove('on'); return; }
+  const acts = {
+    free: [['disabled', '⛔ 停用車位', 'ghost'], ['occupied', '✋ 人手標記有車', 'ghost']],
+    disabled: [['free', '✅ 恢復使用', 'ghost']],
+    occupied: b.source === 'walk_in' || !b.source ? [['exit', '⬆️ 模擬出閘', ''], ['free', '✋ 人手清走（鏡頭漏咗）', 'ghost']] : [['exit', '⬆️ 模擬出閘（計錢）', '']],
+    reserved: []
+  }[b.status];
+  el.innerHTML = `<div class="card-head" style="margin:0 0 6px"><b style="font-size:16px">${esc(b.code)} <span class="small muted">${KIND[b.kind]}</span></b><button class="btn ghost sm" data-x>✕</button></div>
+    <div class="small">${BAYST[b.status]}${b.source ? '．' + SRC[b.source] : ''}${b.plate && b.status !== 'free' ? '．車牌 ' + esc(b.plate) : ''}
+      ${b.status === 'occupied' && b.since ? `．${hhmm(b.since)} 入閘（泊咗 ${dur(minsSince(b.since))}）` : ''}${b.deadline ? `．${hhmm(b.deadline)} 前要到，過時自動放返` : ''}</div>
+    ${acts.length ? `<div class="btns" style="margin-top:8px">${acts.map(([k, t, c]) => `<button class="btn sm ${c}" data-act="${k}">${t}</button>`).join('')}</div>` : '<p class="small muted" style="margin:8px 0 0">留畀司機嘅車位，佢到咗閘口會自動認車牌。</p>'}`;
+  el.classList.add('on');
+  el.querySelector('[data-x]').onclick = () => { CP.sel = null; el.classList.remove('on'); $('fp').querySelectorAll('.bay').forEach(x => x.classList.remove('sel')); };
+  el.querySelectorAll('[data-act]').forEach(btn => btn.onclick = () => busy(btn, async () => {
+    try {
+      if (btn.dataset.act === 'exit') {
+        const cam = pickCam('exit', b.kind);
+        if (inFlight(b.id)) toast('架車已經去緊出口');
+        else if (cam) { spawn(cam, { ...exitVeh(b, 0.97), manual: true }); syslog(`${b.code} 架車駛去出口`); }
+        else { const r = await rpc('ps_cp_bay_exit', { p_bay: b.id }); afterRead(r, null); }
+      } else {
+        await rpc('ps_cp_bay_set', { p_bay: b.id, p_status: btn.dataset.act });
+        syslog(`✋ ${b.code}：${{ disabled: '停用', free: '設為空位', occupied: '人手標記有車' }[btn.dataset.act]}`);
+        refreshSoon();
+      }
+    } catch (err) { toast('⚠️ ' + err.message, 4000); }
+  }));
+}
+
+function renderReads(L) {
+  const first = CP.seenReads === null;
+  if (first) CP.seenReads = new Set();
+  const rows = L.reads.map(r => {
+    const isNew = !first && !CP.seenReads.has(r.id);
+    CP.seenReads.add(r.id);
+    const [txt, cls] = RES[r.result] || [r.result, ''];
+    return `<tr class="${isNew ? 'new' : ''}"><td class="mono">${hhmm(r.at)}:${String(new Date(r.at).getSeconds()).padStart(2, '0')}</td><td>${esc(r.camera || '人手')}</td>
+      <td>${r.direction === 'entry' ? '⬇️ 入' : '⬆️ 出'}</td><td class="mono"><b>${esc(r.plate || '—')}</b></td><td class="num">${r.confidence != null ? Math.round(r.confidence * 100) + '%' : '—'}</td>
+      <td class="${cls}">${txt}</td><td>${esc(r.bay || '')}</td><td class="num">${r.fee != null ? money(r.fee) : ''}</td></tr>`;
+  }).join('');
+  $('reads').innerHTML = `<table><thead><tr><th>時間</th><th>鏡頭</th><th>方向</th><th>車牌</th><th class="num">信心</th><th>結果</th><th>車位</th><th class="num">收費</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="8" class="empty">未有紀錄：撳上面「▶ 1×」開始模擬，或者喺右邊輸入車牌</td></tr>'}</tbody></table>`;
+}
+function renderQueue(L) {
+  const t = L.tickets;
+  $('qnote').textContent = t.length ? `${t.filter(x => x.status === 'waiting').length} 人等緊` : '';
+  $('queue').innerHTML = t.length ? `<div class="tbl-wrap dark"><table><thead><tr><th>籌號</th><th>車牌</th><th>狀態</th></tr></thead><tbody>
+    ${t.map(x => `<tr><td><b>${esc(x.ticket_no)}</b><div class="small muted">${x.space_type === 'ev' ? '⚡ 充電' : '一般'}．${hhmm(x.joined_at)} 攞籌</div></td><td class="mono">${esc(x.plate)}</td>
+      <td>${x.status === 'called' ? `<span class="pill called">已叫號</span><div class="small muted">${hhmm(x.respond_by)} 前到</div>` : `<span class="pill waiting">第 ${x.position} 位</span>`}</td></tr>`).join('')}
+    </tbody></table></div>` : '<p class="small muted">冇人排隊。車位滿咗嘅時候，司機會喺 App 攞籌，唔使喺街上等；有車出閘會自動叫號同留位。</p>';
+}
+
+// ---------- 圖表（SVG，自己畫；一條 y 軸、hover 十字線） ----------
+function lineChart(el, { labels, series, yMax, yFmt = v => v, area = false }) {
+  const W = 460, H = 150, m = { l: 34, r: 40, t: 10, b: 22 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const n = labels.length;
+  if (!n) { el.innerHTML = '<p class="small muted">今日未有數據</p>'; return; }
+  const top = Math.max(yMax ?? 0, ...series.flatMap(s => s.values), 1);
+  const nice = yMax ?? (top <= 4 ? 4 : top <= 10 ? 10 : Math.ceil(top / 5) * 5);
+  const X = i => m.l + (n === 1 ? iw / 2 : i * iw / (n - 1)), Y = v => m.t + ih - (v / nice) * ih;
+  const ticks = [0, nice / 2, nice];
+  const grid = ticks.map(t => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--grid)" stroke-width="1"/>
+    <text x="${m.l - 6}" y="${Y(t)}" fill="var(--muted)" font-size="10" text-anchor="end" dominant-baseline="middle">${yFmt(Math.round(t * 10) / 10)}</text>`).join('');
+  const step = n > 7 ? Math.ceil(n / 6) : 1;
+  const xl = labels.map((l, i) => (i % step === 0 && n - 1 - i >= step) || i === n - 1 ? `<text x="${X(i)}" y="${H - 6}" fill="var(--muted)" font-size="10" text-anchor="middle">${esc(l)}</text>` : '').join('');
+  const paths = series.map(s => {
+    const d = s.values.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join('');
+    const a = area ? `<path d="${d}L${X(n - 1)},${Y(0)}L${X(0)},${Y(0)}Z" fill="${s.color}" opacity="0.1"/>` : '';
+    const last = s.values[n - 1];
+    return `${a}<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${X(n - 1)}" cy="${Y(last)}" r="4" fill="${s.color}" stroke="var(--card)" stroke-width="2"/>`;
+  }).join('');
+  // 直接標示最尾數值（兩條線太近就唔標，靠圖例同提示）
+  const ends = series.map(s => ({ s, y: Y(s.values[n - 1]) }));
+  const clash = ends.length > 1 && Math.abs(ends[0].y - ends[1].y) < 14;
+  const endLabels = clash ? '' : ends.map(({ s, y }) => `<text x="${X(n - 1) + 8}" y="${y}" fill="var(--ink)" font-size="11" dominant-baseline="middle">${yFmt(s.values[n - 1])}</text>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map(s => s.name).join('、'))}">${grid}
+    <line x1="${m.l}" x2="${W - m.r}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--axis)" stroke-width="1"/>${xl}${paths}${endLabels}
+    <line class="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/>
+    <rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" class="hit"/></svg><div class="tt"></div>`;
+  const svg = el.querySelector('svg'), xh = el.querySelector('.xh'), tt = el.querySelector('.tt');
+  const show = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / (n === 1 ? 1 : iw / (n - 1)))));
+    xh.setAttribute('x1', X(i)); xh.setAttribute('x2', X(i)); xh.setAttribute('visibility', 'visible');
+    tt.innerHTML = '';
+    const head = document.createElement('div'); head.className = 'small'; head.textContent = labels[i]; tt.appendChild(head);
+    series.forEach(s => {
+      const row = document.createElement('div'), key = document.createElement('span'), val = document.createElement('b'), nm = document.createElement('span');
+      key.className = 'key'; key.style.background = s.color; val.textContent = yFmt(s.values[i]); nm.textContent = ' ' + s.name;
+      row.append(key, val, nm); tt.appendChild(row);
+    });
+    tt.style.display = 'block';
+    const left = X(i) * r.width / W;
+    tt.style.left = Math.min(left + 10, r.width - tt.offsetWidth) + 'px'; tt.style.top = '4px';
+  };
+  const hide = () => { xh.setAttribute('visibility', 'hidden'); tt.style.display = 'none'; };
+  const hit = el.querySelector('.hit');
+  hit.onpointermove = show; hit.onpointerleave = hide;
+}
+function renderCharts(L) {
+  const nowH = +new Date().toLocaleString('en-GB', { hour: '2-digit', hour12: false, timeZone: 'Asia/Hong_Kong' }) % 24;
+  const hrs = L.hourly.filter(x => x.h <= nowH && x.h > nowH - 12);
+  const labels = hrs.map(x => String(x.h).padStart(2, '0') + ':00');
+  lineChart($('ch1'), { labels, series: [{ name: '入閘', color: 'var(--s1)', values: hrs.map(x => x.in) }, { name: '出閘', color: 'var(--s2)', values: hrs.map(x => x.out) }] });
+  // 佔用率：由而家有幾多車，倒推每個鐘尾
+  const bays = L.bays.filter(b => b.status !== 'disabled');
+  const total = bays.length || (L.location.regular.total + (L.location.ev?.total || 0));
+  const occNow = bays.length ? bays.filter(b => b.status === 'occupied').length : total - L.location.regular.available - (L.location.ev?.available || 0);
+  const occ = []; let o = occNow;
+  for (let i = hrs.length - 1; i >= 0; i--) { occ[i] = Math.max(0, Math.min(total, o)); o -= hrs[i].in - hrs[i].out; }
+  const pct = occ.map(v => total ? Math.round(v / total * 100) : 0);
+  lineChart($('ch2'), { labels, series: [{ name: '佔用率', color: 'var(--s1)', values: pct }], yMax: 100, yFmt: v => v + '%', area: true });
+  $('chtbl').innerHTML = `<div class="tbl-wrap dark" style="max-height:200px"><table><thead><tr><th>時間</th><th class="num">入閘</th><th class="num">出閘</th><th class="num">佔用率</th></tr></thead><tbody>
+    ${hrs.map((x, i) => `<tr><td>${labels[i]}</td><td class="num">${x.in}</td><td class="num">${x.out}</td><td class="num">${pct[i]}%</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+// ---------------------------------------------------------------------
+// 鏡頭牆：模擬車輛 + 車牌辨識（真鏡頭由 Python 程式送事件入嚟）
+// ---------------------------------------------------------------------
+const CAR_COLORS = ['#c9d2dc', '#2b2f36', '#8c1c13', '#1d3c6e', '#d9d9d9', '#5a5f66', '#0f4d3a', '#b8860b'];
+function setupCams(L) {
+  const cfgs = L.cameras.filter(c => c.is_active).slice(0, 4);
+  const sig = cfgs.map(c => `${c.id}:${c.name}:${JSON.stringify(c.roi)}`).join('|');
+  if (CP.camSig === sig && CP.cams.length) { CP.cams.forEach(c => { c.cfg = cfgs.find(x => x.id === c.cfg.id) || c.cfg; }); return; }
+  CP.camSig = sig;
+  CP.cams.forEach(c => cancelAnimationFrame(c.raf));
+  const wall = $('camwall');
+  wall.innerHTML = cfgs.map(c => `<div class="cam" data-cam="${c.id}" title="${c.direction === 'entry' ? '入口' : '出口'}．${KIND[c.default_type]}"><canvas width="480" height="300" role="img" aria-label="${esc(c.name)} 模擬畫面"></canvas>
+    <div class="cl"><b>${esc(c.name)}</b><span class="rec">● REC</span></div><div class="cr"></div></div>`).join('')
+    || '<p class="small muted">未有鏡頭：去「⚙️ 設定」加。</p>';
+  $('camnote').textContent = `${cfgs.length} 部鏡頭．ROI 辨識區域`;
+  $('mcam').innerHTML = cfgs.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  CP.cams = cfgs.map(cfg => {
+    const el = wall.querySelector(`[data-cam="${cfg.id}"]`), cv = el.querySelector('canvas');
+    const cam = { cfg, el, cv, ctx: cv.getContext('2d'), q: [], cur: null, flash: null, raf: 0, last: performance.now() };
+    const loop = ts => { drawCam(cam, ts); cam.raf = requestAnimationFrame(loop); };
+    cam.raf = requestAnimationFrame(loop);
+    return cam;
+  });
+  syslog(`📷 ${cfgs.length} 部閘口鏡頭上線：${cfgs.map(c => c.name).join('、')}`);
+}
+// 揀鏡頭：電單車用電單車閘，其他車用汽車閘
+const pickCam = (dir, kind) => CP.cams.find(c => c.cfg.direction === dir && (c.cfg.default_type === 'motorcycle') === (kind === 'motorcycle')) || null;
+// 模擬用：記住入閘時嘅完整車牌（只留喺呢部電腦嘅記憶體；數據庫只存雜湊同遮咗嘅車牌）
+const plateKey = code => `${CP.loc}:${code}`;
+const platesSeen = {};
+function spawn(cam, v) {
+  const veh = { t: 0, state: 'drive', color: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)], hold: 0, ...v };
+  if (veh.type === 'ev') veh.color = '#e8f1fb';
+  cam.q.push(veh);
+}
+function randPlate() {
+  const A = 'ABCDEFGHJKLMNPRSTUVWXYZ';
+  if (Math.random() < 0.05) return ['PARK88', 'KEN1', 'HKGO', 'FYP2027', 'LUCKY8'][Math.floor(Math.random() * 5)];
+  return A[Math.floor(Math.random() * A.length)] + A[Math.floor(Math.random() * A.length)] + (1 + Math.floor(Math.random() * 9999));
+}
+
+// 鏡頭畫面：停車場入面嘅閘口車道（透視），入口睇車頭（白牌），出口睇車尾（黃牌）
+function camGeom(cam) {
+  const { cv, cfg } = cam, W = cv.width, H = cv.height, entry = cfg.direction === 'entry', moto = cfg.default_type === 'motorcycle';
+  const sig = `${W}:${JSON.stringify(cfg.roi)}:${cfg.direction}:${cfg.default_type}`;
+  if (cam.geom && cam.geom.sig === sig) return cam.geom;
+  const roi = cfg.roi || { x1: 0.2, y1: 0.35, x2: 0.8, y2: 0.9 };
+  const hy = H * (entry ? 0.2 : 0.06), vx = W / 2;
+  const g = { sig, W, H, hy, vx, entry, moto, roi };
+  g.byOf = d => hy + d * (H - hy) * 1.05;
+  g.wOf = by => (moto ? 0.2 : 0.62) * W * Math.max(0, by - hy) / (H - hy);
+  g.hOf = w => w * (moto ? 1.25 : 0.62);
+  g.plateY = by => by - g.hOf(g.wOf(by)) * (moto ? 0.3 : 0.22);
+  const target = Math.max(hy + 30, Math.min(H - 12, (roi.y1 + (roi.y2 - roi.y1) * 0.6) * H));
+  let lo = hy + 1, hi = H * 1.6;                        // 搵車停低嘅位置：車牌啱啱喺 ROI 入面
+  for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (g.plateY(m) < target) lo = m; else hi = m; }
+  g.stopBy = lo; g.stopD = (lo - hy) / ((H - hy) * 1.05);
+  g.gateY = entry ? g.stopBy + 10 : g.stopBy - 6;
+  return (cam.geom = g);
+}
+function drawScene(ctx, g, ts, moving) {
+  const { W, H, hy, vx } = g;
+  let gr = ctx.createLinearGradient(0, 0, 0, H);
+  gr.addColorStop(0, '#0a0f15'); gr.addColorStop(hy / H, '#18212b'); gr.addColorStop(1, '#0d1319');
+  ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+  // 天花燈
+  for (let i = 1; i <= 5; i++) {
+    const k = i / 5, y = hy - k * k * hy * 0.85, w = 8 + k * 70;
+    ctx.fillStyle = `rgba(220,235,255,${0.25 + k * 0.5})`; ctx.fillRect(vx - w / 2, y, w, 2 + k * 3);
+  }
+  // 地台
+  ctx.beginPath(); ctx.moveTo(vx - 26, hy); ctx.lineTo(vx + 26, hy); ctx.lineTo(W * 1.15, H); ctx.lineTo(-W * 0.15, H); ctx.closePath();
+  gr = ctx.createLinearGradient(0, hy, 0, H); gr.addColorStop(0, '#141b23'); gr.addColorStop(1, '#2a333d');
+  ctx.fillStyle = gr; ctx.fill();
+  // 柱
+  [0.3, 0.75].forEach(d => {
+    const by = g.byOf(d), s = (by - hy) / (H - hy), off = (W * 0.62) * s + 6, pw = 10 + 26 * s;
+    ctx.fillStyle = '#26303b'; ctx.fillRect(vx - off - pw, by - (by - 0) * 0.98, pw, by * 0.98);
+    ctx.fillRect(vx + off, by - by * 0.98, pw, by * 0.98);
+    ctx.fillStyle = 'rgba(250,178,25,0.55)'; ctx.fillRect(vx - off - pw, by - 14 * s - 6, pw, 4 + 6 * s); ctx.fillRect(vx + off, by - 14 * s - 6, pw, 4 + 6 * s);
+  });
+  // 車道邊線 + 中線
+  ctx.strokeStyle = 'rgba(250,178,25,0.7)'; ctx.lineWidth = 3;
+  [[-22, -W * 0.02], [22, W * 1.02]].forEach(([a, b]) => { ctx.beginPath(); ctx.moveTo(vx + a, hy); ctx.lineTo(b, H); ctx.stroke(); });
+  ctx.setLineDash([16, 18]); ctx.lineDashOffset = moving ? -(ts / 18) % 34 * (g.entry ? 1 : -1) : 0;
+  ctx.strokeStyle = 'rgba(230,237,245,0.28)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(vx, hy); ctx.lineTo(vx, H); ctx.stroke(); ctx.setLineDash([]);
+  // 停車線
+  const sy = g.entry ? g.gateY + 4 : g.gateY + 2, s = (sy - hy) / (H - hy);
+  ctx.fillStyle = 'rgba(240,240,240,0.55)'; ctx.fillRect(vx - W * 0.62 * s, sy, W * 1.24 * s, 2 + 4 * s);
+}
+function drawGate(ctx, g, open) {
+  const { vx, hy, H, W } = g, y = g.gateY, s = (y - hy) / (H - hy), half = W * 0.62 * s;
+  const px = Math.max(18 + 8 * s, vx - half - 6), len = Math.min(vx + half + 4, W - 6) - px, th = 4 + 6 * s;
+  ctx.fillStyle = '#d9a514'; ctx.fillRect(px - 8 - 6 * s, y - 34 * s - 10, 10 + 8 * s, 34 * s + 12);
+  ctx.fillStyle = '#111'; ctx.fillRect(px - 8 - 6 * s, y - 20 * s - 6, 10 + 8 * s, 3);
+  ctx.save(); ctx.translate(px, y - 26 * s - 6); ctx.rotate(-open * Math.PI * 0.47);
+  const n = 10;
+  for (let i = 0; i < n; i++) { ctx.fillStyle = i % 2 ? '#d03b3b' : '#f2f2f2'; ctx.fillRect(i * len / n, -th / 2, len / n + 0.5, th); }
+  ctx.restore();
+}
+function drawVehicle(ctx, g, v, by) {
+  const w = g.wOf(by), h = g.hOf(w), cx = g.vx, front = g.entry, moto = g.moto || v.type === 'motorcycle';
+  ctx.save(); ctx.globalAlpha = v.alpha ?? 1;
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(cx, by, w * 0.6, Math.max(2, h * 0.08), 0, 0, Math.PI * 2); ctx.fill();
+  if (moto) {
+    ctx.fillStyle = '#111'; roundRect(ctx, cx - w * 0.12, by - h * 0.32, w * 0.24, h * 0.32, w * 0.08); ctx.fill();          // 車轆
+    ctx.fillStyle = v.color; roundRect(ctx, cx - w * 0.38, by - h * 0.62, w * 0.76, h * 0.36, w * 0.18); ctx.fill();       // 車身
+    ctx.fillStyle = '#2b3440'; roundRect(ctx, cx - w * 0.3, by - h * 0.95, w * 0.6, h * 0.4, w * 0.2); ctx.fill();         // 騎士
+    ctx.fillStyle = '#e6edf5'; ctx.beginPath(); ctx.arc(cx, by - h * 0.98, w * 0.2, 0, Math.PI * 2); ctx.fill();         // 頭盔
+    ctx.fillStyle = front ? '#fff6c8' : '#ff3b3b'; ctx.beginPath(); ctx.arc(cx, by - h * 0.5, w * 0.09, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.fillStyle = '#0b0d10';
+    [-1, 1].forEach(sx => { roundRect(ctx, cx + sx * w * 0.42 - w * 0.07, by - h * 0.2, w * 0.14, h * 0.2, w * 0.03); ctx.fill(); });
+    ctx.fillStyle = v.color; roundRect(ctx, cx - w * 0.5, by - h * 0.62, w, h * 0.5, w * 0.08); ctx.fill();               // 車身
+    ctx.beginPath(); ctx.moveTo(cx - w * 0.44, by - h * 0.6); ctx.lineTo(cx - w * 0.33, by - h); ctx.lineTo(cx + w * 0.33, by - h); ctx.lineTo(cx + w * 0.44, by - h * 0.6); ctx.closePath(); ctx.fill();
+    const glass = ctx.createLinearGradient(0, by - h, 0, by - h * 0.62); glass.addColorStop(0, '#2b3a4c'); glass.addColorStop(1, '#0d141c');
+    ctx.fillStyle = glass; ctx.beginPath(); ctx.moveTo(cx - w * 0.39, by - h * 0.64); ctx.lineTo(cx - w * 0.3, by - h * 0.95); ctx.lineTo(cx + w * 0.3, by - h * 0.95); ctx.lineTo(cx + w * 0.39, by - h * 0.64); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = v.color; [-1, 1].forEach(sx => { ctx.fillRect(cx + sx * w * 0.5 - (sx < 0 ? w * 0.06 : 0), by - h * 0.66, w * 0.06, h * 0.07); });   // 倒後鏡
+    if (front) {
+      ctx.fillStyle = '#1a1f26'; roundRect(ctx, cx - w * 0.2, by - h * 0.5, w * 0.4, h * 0.12, w * 0.02); ctx.fill();           // 車頭格柵
+      ctx.save(); ctx.shadowColor = 'rgba(255,246,200,0.9)'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#fff6c8'; [-1, 1].forEach(sx => { roundRect(ctx, cx + sx * w * 0.35 - w * 0.1, by - h * 0.52, w * 0.2, h * 0.09, w * 0.03); ctx.fill(); });
+      ctx.restore();
+    } else {
+      ctx.save(); ctx.shadowColor = 'rgba(255,40,40,0.9)'; ctx.shadowBlur = v.state === 'drive' || v.state === 'go' ? 6 : 14;
+      ctx.fillStyle = '#ff3030'; [-1, 1].forEach(sx => { roundRect(ctx, cx + sx * w * 0.36 - w * 0.11, by - h * 0.53, w * 0.22, h * 0.09, w * 0.02); ctx.fill(); });
+      ctx.restore();
+    }
+  }
+  // 車牌（入口睇車頭 = 白牌；出口睇車尾 = 黃牌）
+  const pw = w * (moto ? 0.56 : 0.3), ph = pw * (moto ? 0.5 : 0.24), py = g.plateY(by);
+  ctx.fillStyle = front ? '#f4f4f0' : '#f7d43a'; ctx.fillRect(cx - pw / 2, py - ph / 2, pw, ph);
+  ctx.strokeStyle = '#111'; ctx.lineWidth = Math.max(0.5, pw / 60); ctx.strokeRect(cx - pw / 2, py - ph / 2, pw, ph);
+  ctx.fillStyle = '#111'; ctx.font = `bold ${Math.max(5, (moto ? ph * 0.42 : ph * 0.78))}px "Arial Narrow", Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (moto && v.plate.length > 4) { ctx.fillText(v.plate.slice(0, 2), cx, py - ph * 0.22); ctx.fillText(v.plate.slice(2), cx, py + ph * 0.24); }
+  else ctx.fillText(v.plate, cx, py + 0.5);
+  ctx.restore();
+  return { px: cx - pw / 2, py: py - ph / 2, pw, ph };
+}
+function drawCam(cam, ts) {
+  const dtm = Math.min(80, ts - cam.last); cam.last = ts;
+  const { ctx } = cam, g = camGeom(cam), { W, H } = g;
+  if (!cam.cur && cam.q.length) { cam.cur = cam.q.shift(); cam.cur.d = g.entry ? 0.02 : 1.25; }
+  const v = cam.cur, spd = 0.00042 * Math.sqrt(CP.sim.speed || 1) * dtm;
+  // 狀態機：drive → read → go／deny／wait
+  if (v) {
+    if (v.state === 'drive') {
+      const left = g.entry ? g.stopD - v.d : v.d - g.stopD;
+      const step = Math.min(spd * Math.max(0.25, Math.min(1, left * 5)), Math.abs(left));
+      v.d += g.entry ? step : -step;
+      if (Math.abs(left) < 0.002) { v.state = 'read'; v.readT = 0; }
+    } else if (v.state === 'read') { v.readT += dtm; if (v.readT > 700 && !v.sent) { v.sent = true; doRead(cam, v); } }
+    else if (v.state === 'go') {
+      v.openT = (v.openT || 0) + dtm;
+      if (v.openT > 600) v.d += (g.entry ? 1 : -1) * spd * 1.4;
+      if (!g.entry && v.d < 0.25) v.alpha = Math.max(0, v.d / 0.25);
+      if ((g.entry && g.byOf(v.d) - g.hOf(g.wOf(g.byOf(v.d))) > H) || (!g.entry && v.d <= 0.02)) cam.cur = null;
+    } else if (v.state === 'deny') {
+      v.hold += dtm;
+      if (v.hold > 2200) { v.d += (g.entry ? -1 : 1) * spd * 0.8; v.alpha = Math.max(0, 1 - (v.hold - 2200) / 1200); if (v.alpha <= 0) cam.cur = null; }
+    } else if (v.state === 'wait') { v.hold += dtm; if (v.hold > 25000) { v.state = 'deny'; v.hold = 0; v.label = '人手確認逾時'; renderPending(); } }
+  }
+  const cur = cam.cur;
+  drawScene(ctx, g, ts, cur && (cur.state === 'drive' || (cur.state === 'go' && cur.openT > 600)));
+  // 閘杆打開角度
+  cam.open = cur && cur.state === 'go' ? Math.min(1, (cam.open || 0) + dtm / 600) : Math.max(0, (cam.open || 0) - dtm / 900);
+  let plate = null;
+  if (cur) {
+    const by = g.byOf(cur.d), behind = by < g.gateY;
+    if (!behind) drawGate(ctx, g, cam.open);
+    plate = drawVehicle(ctx, g, cur, by);
+    if (behind) drawGate(ctx, g, cam.open);
+  } else drawGate(ctx, g, cam.open);
+  // ROI
+  const r = g.roi, rx = r.x1 * W, ry = r.y1 * H, rw = (r.x2 - r.x1) * W, rh = (r.y2 - r.y1) * H;
+  ctx.setLineDash([6, 5]); ctx.strokeStyle = 'rgba(57,135,229,0.75)'; ctx.lineWidth = 1.5; ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(57,135,229,0.9)'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('ROI', rx + 5, ry + 4);
+  // 辨識框（角位括號）+ 標籤
+  if (cur && plate && cur.state !== 'drive' && (cur.alpha ?? 1) > 0.3) {
+    const col = cur.state === 'go' ? '#2bd62b' : cur.state === 'deny' ? '#ff5a5a' : cur.state === 'wait' ? '#fab219' : '#3d9bff';
+    const pad = 6, x = plate.px - pad, y = plate.py - pad, w = plate.pw + pad * 2, h = plate.ph + pad * 2, c = Math.min(12, w / 4);
+    ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath();
+    [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]].forEach(([px, py, sx, sy]) => { ctx.moveTo(px + sx * c, py); ctx.lineTo(px, py); ctx.lineTo(px, py + sy * c); });
+    ctx.stroke();
+    if (cur.state === 'read') {                                         // 掃描線
+      const k = (cur.readT % 700) / 700; ctx.fillStyle = 'rgba(61,155,255,0.5)'; ctx.fillRect(x, y + h * k, w, 2);
+    }
+    const label = cur.state === 'read' ? '辨識中…' : `${cur.plate}  ${Math.round((cur.conf ?? 0.95) * 100)}%`;
+    ctx.font = 'bold 17px sans-serif'; const tw = ctx.measureText(label).width + 14;
+    const lx = Math.max(4, Math.min(W - tw - 4, x + w / 2 - tw / 2)), ly = Math.max(4, y - 30);
+    ctx.fillStyle = col; roundRect(ctx, lx, ly, tw, 24, 5); ctx.fill();
+    ctx.fillStyle = cur.state === 'wait' ? '#1a1300' : '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(label, lx + 7, ly + 12.5);
+  }
+  // 結果橫額
+  if (cur && cur.label && (cur.alpha ?? 1) > 0.2) {
+    const ok = cur.state === 'go', bad = cur.state === 'deny';
+    ctx.fillStyle = 'rgba(5,8,12,0.78)'; ctx.fillRect(0, H - 38, W, 38);
+    ctx.fillStyle = ok ? '#2bd62b' : bad ? '#ff5a5a' : '#fab219'; ctx.fillRect(0, H - 38, 5, 38);
+    ctx.fillStyle = '#f2f6fa'; ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(cur.label, 16, H - 18);
+  }
+  // CCTV 質感：掃描線 + 暗角
+  ctx.fillStyle = 'rgba(0,0,0,0.12)'; for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+  if (!cam.vig) { cam.vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.7); cam.vig.addColorStop(0, 'rgba(0,0,0,0)'); cam.vig.addColorStop(1, 'rgba(0,0,0,0.55)'); }
+  ctx.fillStyle = cam.vig; ctx.fillRect(0, 0, W, H);
+  if (ts - (cam.tsT || 0) > 1000) { cam.tsT = ts; const el = cam.el.querySelector('.cr'); if (el) el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Hong_Kong' }); }
+}
+function roundRect(ctx, x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+// 到咗 ROI：叫數據庫（入閘／出閘）
+async function doRead(cam, v) {
+  drawOcr(v.plate, cam.cfg.direction, v.conf ?? 0.95);
+  try {
+    let r;
+    if (v.bayId) r = await rpc('ps_cp_bay_exit', { p_bay: v.bayId });
+    else r = await rpc('ps_cp_lpr_event', { p_camera: cam.cfg.id, p_plate: v.plate, p_confidence: v.conf ?? 0.95,
+      p_space_type: v.type && v.type !== cam.cfg.default_type ? v.type : null, p_source: v.manual ? 'manual' : 'sim' });
+    afterRead(r, cam, v);
+  } catch (e) {
+    v.state = 'deny'; v.hold = 0; v.label = '⚠️ ' + e.message;
+    syslog(`⚠️ ${cam.cfg.name} ${v.plate}：${e.message}`, 'r-bad');
+  }
+}
+function afterRead(r, cam, v) {
+  const plate = v ? v.plate : r.plate;
+  const res = r.result, gateOpen = ['booking', 'queue', 'walk_in'].includes(res);
+  if (r.bay && v) { if (cam && cam.cfg.direction === 'entry' && gateOpen) platesSeen[plateKey(r.bay)] = v.plate; else if (!cam || cam.cfg.direction === 'exit') delete platesSeen[plateKey(r.bay)]; }
+  if (v) {
+    if (res === 'low_conf') { v.state = 'wait'; v.hold = 0; v.label = '⚠️ 信心低：等人手確認'; CP.pending.push({ cam, v }); renderPending(); }
+    else if (gateOpen) { v.state = 'go'; v.label = cam.cfg.direction === 'entry' ? `✅ ${{ booking: '預約', queue: '排隊籌號', walk_in: '冇預約' }[res]} → ${r.bay || '開閘'}` : `✅ 出閘${r.fee != null ? '．收 ' + money(r.fee) : ''}`; }
+    else { v.state = 'deny'; v.hold = 0; v.label = res === 'full' ? '🚫 已滿：唔開閘' : res === 'already_in' ? '↺ 已經喺場內' : res; }
+  }
+  const dir = cam ? cam.cfg.direction : 'exit';
+  const msg = dir === 'entry'
+    ? { booking: `✅ ${plate} 認到預約 → 泊 ${r.bay || '（計數模式）'}`, queue: `✅ ${plate} 認到排隊籌號 → 泊 ${r.bay || ''}`, walk_in: `🚗 ${plate} 冇預約 → 分配 ${r.bay || '車位'}`,
+        full: `🚫 ${plate} 已滿，閘口唔開（司機可以用 App 遙距排隊）`, low_conf: `⚠️ ${plate} 信心 ${Math.round((v?.conf ?? 0) * 100)}%，等人手確認`, already_in: `↺ ${plate} 重複讀取` }[res]
+    : `⬆️ ${plate} 出閘${r.bay ? '，放返 ' + r.bay : ''}${r.fee != null ? `，收 ${money(r.fee)}${+r.discount ? `（優惠減 ${money(r.discount)}）` : ''}` : ''}`;
+  syslog(`${cam ? cam.cfg.name : '出口'}｜${msg || res}`, gateOpen || dir === 'exit' ? 'r-ok' : res === 'full' ? 'r-bad' : 'r-warn');
+  const rr = $('ocrres');
+  if (rr) rr.innerHTML = `<span>辨識結果 <b class="mono">${esc(plate)}</b>．信心 ${Math.round((v?.conf ?? 0.97) * 100)}%．${/^[A-Z]{0,2}[0-9]{1,4}$/.test(plate) ? '香港車牌格式 ✔' : '自訂車牌'}</span><span class="${(RES[dir === 'exit' && gateOpen ? 'exit_' + res : res] || ['', ''])[1]}">${(RES[dir === 'exit' && gateOpen ? 'exit_' + res : res] || [res])[0]}</span>`;
+  refreshSoon();
+}
+function renderPending() {
+  const el = $('pending'); if (!el) return;
+  CP.pending = CP.pending.filter(p => p.v.state === 'wait');
+  el.innerHTML = CP.pending.map((p, i) => `<div class="card-head" style="background:var(--warn-soft);border:1px solid rgba(250,178,25,.4);border-radius:8px;padding:8px 10px;margin:8px 0 0">
+    <span class="small">⚠️ ${esc(p.cam.cfg.name)} 讀到 <b class="mono">${esc(p.v.plate)}</b>（信心 ${Math.round(p.v.conf * 100)}%），請對一對鏡頭畫面</span>
+    <div class="btns"><button class="btn ok sm" data-ok="${i}">確認放行</button><button class="btn bad sm" data-no="${i}">拒絕</button></div></div>`).join('');
+  el.querySelectorAll('[data-ok]').forEach(b => b.onclick = async () => {
+    const p = CP.pending[+b.dataset.ok]; if (!p) return;
+    p.v.conf = 1; p.v.manual = true; p.v.label = '人手確認中…'; p.v.state = 'read'; p.v.sent = false; p.v.readT = 0;
+    syslog(`👤 職員確認 ${p.v.plate}`); renderPending();
+  });
+  el.querySelectorAll('[data-no]').forEach(b => b.onclick = () => {
+    const p = CP.pending[+b.dataset.no]; if (!p) return;
+    p.v.state = 'deny'; p.v.hold = 0; p.v.label = '✋ 職員拒絕'; syslog(`✋ 職員拒絕 ${p.v.plate}`, 'r-warn'); renderPending();
+  });
+}
+// 車牌校正預覽：①斜拍（透視變形 + 模糊）→ ②拉正
+function drawOcr(plate, dir, conf) {
+  const c1 = $('ocr1'), c2 = $('ocr2'); if (!c1 || !c2) return;
+  const bg = dir === 'entry' ? '#f4f4f0' : '#f7d43a';
+  const plateImg = (ctx, w, h) => {
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); ctx.strokeStyle = '#222'; ctx.lineWidth = 3; ctx.strokeRect(2, 2, w - 4, h - 4);
+    ctx.fillStyle = '#111'; ctx.font = `bold ${h * 0.62}px "Arial Narrow", Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(plate, w / 2, h / 2 + 2);
+  };
+  const x2 = c2.getContext('2d'); x2.fillStyle = '#0d141c'; x2.fillRect(0, 0, c2.width, c2.height);
+  x2.save(); x2.translate(20, 14); plateImg(x2, c2.width - 40, c2.height - 28); x2.restore();
+  const x1 = c1.getContext('2d'); x1.fillStyle = '#0d141c'; x1.fillRect(0, 0, c1.width, c1.height);
+  x1.save(); x1.filter = conf < 0.6 ? 'blur(1.6px)' : 'blur(0.7px)'; x1.translate(c1.width * 0.5, c1.height * 0.5);
+  x1.transform(0.86, 0.16, -0.32, 0.78, 0, 0); x1.rotate(-0.06); x1.translate(-(c1.width - 40) / 2, -(c1.height - 28) / 2);
+  plateImg(x1, c1.width - 40, c1.height - 28); x1.restore();
+  x1.fillStyle = 'rgba(255,255,255,0.05)'; for (let i = 0; i < 160; i++) x1.fillRect(Math.random() * c1.width, Math.random() * c1.height, 1.5, 1.5);
+}
+
+// 自動模擬：按佔用率決定入定出
+function simTick() {
+  if (!CP.sim.speed || !CP.live || CP.tab !== 'console') return;
+  const now = Date.now();
+  if (now < CP.sim.next) return;
+  CP.sim.next = now + (1800 + Math.random() * 2600) / CP.sim.speed;
+  const L = CP.live, loc = L.location;
+  const carIn = pickCam('entry', 'regular'), carOut = pickCam('exit', 'regular');
+  const motoIn = pickCam('entry', 'motorcycle'), motoOut = pickCam('exit', 'motorcycle');
+  const camBusy = c => !c || c.cur || c.q.length > 0;
+  if (motoIn && Math.random() < 0.16) {
+    const mb = L.bays.filter(b => b.kind === 'motorcycle');
+    const occM = mb.filter(b => b.status === 'occupied' && !inFlight(b.id));
+    if (occM.length && (Math.random() < occM.length / Math.max(1, mb.length) || !mb.some(b => b.status === 'free'))) {
+      const b = occM[Math.floor(Math.random() * occM.length)];
+      if (!camBusy(motoOut)) spawn(motoOut, exitVeh(b, 0.96));
+    } else if (!camBusy(motoIn) && mb.some(b => b.status === 'free')) spawn(motoIn, { plate: randPlate(), type: 'motorcycle', conf: 0.9 + Math.random() * 0.09 });
+    return;
+  }
+  const total = loc.regular.total + (loc.ev?.total || 0), avail = loc.regular.available + (loc.ev?.available || 0);
+  const occRate = total ? 1 - avail / total : 0;
+  const outs = L.bays.filter(b => b.status === 'occupied' && b.kind !== 'motorcycle' && (b.source === 'walk_in' || CP.sim.booked) && !inFlight(b.id));
+  const pIn = loc.regular.free + (loc.ev?.free || 0) > 0 ? Math.max(0.15, Math.min(0.9, 0.5 + (0.78 - occRate) * 1.4)) : 0.2;
+  const goIn = Math.random() < pIn || !outs.length;
+  if (goIn && !camBusy(carIn)) {
+    const lowConf = Math.random() < 0.07;
+    const ev = loc.ev && Math.random() < 0.14;
+    spawn(carIn, { plate: randPlate(), type: ev ? 'ev' : 'regular', conf: lowConf ? 0.42 + Math.random() * 0.16 : 0.88 + Math.random() * 0.11 });
+  } else if (!goIn && !camBusy(carOut)) {
+    spawn(carOut, exitVeh(outs[Math.floor(Math.random() * outs.length)], 0.97));
+  }
+}
+const inFlight = bayId => CP.cams.some(c => (c.cur && c.cur.bayId === bayId) || c.q.some(v => v.bayId === bayId));
+const exitVeh = (b, conf) => ({ bayId: b.id, bayCode: b.code, plate: platesSeen[plateKey(b.code)] || b.plate || '•••', type: b.kind, conf });
+
+// ---------------------------------------------------------------------
+// 平面圖編輯
+// ---------------------------------------------------------------------
+async function renderEditor() {
+  const app = $('app');
+  if (!CP.loc) { app.innerHTML = noLoc(); return; }
+  app.innerHTML = '<div class="loading">讀緊…</div>';
+  let lay;
+  try { lay = await rpc('ps_cp_layout', { p_location: CP.loc }); } catch (e) { app.innerHTML = `<div class="card err">${esc(e.message)}</div>`; return; }
+  let k = 0;
+  const ed = CP.ed = {
+    levels: lay.levels.map(l => ({ id: l.id, key: String(l.id), name: l.name, sort: l.sort, width: l.width, height: l.height, shapes: l.shapes, bg: 'keep', img: l.bg_image })),
+    bays: lay.bays.map(b => ({ ...b, _k: 'b' + (k++), level: String(b.level_id), x: +b.x, y: +b.y, w: +b.w, h: +b.h })),
+    cur: null, tool: 'select', sel: null, snap: true, dirty: false, seq: k, loc: lay.location
+  };
+  if (!ed.levels.length) ed.levels.push({ key: 'n1', name: 'G', sort: 0, width: 1000, height: 700, shapes: [], bg: 'keep', img: null });
+  ed.cur = ed.levels[0].key;
+  drawEditor();
+}
+function drawEditor() {
+  const app = $('app'), ed = CP.ed, lv = ed.levels.find(l => l.key === ed.cur);
+  const bays = ed.bays.filter(b => b.level === lv.key);
+  const selB = ed.bays.find(b => b._k === ed.sel);
+  const counts = ['regular', 'ev', 'motorcycle'].map(t => `${KIND[t]} ${ed.bays.filter(b => b.kind === t).length}`).join('．');
+  app.innerHTML = `
+    <div class="cbar">${locSelect()}<span class="small muted">${counts}</span><span class="sp"></span>
+      ${ed.dirty ? '<span class="pill warn">未儲存</span>' : ''}<button class="btn ghost sm" id="edreload">↺ 放棄修改</button><button class="btn" id="edsave">💾 儲存平面圖</button></div>
+    <div class="err" id="ederr" style="margin-bottom:8px"></div>
+    <div class="ed-grid">
+      <section class="panel">
+        <div class="tools">
+          <div class="lvtabs">${ed.levels.map(l => `<button data-lv="${esc(l.key)}" class="${l.key === ed.cur ? 'on' : ''}">${esc(l.name)}</button>`).join('')}<button data-addlv>＋ 樓層</button></div>
+          <span class="sp" style="flex:1"></span>
+          ${[['select', '↖ 揀／拖'], ['regular', '＋ 一般'], ['ev', '＋ ⚡ 充電'], ['motorcycle', '＋ 🏍️ 電單車']].map(([t, n]) => `<button class="btn ghost sm ${ed.tool === t ? 'on' : ''}" data-tool="${t}">${n}</button>`).join('')}
+          <label class="check small"><input type="checkbox" id="snap" ${ed.snap ? 'checked' : ''}> 對齊格仔</label></div>
+        <div class="fp-wrap"><svg class="ed-svg" id="edsvg" viewBox="0 0 ${lv.width} ${lv.height}">${SVG_DEFS}
+          ${lv.img ? `<image href="${esc(lv.img)}" x="0" y="0" width="${lv.width}" height="${lv.height}" preserveAspectRatio="xMidYMid meet" opacity="0.6"/>` : ''}
+          ${shapesSvg(lv.shapes)}${baysSvg(bays.map(b => ({ ...b, id: null })), { editor: true })}
+          ${selB && selB.level === lv.key ? `<rect id="selbox" x="${selB.x}" y="${selB.y}" width="${selB.w}" height="${selB.h}" fill="none" stroke="#e6edf5" stroke-dasharray="4 3" pointer-events="none"/>
+            <rect class="handle" id="selhandle" data-handle x="${selB.x + selB.w - 7}" y="${selB.y + selB.h - 7}" width="14" height="14"/>` : ''}</svg></div>
+        <p class="hint">揀「＋ 一般」等工具再撳平面圖就加車位；撳車位揀選，拖曳移動，拖右下角改大細；方向鍵微調，Delete 刪除。虛線框 = 有車／已預留，唔可以刪。</p>
+      </section>
+      <aside class="panel">
+        <div class="ph"><h2>樓層</h2></div>
+        <form class="form" id="lvform"><label class="f">名稱<input name="name" value="${esc(lv.name)}" maxlength="20"></label>
+          <div class="row" style="grid-template-columns:1fr 1fr"><label class="f">闊<input type="number" name="width" min="200" max="4000" value="${lv.width}"></label>
+            <label class="f">高<input type="number" name="height" min="200" max="4000" value="${lv.height}"></label></div>
+          <label class="f">背景平面圖（PNG／JPG，會自動縮細）<input type="file" accept="image/png,image/jpeg,image/webp" id="bgfile"></label>
+          <div class="btns">${lv.img ? '<button type="button" class="btn ghost sm" id="bgclear">移除背景</button>' : ''}<button type="button" class="btn ghost sm" id="bgfit">按背景比例設定大細</button>
+            ${lv.shapes && lv.shapes.length ? '<button type="button" class="btn ghost sm" id="shclear">清走示意線條</button>' : ''}
+            ${ed.levels.length > 1 ? '<button type="button" class="btn bad sm" id="lvdel">刪除樓層</button>' : ''}</div></form>
+        <div class="ph" style="margin-top:14px"><h2>車位</h2></div>
+        ${selB ? `<form class="form" id="bform"><div class="row" style="grid-template-columns:1fr 1fr">
+            <label class="f">編號<input name="code" value="${esc(selB.code)}" maxlength="12"></label>
+            <label class="f">種類<select name="kind" ${selB.status && selB.status !== 'free' && selB.status !== 'disabled' ? 'disabled' : ''}>${Object.entries(KIND).map(([kk, n]) => `<option value="${kk}" ${selB.kind === kk ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
+          <div class="row" style="grid-template-columns:repeat(4,1fr)">${['x', 'y', 'w', 'h'].map(f => `<label class="f">${f.toUpperCase()}<input type="number" name="${f}" value="${Math.round(selB[f])}"></label>`).join('')}</div>
+          <label class="f">分配次序（細嘅先俾車）<input type="number" name="sort" value="${selB.sort || 0}"></label>
+          <div class="btns"><button type="button" class="btn ghost sm" id="brot">⟲ 轉 90°</button><button type="button" class="btn ghost sm" id="bdup">⧉ 複製</button>
+            <button type="button" class="btn bad sm" id="bdel" ${selB.status && !['free', 'disabled'].includes(selB.status) ? 'disabled' : ''}>🗑 刪除</button></div></form>`
+          : '<p class="small muted">撳一個車位就可以改編號、種類同大細。</p>'}
+        ${!CP.ed.bays.length ? `<div class="ph" style="margin-top:14px"><h2>快速開始</h2></div><button class="btn block" id="edgen">⚡ 按車位數自動生成</button>` : ''}
+      </aside>
+    </div>`;
+  bindLocSelect(app, renderEditor);
+  const mark = () => { ed.dirty = true; };
+  app.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { ed.cur = b.dataset.lv; ed.sel = null; drawEditor(); });
+  app.querySelector('[data-addlv]').onclick = () => { const key = 'n' + (ed.seq++); ed.levels.push({ key, name: 'L' + (ed.levels.length + 1), sort: ed.levels.length, width: 1000, height: 700, shapes: [], bg: 'keep', img: null }); ed.cur = key; mark(); drawEditor(); };
+  app.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => { ed.tool = b.dataset.tool; drawEditor(); });
+  $('snap').onchange = e => { ed.snap = e.target.checked; };
+  $('edreload').onclick = () => renderEditor();
+  $('edsave').onclick = e => busy(e.currentTarget, saveLayout);
+  const lf = $('lvform');
+  lf.onchange = e => { if (e.target.type === 'file') return; const d = formData(lf); lv.name = d.name.trim() || lv.name; lv.width = Math.max(200, Math.min(4000, +d.width || lv.width)); lv.height = Math.max(200, Math.min(4000, +d.height || lv.height)); mark(); drawEditor(); };
+  $('bgfile').onchange = async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try { const { url, w, h } = await shrinkImage(f, 2000, 1200000); lv.img = url; lv.bg = url; lv.imgW = w; lv.imgH = h; mark(); drawEditor(); toast('已載入背景，記得儲存'); }
+    catch (err) { toast('⚠️ ' + err.message, 4000); }
+  };
+  $('bgclear')?.addEventListener('click', () => { lv.img = null; lv.bg = 'clear'; mark(); drawEditor(); });
+  $('bgfit').onclick = () => {
+    const apply = (w, h) => { const s = Math.min(1, 1600 / Math.max(w, h)); lv.width = Math.round(w * s); lv.height = Math.round(h * s); mark(); drawEditor(); };
+    if (lv.imgW) apply(lv.imgW, lv.imgH);
+    else if (lv.img) { const im = new Image(); im.onload = () => apply(im.naturalWidth, im.naturalHeight); im.src = lv.img; }
+  };
+  $('shclear')?.addEventListener('click', () => { lv.shapes = []; mark(); drawEditor(); toast('已清走牆身、車道等示意線條（車位保留）'); });
+  $('lvdel')?.addEventListener('click', () => {
+    if (ed.bays.some(b => b.level === lv.key && b.status && !['free', 'disabled'].includes(b.status))) { toast('⚠️ 呢層有車位有車或者已預留', 4000); return; }
+    ed.bays = ed.bays.filter(b => b.level !== lv.key); ed.levels = ed.levels.filter(l => l !== lv); ed.cur = ed.levels[0].key; ed.sel = null; mark(); drawEditor();
+  });
+  $('edgen')?.addEventListener('click', e => busy(e.currentTarget, async () => {
+    try { await rpc('ps_cp_generate_layout', { p_location: CP.loc }); toast('✅ 已生成'); renderEditor(); } catch (err) { $('ederr').textContent = err.message; }
+  }));
+  const bf = $('bform');
+  if (bf && selB) {
+    bf.onchange = () => {
+      const d = formData(bf);
+      selB.code = d.code.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 12) || selB.code;
+      if (d.kind) selB.kind = d.kind;
+      ['x', 'y', 'w', 'h'].forEach(f => { const v = +d[f]; if (Number.isFinite(v)) selB[f] = f === 'w' || f === 'h' ? Math.max(8, v) : v; });
+      selB.sort = +d.sort || 0; mark(); drawEditor();
+    };
+    $('brot').onclick = () => { const cx = selB.x + selB.w / 2, cy = selB.y + selB.h / 2; [selB.w, selB.h] = [selB.h, selB.w]; selB.x = cx - selB.w / 2; selB.y = cy - selB.h / 2; mark(); drawEditor(); };
+    $('bdup').onclick = () => { const nb = { ...selB, id: undefined, status: undefined, _k: 'b' + (ed.seq++), code: nextCode(selB.code), x: selB.x + selB.w + 4, sort: (selB.sort || 0) + 1 }; ed.bays.push(nb); ed.sel = nb._k; mark(); drawEditor(); };
+    $('bdel').onclick = () => { ed.bays = ed.bays.filter(b => b !== selB); ed.sel = null; mark(); drawEditor(); };
+  }
+  // 平面圖互動：加、揀、拖、改大細
+  const svg = $('edsvg');
+  const pt = ev => { const r = svg.getBoundingClientRect(); return { x: (ev.clientX - r.left) * lv.width / r.width, y: (ev.clientY - r.top) * lv.height / r.height }; };
+  const snap = v => ed.snap ? Math.round(v / 5) * 5 : Math.round(v);
+  // 拖曳期間唔重畫成個 SVG（重畫會甩咗 pointer capture），放手先重畫
+  let drag = null;
+  svg.onpointerdown = ev => {
+    const p = pt(ev), g = ev.target.closest('.bay'), handle = ev.target.closest('[data-handle]');
+    if (handle && selB) { drag = { mode: 'size', b: selB, p0: p, w0: selB.w, h0: selB.h, moved: false }; svg.setPointerCapture(ev.pointerId); return; }
+    if (g) {
+      const b = bays.find(x => x._k === g.dataset.bay);
+      if (b) {
+        ed.sel = b._k; drag = { mode: 'move', b, g, p0: p, x0: b.x, y0: b.y, moved: false };
+        svg.querySelectorAll('.bay').forEach(x => x.classList.toggle('sel', x === g));
+        svg.setPointerCapture(ev.pointerId); return;
+      }
+    }
+    if (ed.tool !== 'select') {
+      const size = ed.tool === 'motorcycle' ? [26, 48] : [60, 110];
+      const pre = ed.tool === 'ev' ? 'E' : ed.tool === 'motorcycle' ? 'M' : 'P';
+      const nb = { _k: 'b' + (ed.seq++), level: lv.key, kind: ed.tool, code: nextFree(pre), x: snap(p.x - size[0] / 2), y: snap(p.y - size[1] / 2), w: size[0], h: size[1], sort: ed.bays.length };
+      ed.bays.push(nb); ed.sel = nb._k; mark(); drawEditor();
+    } else if (ed.sel) { ed.sel = null; drawEditor(); }
+  };
+  svg.onpointermove = ev => {
+    if (!drag) return;
+    const p = pt(ev);
+    if (Math.abs(p.x - drag.p0.x) + Math.abs(p.y - drag.p0.y) < 2 && !drag.moved) return;
+    drag.moved = true;
+    const box = $('selbox'), hd = $('selhandle');
+    if (drag.mode === 'move') {
+      drag.b.x = snap(drag.x0 + p.x - drag.p0.x); drag.b.y = snap(drag.y0 + p.y - drag.p0.y);
+      drag.g.setAttribute('transform', `translate(${drag.b.x - drag.x0} ${drag.b.y - drag.y0})`);
+      if (box && hd) { box.setAttribute('visibility', 'hidden'); hd.setAttribute('visibility', 'hidden'); }
+    } else {
+      drag.b.w = Math.max(8, snap(drag.w0 + p.x - drag.p0.x)); drag.b.h = Math.max(8, snap(drag.h0 + p.y - drag.p0.y));
+      const r = svg.querySelector(`[data-bay="${drag.b._k}"] rect.b`);
+      if (r) { r.setAttribute('width', Math.max(1, drag.b.w - 2)); r.setAttribute('height', Math.max(1, drag.b.h - 2)); }
+      if (box) { box.setAttribute('width', drag.b.w); box.setAttribute('height', drag.b.h); }
+      if (hd) { hd.setAttribute('x', drag.b.x + drag.b.w - 7); hd.setAttribute('y', drag.b.y + drag.b.h - 7); }
+    }
+  };
+  svg.onpointerup = () => { if (drag) { if (drag.moved) mark(); drag = null; drawEditor(); } };
+  document.onkeydown = ev => {
+    if (CP.tab !== 'editor' || !ed.sel || /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName)) return;
+    const b = ed.bays.find(x => x._k === ed.sel); if (!b) return;
+    const d = ev.shiftKey ? 10 : 1;
+    if (ev.key === 'ArrowLeft') b.x -= d; else if (ev.key === 'ArrowRight') b.x += d; else if (ev.key === 'ArrowUp') b.y -= d; else if (ev.key === 'ArrowDown') b.y += d;
+    else if ((ev.key === 'Delete' || ev.key === 'Backspace') && (!b.status || ['free', 'disabled'].includes(b.status))) { ed.bays = ed.bays.filter(x => x !== b); ed.sel = null; }
+    else return;
+    ev.preventDefault(); mark(); drawEditor();
+  };
+}
+function nextFree(pre) {
+  const used = new Set(CP.ed.bays.map(b => b.code.toUpperCase()));
+  for (let i = 1; i < 5000; i++) if (!used.has(pre + i)) return pre + i;
+  return pre + Date.now() % 10000;
+}
+function nextCode(code) { const m = code.match(/^(.*?)(\d+)$/); return m ? nextFree(m[1]) : nextFree(code.slice(0, 8)); }
+function shrinkImage(file, maxSide, maxChars) {
+  return new Promise((ok, bad) => {
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { bad(new Error('只接受 PNG／JPG／WebP')); return; }
+    const im = new Image(), url = URL.createObjectURL(file);
+    im.onload = () => {
+      let s = Math.min(1, maxSide / Math.max(im.naturalWidth, im.naturalHeight)), out = '';
+      for (let i = 0; i < 6; i++) {
+        const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * s); c.height = Math.round(im.naturalHeight * s);
+        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+        out = c.toDataURL('image/jpeg', 0.82);
+        if (out.length <= maxChars) { URL.revokeObjectURL(url); ok({ url: out, w: c.width, h: c.height }); return; }
+        s *= 0.75;
+      }
+      bad(new Error('張圖太大，請用細啲嘅圖'));
+    };
+    im.onerror = () => bad(new Error('讀唔到張圖'));
+    im.src = url;
+  });
+}
+async function saveLayout() {
+  const ed = CP.ed, err = $('ederr'); err.textContent = '';
+  const codes = ed.bays.map(b => b.code.toUpperCase());
+  const dup = codes.find((c, i) => codes.indexOf(c) !== i);
+  if (dup) { err.textContent = `車位編號重複：${dup}`; return; }
+  try {
+    await rpc('ps_cp_save_layout', { p_location: CP.loc,
+      p_levels: ed.levels.map(l => ({ id: l.id, key: l.key, name: l.name, sort: l.sort, width: l.width, height: l.height, shapes: l.shapes, bg: l.bg })),
+      p_bays: ed.bays.map(b => ({ id: b.id, level: b.level, code: b.code, kind: b.kind, x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(b.h), sort: b.sort || 0 })) });
+    CP.bg = {}; toast('✅ 已儲存平面圖'); renderEditor();
+  } catch (e) { err.textContent = e.message; }
+}
+
+// ---------------------------------------------------------------------
+// 報表
+// ---------------------------------------------------------------------
+async function renderReport() {
+  const app = $('app');
+  if (!CP.loc) { app.innerHTML = noLoc(); return; }
+  app.innerHTML = '<div class="loading">讀緊…</div>';
+  let r;
+  try { r = await rpc('ps_op_stats', { p_location: CP.loc, p_days: CP.days }); } catch (e) { app.innerHTML = `<div class="card err">${esc(e.message)}</div>`; return; }
+  const days = r.days.slice().reverse();
+  const sum = k => r.days.reduce((a, d) => a + (+d[k] || 0), 0);
+  const avg = k => { const xs = r.days.filter(d => d[k] != null).map(d => +d[k]); return xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null; };
+  const cols = [['day', '日期'], ['bookings', '預約'], ['queue', '排隊'], ['completed', '完成'], ['no_show', '失約'], ['cancelled', '取消'],
+    ['revenue', '泊車收入'], ['no_show_fees', '失約費'], ['discounts', '優惠折扣'], ['avg_stay_min', '平均泊（分鐘）'], ['avg_wait_min', '平均等（分鐘）'], ['entries', '入閘'], ['exits', '出閘']];
+  const isMoney = k => ['revenue', 'no_show_fees', 'discounts'].includes(k);
+  const total = sum('bookings') + sum('queue');
+  app.innerHTML = `
+    <div class="cbar">${locSelect()}<select class="inp" data-days style="width:auto;padding:6px 10px">${[7, 14, 30].map(n => `<option value="${n}" ${n === CP.days ? 'selected' : ''}>最近 ${n} 日</option>`).join('')}</select>
+      <span class="sp"></span><button class="btn ghost sm" data-csv>⬇️ 下載 CSV</button></div>
+    <div class="kstrip" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kt"><div class="k">預約</div><div class="v">${sum('bookings')}</div></div><div class="kt"><div class="k">遙距排隊</div><div class="v">${sum('queue')}</div></div>
+      <div class="kt"><div class="k">完成泊車</div><div class="v">${sum('completed')}</div></div><div class="kt"><div class="k">失約率</div><div class="v">${total ? Math.round(sum('no_show') / total * 100) : 0}<small>%</small></div></div>
+      <div class="kt"><div class="k">泊車收入</div><div class="v">${money(sum('revenue'))}</div></div><div class="kt"><div class="k">失約費</div><div class="v">${money(sum('no_show_fees'))}</div></div>
+      <div class="kt"><div class="k">平均排隊等候</div><div class="v">${avg('avg_wait_min') ?? '—'}<small> 分鐘</small></div></div><div class="kt"><div class="k">平均泊車時間</div><div class="v">${avg('avg_stay_min') ?? '—'}<small> 分鐘</small></div></div></div>
+    <p class="small muted">「平均排隊等候」＝攞籌到叫號嘅時間：呢段時間司機唔使喺街上排隊，可以用嚟評估減少路面排隊嘅效果。</p>
+    <div class="panel"><div class="tbl-wrap dark" style="max-height:none"><table><thead><tr>${cols.map(([k, t]) => `<th class="${k === 'day' ? '' : 'num'}">${t}</th>`).join('')}</tr></thead><tbody>
+      ${days.map(d => `<tr>${cols.map(([k]) => `<td class="${k === 'day' ? '' : 'num'}">${k === 'day' ? esc(d.day) : d[k] === null ? '—' : isMoney(k) ? money(d[k]) : esc(d[k])}</td>`).join('')}</tr>`).join('')}
+    </tbody></table></div></div>`;
+  bindLocSelect(app, renderReport);
+  app.querySelector('[data-days]').onchange = e => { CP.days = +e.target.value; renderReport(); };
+  app.querySelector('[data-csv]').onclick = () => download(`parksmart-report-${CP.loc}.csv`, [cols.map(c => c[1]).join(',')].concat(r.days.map(d => cols.map(([k]) => csvCell(d[k] ?? '')).join(','))).join('\n'));
+}
+
+// ---------------------------------------------------------------------
+// 設定：停車場資料、鏡頭、新增停車場（單個／CSV）
+// ---------------------------------------------------------------------
+const CSV_COLS = ['name', 'address', 'district', 'latitude', 'longitude', 'total_spots', 'ev_spots', 'hourly_rate', 'ext_park_id'];
+const CSV_LABEL = { name: '名稱', address: '地址', district: '地區', latitude: '緯度', longitude: '經度', total_spots: '一般車位', ev_spots: '充電車位', hourly_rate: '每小時 $', ext_park_id: '運輸署編號' };
+async function renderSettings() {
+  const app = $('app'), h = CP.home;
+  const L = h.locations.find(l => l.id === CP.loc);
+  const provs = h.providers.filter(p => p.status === 'approved' && p.is_active);
+  let cams = [];
+  if (L) { try { cams = (await rpc('ps_cp_layout', { p_location: CP.loc })).cameras; } catch (e) { cams = []; } }
+  app.innerHTML = `
+    ${L ? `<div class="grid2">
+      <div class="panel"><div class="ph"><h2>停車場資料</h2>${locSelect()}</div>
+        <form class="form" data-edit>
+          <div class="row"><label class="f">名稱<input name="name" value="${esc(L.name)}" maxlength="120" required></label><label class="f">地區<input name="district" value="${esc(L.district || '')}" maxlength="40"></label></div>
+          <label class="f">地址<input name="address" value="${esc(L.address || '')}" maxlength="200"></label>
+          <div class="row"><label class="f">一般車位${L.bay_mode ? '（由平面圖計）' : ''}<input type="number" name="total" min="0" max="10000" value="${L.regular.total}" ${L.bay_mode ? 'readonly' : ''}></label>
+            <label class="f">充電車位${L.bay_mode ? '（由平面圖計）' : ''}<input type="number" name="ev" min="0" max="2000" value="${L.ev ? L.ev.total : 0}" ${L.bay_mode ? 'readonly' : ''}></label></div>
+          <div class="row"><label class="f">每小時收費（$）<input type="number" name="rate" min="0" max="1000" step="0.5" value="${num(L.hourly_rate)}"></label>
+            <label class="f">預約寬限（分鐘）<input type="number" name="grace" min="5" max="60" value="${L.grace_min}"></label></div>
+          <label class="f">收費說明（司機會見到）<input name="pricing" value="${esc(L.pricing_info || '')}" maxlength="200"></label>
+          <label class="check"><input type="checkbox" name="active" ${L.is_active ? 'checked' : ''}> 接受預約（取消剔 = 暫停）</label>
+          <div class="err" data-err></div><div><button class="btn">儲存</button></div></form></div>
+      <div class="panel"><div class="ph"><h2>閘口鏡頭</h2><button class="btn ghost sm" id="camadd">＋ 加鏡頭</button></div>
+        <p class="small muted" style="margin-top:0">ROI＝畫面入面辨識車牌嘅範圍（0 至 1）。「串流位址」畀 Python 車牌辨識程式（lpr_edge.py）用；呢個網頁唔會連去鏡頭。</p>
+        <div id="camlist"></div><div class="err" id="camerr"></div><button class="btn" id="camsave" style="margin-top:8px">儲存鏡頭設定</button></div></div>` : ''}
+    ${provs.length ? `<div class="grid2" style="margin-top:14px">
+      <div class="panel"><div class="ph"><h2>➕ 新增停車場</h2></div>
+        <form class="form" data-add>${provs.length > 1 ? `<label class="f">公司<select name="prov">${provs.map(p => `<option value="${p.id}">${esc(p.company_name)}</option>`).join('')}</select></label>` : ''}
+          <label class="f">名稱<input name="name" required maxlength="120"></label><label class="f">地址<input name="address" maxlength="200"></label>
+          <div class="row"><label class="f">地區<input name="district" maxlength="40"></label><label class="f">運輸署編號（可以唔填）<input name="ext_park_id" maxlength="40"></label></div>
+          <div class="row"><label class="f">緯度<input name="latitude" required placeholder="22.3193"></label><label class="f">經度<input name="longitude" required placeholder="114.1694"></label></div>
+          <div class="row"><label class="f">一般車位<input type="number" name="total_spots" min="0" required></label><label class="f">充電車位<input type="number" name="ev_spots" min="0" value="0"></label>
+            <label class="f">每小時 $<input type="number" name="hourly_rate" min="0" step="0.5" required></label></div>
+          <div class="err" data-err></div><div><button class="btn">提交平台審批</button></div></form></div>
+      <div class="panel"><div class="ph"><h2>📄 CSV 一次過上載</h2></div>
+        <div class="btns"><button class="btn ghost sm" data-tpl>⬇️ 下載範本</button><label class="btn ghost sm" style="cursor:pointer">📂 揀 CSV 檔<input type="file" accept=".csv,text/csv" data-file hidden></label></div>
+        ${provs.length > 1 ? `<label class="f" style="margin-top:10px">公司<select data-csvprov>${provs.map(p => `<option value="${p.id}">${esc(p.company_name)}</option>`).join('')}</select></label>` : ''}
+        <div data-preview style="margin-top:12px"></div></div></div>` : ''}
+    <div class="panel" style="margin-top:14px"><div class="ph"><h2>提交記錄</h2></div><div class="tbl-wrap dark"><table><thead><tr><th>日期</th><th>檔案</th><th class="num">行數</th><th>狀態</th><th>備註</th></tr></thead><tbody>
+      ${h.uploads.map(c => `<tr><td>${dt(c.created_at)}</td><td>${esc(c.file_name)}</td><td class="num">${c.row_count}</td><td>${pill(c.status)}</td><td class="small">${esc(c.notes || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">未有</td></tr>'}
+    </tbody></table></div></div>`;
+  bindLocSelect(app, renderSettings);
+  const ef = app.querySelector('[data-edit]');
+  if (ef) ef.onsubmit = e => { e.preventDefault(); busy(ef.querySelector('button'), async () => {
+    const d = formData(ef);
+    try {
+      await rpc('ps_op_update_location', { p_location: CP.loc, p_name: d.name, p_address: d.address, p_district: d.district, p_total: +d.total, p_ev: +d.ev,
+        p_rate: +d.rate, p_grace: +d.grace, p_pricing_info: d.pricing, p_active: !!d.active });
+      toast('✅ 已儲存'); await cpLoad(true); renderSettings();
+    } catch (err) { ef.querySelector('[data-err]').textContent = err.message; }
+  }); };
+  if (L) {
+    const draw = () => {
+      $('camlist').innerHTML = cams.map((c, i) => `<div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px" data-ci="${i}">
+        <div class="row" style="display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:6px;align-items:end">
+          <label class="f">名稱<input data-k="name" value="${esc(c.name)}" maxlength="30"></label>
+          <label class="f">方向<select data-k="direction"><option value="entry" ${c.direction === 'entry' ? 'selected' : ''}>入口</option><option value="exit" ${c.direction === 'exit' ? 'selected' : ''}>出口</option></select></label>
+          <label class="f">車種<select data-k="default_type">${Object.entries(KIND).map(([k, n]) => `<option value="${k}" ${c.default_type === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <button class="btn ghost sm" data-del="${i}">🗑</button></div>
+        <div class="row" style="display:grid;grid-template-columns:repeat(4,1fr) 2fr;gap:6px;margin-top:6px">
+          ${['x1', 'y1', 'x2', 'y2'].map(k => `<label class="f">ROI ${k}<input type="number" step="0.01" min="0" max="1" data-roi="${k}" value="${(+c.roi[k]).toFixed(2)}"></label>`).join('')}
+          <label class="f">串流位址（Python 用）<input data-k="stream_hint" value="${esc(c.stream_hint || '')}" placeholder="rtsp://… 或 0（webcam）" maxlength="200"></label></div>
+        <div class="small muted" style="margin-top:4px">鏡頭 ID：<b class="mono">${c.id ?? '（儲存後先有）'}</b></div></div>`).join('') || '<p class="small muted">未有鏡頭</p>';
+      $('camlist').querySelectorAll('[data-ci]').forEach(row => {
+        const c = cams[+row.dataset.ci];
+        row.querySelectorAll('[data-k]').forEach(inp => inp.onchange = () => { c[inp.dataset.k] = inp.value; });
+        row.querySelectorAll('[data-roi]').forEach(inp => inp.onchange = () => { c.roi = { ...c.roi, [inp.dataset.roi]: +inp.value }; });
+        row.querySelector('[data-del]').onclick = () => { cams.splice(+row.dataset.ci, 1); draw(); };
+      });
+    };
+    draw();
+    $('camadd').onclick = () => { if (cams.length >= 9) return; cams.push({ name: `CAM-0${cams.length + 1}`, direction: 'entry', default_type: 'regular', roi: { x1: 0.2, y1: 0.35, x2: 0.8, y2: 0.9 }, is_active: true }); draw(); };
+    $('camsave').onclick = e => busy(e.currentTarget, async () => {
+      $('camerr').textContent = '';
+      try { cams = await rpc('ps_cp_save_cameras', { p_location: CP.loc, p_cameras: cams }); toast('✅ 已儲存鏡頭'); CP.camSig = null; draw(); }
+      catch (err) { $('camerr').textContent = err.message; }
+    });
+  }
+  const submitRows = async (prov, name, rows, errBox) => {
+    const r = await rpc('ps_op_submit_locations', { p_provider: prov, p_file_name: name, p_rows: rows });
+    if (!r.ok) { errBox.innerHTML = '有資料唔啱，未提交：<br>' + r.errors.map(x => `第 ${x.row} 行：${x.errors.map(esc).join('、')}`).join('<br>'); return; }
+    toast(`✅ 已提交 ${r.rows} 個停車場，等平台審批`, 4000); await cpLoad(true); renderSettings();
+  };
+  const af = app.querySelector('[data-add]');
+  if (af) af.onsubmit = e => { e.preventDefault(); busy(af.querySelector('button'), async () => {
+    const d = formData(af), errBox = af.querySelector('[data-err]'); errBox.textContent = '';
+    const row = Object.fromEntries(CSV_COLS.map(k => [k, (d[k] ?? '').trim()]));
+    try { await submitRows(+(d.prov || provs[0].id), '手動輸入：' + row.name, [row], errBox); } catch (err) { errBox.textContent = err.message; }
+  }); };
+  app.querySelector('[data-tpl]')?.addEventListener('click', () => download('parksmart-carparks-template.csv', CSV_COLS.join(',') + '\n好停車旺角,旺角道 1 號,油尖旺,22.3193,114.1694,120,6,28,\n'));
+  const fi = app.querySelector('[data-file]');
+  if (fi) fi.onchange = async () => {
+    const f = fi.files[0]; if (!f) return;
+    if (f.size > 500 * 1024) { toast('⚠️ 檔案太大（最大 500 KB）', 4000); return; }
+    CP.csvRows = parseCsv(await f.text()); CP.csvName = f.name;
+    const box = app.querySelector('[data-preview]');
+    const missing = ['name', 'latitude', 'longitude', 'total_spots', 'hourly_rate'].filter(k => CP.csvRows.length && !(k in CP.csvRows[0]));
+    if (!CP.csvRows.length || missing.length) { box.innerHTML = `<div class="err">讀唔到資料${missing.length ? '：缺少欄位 ' + missing.join('、') : ''}</div>`; return; }
+    box.innerHTML = `<p class="small"><b>${esc(f.name)}</b>：${CP.csvRows.length} 行</p><div class="tbl-wrap dark"><table><thead><tr>${CSV_COLS.map(k => `<th>${CSV_LABEL[k]}</th>`).join('')}</tr></thead><tbody>
+      ${CP.csvRows.slice(0, 20).map(r => `<tr>${CSV_COLS.map(k => `<td class="small">${esc(r[k] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <div class="err" data-err style="margin-top:8px"></div><button class="btn" data-send style="margin-top:10px">提交平台審批</button>`;
+    box.querySelector('[data-send]').onclick = e => busy(e.currentTarget, async () => {
+      const errBox = box.querySelector('[data-err]'); errBox.textContent = '';
+      try { await submitRows(+(app.querySelector('[data-csvprov]')?.value || provs[0].id), CP.csvName, CP.csvRows.map(r => Object.fromEntries(CSV_COLS.map(k => [k, r[k] ?? '']))), errBox); }
+      catch (err) { errBox.textContent = err.message; }
+    });
+  };
+}
+
+portalStart(AUTH_OPTS);
+
+</script>
+</body>
+</html>

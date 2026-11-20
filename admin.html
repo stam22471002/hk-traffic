@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-EPcEou2nrX+TAX/w18ovogkbXPAgH2kQJmlm0e6sOjE=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex">
+<title>ParkSmart 平台管理員後台</title>
+<style>
+:root {
+  --bg: #f4f6f9; --card: #ffffff; --ink: #1c2430; --muted: #66707d; --line: #e3e7ed; --soft: #f0f3f7;
+  --accent: #0b63c5; --accent-ink: #ffffff; --accent-soft: #e6f0fb;
+  --ok: #1e8e3e; --ok-soft: #e6f4ea; --warn: #b26a00; --warn-soft: #fff4e0; --bad: #c62828; --bad-soft: #fdecea;
+  --radius: 12px; --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 -apple-system, "Segoe UI", "Noto Sans TC", "PingFang HK", "Microsoft JhengHei", sans-serif; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* 頂部 */
+.top { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1180px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; white-space: nowrap; }
+.brand .logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 16px; }
+.brand small { font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+.top .sp { flex: 1; }
+.who { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34vw; }
+.tabs { max-width: 1180px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+.tabs button { background: none; border: none; border-bottom: 3px solid transparent; padding: 10px 12px; cursor: pointer; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs .badge { background: var(--bad); color: #fff; border-radius: 999px; font-size: 11px; padding: 0 6px; margin-left: 4px; }
+
+main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 60px; }
+h1 { font-size: 22px; margin: 4px 0 14px; }
+h2 { font-size: 17px; margin: 0 0 10px; }
+h3 { font-size: 15px; margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.card-head h2 { margin: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 860px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.narrow { max-width: 460px; margin: 30px auto; }
+
+/* 數字格 */
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.kpi { background: var(--soft); border-radius: 10px; padding: 10px 12px; }
+.kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 640px) { .kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.25; }
+.kpi .v small { font-size: 13px; color: var(--muted); font-weight: 500; }
+.kpi.ok { background: var(--ok-soft); } .kpi.warn { background: var(--warn-soft); } .kpi.bad { background: var(--bad-soft); }
+
+/* 表格 */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { background: var(--soft); font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); padding: 14px; text-align: center; }
+
+/* 標籤 */
+.pill { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+.pill.ok, .pill.approved, .pill.checked_in { background: var(--ok-soft); color: var(--ok); }
+.pill.warn, .pill.pending, .pill.called, .pill.reserved, .pill.waiting { background: var(--warn-soft); color: var(--warn); }
+.pill.bad, .pill.rejected { background: var(--bad-soft); color: var(--bad); }
+
+/* 表單 */
+.form { display: grid; gap: 12px; }
+.form .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+label.f input, label.f select, label.f textarea, .inp { width: 100%; border: 1px solid #cfd6df; border-radius: 8px; padding: 9px 11px; background: #fff; color: var(--ink); font-size: 15px; }
+label.f input:focus, label.f select:focus, .inp:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--muted); }
+.check input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--accent); flex-shrink: 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid transparent; border-radius: 8px; padding: 9px 16px;
+  background: var(--accent); color: var(--accent-ink); font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn:hover { filter: brightness(1.06); }
+.btn:disabled { opacity: 0.55; cursor: default; filter: none; }
+.btn.ghost { background: #fff; color: var(--ink); border-color: #cfd6df; }
+.btn.ok { background: var(--ok); } .btn.bad { background: var(--bad); } .btn.warn { background: #e37400; }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+.btn.block { width: 100%; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.err { color: var(--bad); font-size: 14px; }
+.err:empty { display: none; }
+.okmsg { color: var(--ok); font-size: 14px; }
+.okmsg:empty { display: none; }
+.links { display: flex; justify-content: space-between; font-size: 14px; margin-top: 12px; }
+.links a { cursor: pointer; }
+details.box { background: var(--soft); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+details.box summary { cursor: pointer; color: var(--ink); }
+details.box p { margin: 6px 0; }
+
+/* 提示訊息 */
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; transition: 0.2s; background: #1c2430; color: #fff;
+  padding: 10px 16px; border-radius: 10px; z-index: 100; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); pointer-events: none; }
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+.loading { color: var(--muted); padding: 40px 0; text-align: center; }
+.status-card { text-align: center; padding: 28px 16px; }
+.status-card .big { font-size: 40px; }
+@media (max-width: 560px) { .top-in { gap: 8px; } .brand small { display: none; } .who { display: none; } .tabs { overflow-x: auto; white-space: nowrap; } }
+
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="logo">P</span>ParkSmart <small>平台管理員</small></div>
+    <span class="sp"></span>
+    <span class="who" id="who"></span>
+    <button class="btn ghost sm" id="logout" hidden>登出</button>
+    <a class="btn ghost sm" href="./">用家網站</a>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main id="app"><div class="loading">載入緊…</div></main>
+<script>
+// =====================================================================
+// ParkSmart 後台共用：設定、登入、工具
+// =====================================================================
+// Supabase 設定：自動讀同一個資料夾入面 index.html 嘅 PS_URL／PS_KEY，呢個檔唔使改。
+// （呢頁有 Content-Security-Policy：改咗入面嘅 JavaScript，瀏覽器會拒絕執行）
+let PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
+let PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';
+const PS_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+const PS_SDK_SRI = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
+const PS_PDPO_VERSION = '2026-11';
+const MAIN_URL = new URL('./', location.href).href;   // 用家網站
+const P = { sb: null, session: null };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = x => { const n = +x || 0; return n % 1 ? n.toFixed(1) : String(n); };
+const money = x => '$' + (+x || 0).toLocaleString('en-HK', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+const hhmm = t => t ? new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Hong_Kong' }) : '—';
+const dmy = t => t ? new Date(t).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Hong_Kong' }) : '—';
+const dt = t => t ? `${dmy(t)} ${hhmm(t)}` : '—';
+const formData = f => Object.fromEntries(new FormData(f).entries());
+const STATUS = { pending: '審批中', approved: '已批准', rejected: '已拒絕', waiting: '排隊中', called: '已叫號', reserved: '已預約', checked_in: '泊緊',
+  completed: '完成', cancelled: '取消', no_show: '失約', expired: '過期', arrived: '已到' };
+const pill = s => `<span class="pill ${esc(s)}">${esc(STATUS[s] || s)}</span>`;
+
+function toast(msg, ms = 2600) {
+  let t = $('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), ms);
+}
+
+const PS_ERR = {
+  'PS:LOGIN': '請先登入', 'PS:CONSENT': '請先同意私隱政策', 'PS:RATE': '操作得太密，請遲啲再試', 'PS:BAD_INPUT': '資料唔啱，請再檢查',
+  'PS:FORBIDDEN': '你冇權限做呢樣嘢', 'PS:NOT_FOUND': '搵唔到', 'PS:CHANGED': '狀態啱啱變咗，請重新整理',
+  'PS:BAD_EMAIL': '電郵格式唔啱', 'PS:BAD_PHONE': '電話號碼格式唔啱', 'PS:ALREADY': '你已經申請咗（審批中或者已批准）',
+  'PS:NOT_APPROVED': '要等管理員批准咗先可以用', 'PS:BAD_ROWS': '檔案冇資料，或者多過 200 行', 'PS:HAS_BOOKINGS': '有人預約緊或者排緊隊，暫時唔可以停用',
+  'PS:ROW_INVALID': '有一行資料已經唔啱（例如運輸署編號俾人用咗），請拒絕後叫營運商重新上載',
+  'PS:BAD_CODE': '優惠碼要 4 至 20 個英文字母或數字', 'PS:CODE_TAKEN': '呢個優惠碼已經有人用，請換一個', 'PS:TOO_MANY': '數量已經到上限',
+  'PS:NO_LOCATION': '搵唔到呢個停車場', 'PS:BAD_PLATE': '車牌格式唔啱', 'PS:NAME': '名稱要 2 至 30 個字',
+  'PS:BAY_MODE': '呢個停車場用緊平面圖，車位數由平面圖計，請去「平面圖編輯」改', 'PS:BAY_BUSY': '呢個車位有車或者已預留，而家唔可以咁做',
+  'PS:USE_EXIT': '預約車要經出閘收費，請用「模擬出閘」', 'PS:HAS_LAYOUT': '已經有平面圖', 'PS:BAD_LAYOUT': '平面圖資料唔啱（樓層大細 200–4000，車位編號只可以用英文字母、數字同 -）',
+  'PS:DUP_CODE': '車位編號重複', 'PS:BAD_IMAGE': '背景圖唔啱：只接受 PNG／JPG／WebP，最大約 1 MB'
+};
+const PS_AUTH_ERR = [
+  [/invalid login credentials/i, '電郵或者密碼唔啱'], [/email not confirmed/i, '未確認電郵：請先去郵箱撳確認連結'],
+  [/password should be at least|weak password|password is too weak/i, '密碼太弱：最少 8 個字，要有英文字母同數字'],
+  [/rate limit|too many requests/i, '操作得太密，請遲啲再試'], [/only request this after/i, '請等一分鐘再試'],
+  [/invalid api key/i, 'Supabase key 唔啱：請檢查 index.html 入面嘅 PS_KEY'], [/failed to fetch|network/i, '連唔到伺服器，請檢查網絡']
+];
+function msgOf(e) {
+  const m = String(e?.message || e || '');
+  const k = (m.match(/PS:[A-Z_]+/) || [])[0];
+  if (k) return PS_ERR[k] || k;
+  const hit = PS_AUTH_ERR.find(([re]) => re.test(m));
+  return hit ? hit[1] : (m || '出錯，請再試');
+}
+async function rpc(fn, args) {
+  const { data, error } = await P.sb.rpc(fn, args || {});
+  if (error) throw new Error(msgOf(error));
+  return data;
+}
+async function busy(btn, fn) {
+  if (!btn || btn.disabled) return;
+  const t = btn.textContent;
+  btn.disabled = true; btn.textContent = '處理緊…';
+  try { return await fn(); } finally { if (btn.isConnected) { btn.disabled = false; btn.textContent = t; } }
+}
+function download(name, text, type = 'text/csv;charset=utf-8') {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([type.startsWith('text/csv') ? '﻿' + text : text], { type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+const csvCell = v => /[",\n]/.test(String(v ?? '')) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? '');
+
+// 讀 CSV（支援引號、逗號、換行；第一行係標題）
+function parseCsv(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  const clean = rows.filter(r => r.some(x => x.trim() !== ''));
+  if (!clean.length) return [];
+  const head = clean[0].map(h => h.trim().toLowerCase());
+  return clean.slice(1).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+}
+
+// ---------------------------------------------------------------------
+// 開始：讀設定 → 載入 Supabase → 登入狀態
+// ---------------------------------------------------------------------
+let CFG_INFO = '';
+async function loadConfig() {
+  if (PS_URL && PS_KEY) return;
+  const html = await fetch(new URL('index.html', location.href), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').catch(() => '');
+  const pick = name => ((html.match(new RegExp('(?:const|let|var)\\s+' + name + '\\s*=\\s*([\'"`])\\s*([^\'"`]*?)\\s*\\1')) || [])[2] || '').trim();
+  PS_URL = PS_URL || pick('PS_URL');
+  PS_KEY = PS_KEY || pick('PS_KEY');
+  CFG_INFO = !html ? '讀唔到同一個資料夾嘅 index.html（檔名要啱，同埋要喺同一個資料夾）'
+    : !PS_URL && !PS_KEY ? 'index.html 入面嘅 PS_URL 同 PS_KEY 都係空白'
+    : !PS_URL ? 'index.html 入面嘅 PS_URL 係空白' : !PS_KEY ? 'index.html 入面嘅 PS_KEY 係空白：請喺 Supabase → API Keys 複製 publishable key 貼入引號入面' : '';
+  if (PS_URL && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(PS_URL)) CFG_INFO = `PS_URL 格式唔啱（${PS_URL}）：應該係 https://你的編號.supabase.co，尾唔好有 /`;
+  if (PS_KEY && !/^sb_publishable_|^eyJ/.test(PS_KEY)) CFG_INFO = 'PS_KEY 唔似 publishable key（應該係 sb_publishable_ 開頭）';
+  if (/[^\x21-\x7E]/.test(PS_KEY)) CFG_INFO = 'PS_KEY 入面有唔應該有嘅字（例如「…」、中文、全形符號或者空格）。通常係用滑鼠揀咗 Supabase 顯示嘅縮短版 key。請喺 Supabase → API Keys 撳 key 旁邊嘅「複製」掣，再貼入引號入面。';
+}
+function loadSdk() {
+  if (window.supabase?.createClient) return Promise.resolve();
+  return new Promise((ok, bad) => {
+    const s = document.createElement('script');
+    s.src = PS_SDK; s.integrity = PS_SDK_SRI; s.crossOrigin = 'anonymous';
+    s.onload = ok; s.onerror = () => bad(new Error('載入唔到登入元件'));
+    document.head.appendChild(s);
+  });
+}
+function cleanUrl() {
+  const u = new URL(location.href), h = new URLSearchParams(u.hash.slice(1));
+  const err = u.searchParams.get('error_description') || h.get('error_description');
+  if (err) toast('⚠️ ' + (/expired|invalid/i.test(err) ? '條連結過咗期或者用過咗，請再試一次' : err), 6000);
+  let changed = false;
+  ['code', 'error', 'error_code', 'error_description'].forEach(k => { if (u.searchParams.has(k)) { u.searchParams.delete(k); changed = true; } });
+  if (h.has('error') || h.has('access_token')) { u.hash = ''; changed = true; }
+  if (changed) history.replaceState(null, '', u.toString());
+}
+
+// opts: { title, intro, onReady(), onSignedOut() }
+async function portalStart(opts) {
+  const app = $('app');
+  try {
+    await loadConfig();
+    if (!PS_URL || !PS_KEY || CFG_INFO) {
+      app.innerHTML = `<div class="card narrow"><h2>未設定好 Supabase</h2><p class="err">${esc(CFG_INFO || '缺少 PS_URL／PS_KEY')}</p>
+        <p class="small muted">後台會自動讀同一個資料夾入面 <b>index.html</b> 嘅設定。改好 index.html 上載之後，等一兩分鐘再按 Ctrl + F5。</p></div>`;
+      return;
+    }
+    await loadSdk();
+    P.sb = window.supabase.createClient(PS_URL, PS_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    P.sb.auth.onAuthStateChange((evt, session) => {
+      P.session = session;
+      if (evt === 'PASSWORD_RECOVERY') setTimeout(() => renderAuth(opts, 'newpass'), 200);
+      if (evt === 'SIGNED_OUT') setTimeout(() => { renderWho(); renderAuth(opts, 'login'); opts.onSignedOut?.(); }, 0);
+    });
+    P.session = (await P.sb.auth.getSession()).data.session;
+    cleanUrl();
+  } catch (e) { app.innerHTML = `<div class="card narrow err">${esc(msgOf(e))}</div>`; return; }
+  renderWho();
+  if (P.session) opts.onReady(); else renderAuth(opts, 'login');
+}
+function renderWho() {
+  const w = $('who'), lo = $('logout');
+  if (w) w.textContent = P.session?.user?.email || '';
+  if (lo) { lo.hidden = !P.session; lo.onclick = async () => { await P.sb.auth.signOut().catch(() => {}); P.session = null; toast('已登出'); }; }
+}
+
+const PRIVACY = `<details class="box"><summary>私隱政策（重點）</summary>
+  <p>收集：電郵、名稱、聯絡電話、你提交嘅公司／商戶同停車場資料。用途：審批、營運停車場或者優惠券、防止濫用。</p>
+  <p>保護：密碼經雜湊處理；數據庫用 Row Level Security，每個帳戶只睇到自己有權睇嘅資料；所有操作都有審計記錄。</p>
+  <p>存放：Supabase 雲端數據庫（新加坡）。你可以喺用家網站「帳戶 → 私隱」下載或者刪除自己嘅資料（《個人資料（私隱）條例》第 486 章）。</p>
+  <p>呢個係 University of West London 畢業專題嘅原型系統。</p></details>`;
+
+function pwProblem(pw, email) {
+  if (pw.length < 8) return '密碼最少 8 個字';
+  if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return '密碼要有英文字母同數字';
+  if (email && pw.toLowerCase().includes(email.split('@')[0].toLowerCase())) return '密碼唔好包含電郵名';
+  return '';
+}
+
+function renderAuth(opts, view) {
+  const app = $('app');
+  const redirect = location.origin + location.pathname;
+  const links = (...ls) => `<div class="links">${ls.map(([v, t]) => `<a data-v="${v}">${t}</a>`).join('')}</div>`;
+  const intro = `<div class="muted small" style="margin-bottom:12px">${opts.intro}</div>`;
+  const forms = {
+    login: `<h1>登入${esc(opts.title)}</h1>${intro}<form class="form"><label class="f">電郵<input type="email" name="email" autocomplete="email" required></label>
+      <label class="f">密碼<input type="password" name="pw" autocomplete="current-password" required></label>
+      <div class="err" data-err></div><button class="btn block">登入</button></form>${links(['signup', '未有帳戶？註冊'], ['forgot', '忘記密碼'])}
+      <p class="small muted" style="margin-top:14px">用家網站同後台用同一個帳戶。</p>`,
+    signup: `<h1>註冊帳戶</h1>${intro}<form class="form"><label class="f">名稱（2 至 30 個字）<input name="username" maxlength="30" required></label>
+      <label class="f">電郵<input type="email" name="email" autocomplete="email" required></label>
+      <label class="f">密碼（最少 8 個字，要有英文字母同數字）<input type="password" name="pw" autocomplete="new-password" required></label>
+      <label class="f">再輸入一次密碼<input type="password" name="pw2" autocomplete="new-password" required></label>
+      ${PRIVACY}<label class="check"><input type="checkbox" name="consent"> 我已閱讀並同意私隱政策</label>
+      <div class="err" data-err></div><button class="btn block">註冊</button></form>${links(['login', '已經有帳戶？登入'])}`,
+    forgot: `<h1>忘記密碼</h1><form class="form"><label class="f">註冊用嘅電郵<input type="email" name="email" required></label>
+      <div class="err" data-err></div><button class="btn block">寄重設連結</button></form>${links(['login', '返去登入'])}`,
+    newpass: `<h1>設定新密碼</h1><form class="form"><label class="f">新密碼<input type="password" name="pw" autocomplete="new-password" required></label>
+      <label class="f">再輸入一次<input type="password" name="pw2" autocomplete="new-password" required></label>
+      <div class="err" data-err></div><button class="btn block">更新密碼</button></form>`
+  };
+  app.innerHTML = `<div class="card narrow">${forms[view]}</div>`;
+  app.querySelectorAll('[data-v]').forEach(a => a.onclick = () => renderAuth(opts, a.dataset.v));
+  const f = app.querySelector('form'), errBox = app.querySelector('[data-err]');
+  f.onsubmit = e => { e.preventDefault(); busy(f.querySelector('button'), async () => {
+    const d = formData(f);
+    if (view === 'login') {
+      const { error } = await P.sb.auth.signInWithPassword({ email: d.email.trim(), password: d.pw });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      P.session = (await P.sb.auth.getSession()).data.session; renderWho(); opts.onReady();
+    } else if (view === 'signup') {
+      const email = d.email.trim();
+      const bad = d.username.trim().length < 2 ? '名稱最少 2 個字' : pwProblem(d.pw, email) || (d.pw !== d.pw2 ? '兩次密碼唔一樣' : '') || (!d.consent ? '要同意私隱政策先可以註冊' : '');
+      if (bad) { errBox.textContent = bad; return; }
+      const { data, error } = await P.sb.auth.signUp({ email, password: d.pw, options: { emailRedirectTo: redirect,
+        data: { username: d.username.trim(), pdpo_consent: true, pdpo_version: PS_PDPO_VERSION } } });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      if (data.session) { P.session = data.session; renderWho(); opts.onReady(); return; }
+      app.innerHTML = `<div class="card narrow status-card"><div class="big">📧</div><h2>差少少就完成</h2>
+        <p>我哋寄咗確認電郵去 <b>${esc(email)}</b>，撳入面條連結就完成註冊。</p><p class="small muted">搵唔到？睇吓垃圾郵件。</p>
+        <button class="btn ghost" data-v="login">去登入</button></div>`;
+      app.querySelector('[data-v]').onclick = () => renderAuth(opts, 'login');
+    } else if (view === 'forgot') {
+      const { error } = await P.sb.auth.resetPasswordForEmail(d.email.trim(), { redirectTo: redirect });
+      if (error && !/not found/i.test(error.message)) { errBox.textContent = msgOf(error); return; }
+      app.innerHTML = '<div class="card narrow status-card"><div class="big">📧</div><p>如果有呢個帳戶，我哋已經寄咗重設密碼連結。</p></div>';
+    } else if (view === 'newpass') {
+      const bad = pwProblem(d.pw, P.session?.user?.email) || (d.pw !== d.pw2 ? '兩次密碼唔一樣' : '');
+      if (bad) { errBox.textContent = bad; return; }
+      const { error } = await P.sb.auth.updateUser({ password: d.pw });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      toast('✅ 密碼已更新'); opts.onReady();
+    }
+  }); };
+}
+
+// 未同意私隱政策（例如喺數據庫建立之前註冊）
+function renderConsent(after) {
+  const app = $('app');
+  app.innerHTML = `<div class="card narrow"><h1>同意私隱政策</h1>${PRIVACY}
+    <label class="check" style="margin-top:12px"><input type="checkbox" data-c> 我已閱讀並同意私隱政策</label>
+    <div class="err" data-err style="margin-top:8px"></div><button class="btn block" style="margin-top:12px" data-ok>同意，繼續</button></div>`;
+  app.querySelector('details').open = true;
+  app.querySelector('[data-ok]').onclick = e => busy(e.currentTarget, async () => {
+    if (!app.querySelector('[data-c]').checked) { app.querySelector('[data-err]').textContent = '要剔咗先可以繼續'; return; }
+    try { await rpc('ps_give_consent', { p_version: PS_PDPO_VERSION }); after(); } catch (err) { app.querySelector('[data-err]').textContent = err.message; }
+  });
+}
+
+// 申請表（營運商／商戶共用）：fields = [[name, label, type, required, placeholder]]
+function applyFormHtml(title, intro, fields, note) {
+  return `<div class="card narrow"><h1>${title}</h1><p class="muted small">${intro}</p>
+    ${note ? `<div class="err" style="margin-bottom:10px">${note}</div>` : ''}
+    <form class="form">${fields.map(([n, l, t, req, ph]) => `<label class="f">${l}<input name="${n}" type="${t}" ${req ? 'required' : ''} placeholder="${esc(ph || '')}" maxlength="120"></label>`).join('')}
+    <div class="err" data-err></div><button class="btn block">提交申請</button></form>
+    <p class="small muted" style="margin-top:12px">提交之後，管理員會審批。批准咗就可以用晒所有功能。</p></div>`;
+}
+
+// =====================================================================
+// 平台管理員後台（只限 ParkSmart 平台管理員）
+// 審批營運商、商戶、新停車場；睇全平台數字；設定角色；審計記錄
+// =====================================================================
+const AD = { me: null, a: null, tab: 'review' };
+const AUTH_OPTS = {
+  title: '平台管理員後台', intro: 'ParkSmart 平台管理員專用：審批停車場營運商、商戶同新停車場。',
+  onReady: () => adLoad(), onSignedOut: () => renderTabs()
+};
+const CSV_COLS = ['name', 'address', 'district', 'latitude', 'longitude', 'total_spots', 'ev_spots', 'hourly_rate', 'ext_park_id'];
+const CSV_LABEL = { name: '名稱', address: '地址', district: '地區', latitude: '緯度', longitude: '經度', total_spots: '一般車位', ev_spots: '充電車位', hourly_rate: '每小時 $', ext_park_id: '運輸署編號' };
+
+async function adLoad() {
+  const app = $('app');
+  if (!AD.a) app.innerHTML = '<div class="loading">讀緊…</div>';
+  try { AD.me = (await rpc('ps_op_home')).user; } catch (e) { app.innerHTML = `<div class="card narrow err">${esc(e.message)}</div>`; return; }
+  if (!AD.me.consent) { renderTabs(); renderConsent(() => adLoad()); return; }
+  if (!AD.me.is_admin) {
+    renderTabs();
+    app.innerHTML = `<div class="card narrow status-card"><div class="big">🔒</div><h2>只限平台管理員</h2>
+      <p class="muted small">停車場職員請用「停車場管理系統」，商戶請用「商戶後台」。</p>
+      <div class="btns" style="justify-content:center"><a class="btn" href="carpark.html">停車場管理系統</a><a class="btn ghost" href="merchant.html">商戶後台</a></div></div>`;
+    return;
+  }
+  try { AD.a = await rpc('ps_admin_queue'); } catch (e) { app.innerHTML = `<div class="card err">${esc(e.message)}</div>`; return; }
+  renderTabs();
+  renderTab();
+}
+const pendingCount = a => a.providers.filter(p => p.status === 'pending').length + a.merchants.filter(m => m.status === 'pending').length
+  + a.uploads.filter(c => c.status === 'pending').length;
+function renderTabs() {
+  const el = $('tabs');
+  if (!AD.a || !AD.me?.is_admin) { el.innerHTML = ''; return; }
+  const n = pendingCount(AD.a);
+  el.innerHTML = [['review', '📋 審批'], ['parks', '🅿️ 停車場'], ['people', '👤 角色同審計']]
+    .map(([k, t]) => `<button data-t="${k}" class="${k === AD.tab ? 'on' : ''}">${t}${k === 'review' && n ? `<span class="badge">${n}</span>` : ''}</button>`).join('')
+    + '<a class="btn ghost sm" href="carpark.html" style="margin:6px 0 6px auto">🖥️ 停車場管理系統</a>';
+  el.querySelectorAll('button').forEach(b => b.onclick = () => { AD.tab = b.dataset.t; renderTabs(); renderTab(); });
+}
+function renderTab() { ({ review: renderReview, parks: renderParks, people: renderPeople })[AD.tab](); }
+async function reload() { try { AD.a = await rpc('ps_admin_queue'); } catch (e) { toast('⚠️ ' + e.message, 4000); } renderTabs(); renderTab(); }
+
+function kpis() {
+  const a = AD.a, c = a.counts, n = pendingCount(a);
+  const live = a.locations.filter(l => l.is_active);
+  const tot = live.reduce((s, l) => s + l.regular.total + (l.ev ? l.ev.total : 0), 0);
+  const free = live.reduce((s, l) => s + l.regular.available + (l.ev ? l.ev.available : 0), 0);
+  return `<div class="card"><div class="kpis">
+    <div class="kpi"><div class="k">用戶</div><div class="v">${c.users}</div></div>
+    <div class="kpi"><div class="k">合作停車場（接受預約）</div><div class="v">${live.length}<small class="muted"> ／ ${a.locations.length}</small></div></div>
+    <div class="kpi"><div class="k">全平台空位</div><div class="v">${free}<small class="muted"> ／ ${tot}</small></div></div>
+    <div class="kpi"><div class="k">今日預約</div><div class="v">${c.bookings_today}</div></div>
+    <div class="kpi"><div class="k">今日遙距排隊</div><div class="v">${c.queue_today}</div></div>
+    <div class="kpi"><div class="k">生效優惠券</div><div class="v">${c.active_coupons}</div></div>
+    <div class="kpi ${n ? 'warn' : 'ok'}"><div class="k">${n ? '⏳ ' : '✅ '}等你審批</div><div class="v">${n}</div></div></div></div>`;
+}
+const reviewBtns = (kind, id) => `<div class="btns"><input class="inp" style="max-width:180px;padding:5px 8px;font-size:13px" placeholder="備註（可以唔填）" data-note="${kind}${id}" aria-label="備註">
+  <button class="btn ok sm" data-rv="${kind}" data-id="${id}" data-ok="1">批准</button><button class="btn bad sm" data-rv="${kind}" data-id="${id}" data-ok="0">拒絕</button></div>`;
+function bindReview(app) {
+  app.querySelectorAll('[data-rv]').forEach(b => b.onclick = () => busy(b, async () => {
+    const fn = { p: 'ps_admin_review_provider', m: 'ps_admin_review_merchant', u: 'ps_admin_review_upload' }[b.dataset.rv];
+    const note = app.querySelector(`[data-note="${b.dataset.rv}${b.dataset.id}"]`)?.value || null;
+    try {
+      const r = await rpc(fn, { p_id: +b.dataset.id, p_approve: b.dataset.ok === '1', p_note: note });
+      toast(b.dataset.ok === '1' ? `✅ 已批准${r.created ? `，建立咗 ${r.created} 個停車場` : ''}` : '已處理');
+      await reload();
+    } catch (err) { toast('⚠️ ' + err.message, 5000); }
+  }));
+  app.querySelectorAll('[data-pact]').forEach(b => b.onclick = () => busy(b, async () => {
+    try { await rpc('ps_admin_set_provider_active', { p_id: +b.dataset.pact, p_active: b.dataset.on === '1' }); await reload(); } catch (err) { toast('⚠️ ' + err.message, 4000); }
+  }));
+}
+
+function renderReview() {
+  const app = $('app'), a = AD.a;
+  const pp = a.providers.filter(p => p.status === 'pending'), pm = a.merchants.filter(m => m.status === 'pending'), pu = a.uploads.filter(u => u.status === 'pending');
+  app.innerHTML = `${kpis()}
+    <div class="card"><h2>🏢 停車場營運商（${pp.length} 個等審批）</h2><div class="tbl-wrap"><table><thead><tr><th>公司</th><th>聯絡</th><th>申請人</th><th>日期</th><th>狀態</th><th></th></tr></thead><tbody>
+      ${a.providers.map(p => `<tr><td><b>${esc(p.company_name)}</b><div class="small muted">${p.locations} 個停車場</div></td>
+        <td class="small">${esc(p.contact_person || '')}<br>${esc(p.contact_phone || '')} ${esc(p.contact_email || '')}</td><td class="small">${esc(p.applicant || '—')}</td>
+        <td class="small">${dmy(p.created_at)}</td><td>${pill(p.status)}${p.is_active ? '' : ' <span class="pill bad">停用</span>'}<div class="small muted">${esc(p.review_note || '')}</div></td>
+        <td>${p.status === 'pending' ? reviewBtns('p', p.id) : p.status === 'approved' ? `<button class="btn ghost sm" data-pact="${p.id}" data-on="${p.is_active ? 0 : 1}">${p.is_active ? '停用' : '恢復'}</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">冇</td></tr>'}
+    </tbody></table></div></div>
+    <div class="card"><h2>📄 新停車場（${pu.length} 個等審批）</h2>
+      ${a.uploads.map(u => `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+        <div class="card-head" style="margin:0"><div><b>${esc(u.provider)}</b>：${esc(u.file_name)}．${u.row_count} 個停車場 ${pill(u.status)}
+          <div class="small muted">${dt(u.created_at)}．${esc(u.uploader || '')}${u.notes ? '．' + esc(u.notes) : ''}</div></div>${u.status === 'pending' ? reviewBtns('u', u.id) : ''}</div>
+        <details style="margin-top:6px"><summary class="small">睇內容</summary><div class="tbl-wrap" style="margin-top:6px"><table><thead><tr>${CSV_COLS.map(k => `<th>${CSV_LABEL[k]}</th>`).join('')}</tr></thead><tbody>
+          ${u.rows.map(r => `<tr>${CSV_COLS.map(k => `<td class="small">${esc(r[k] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details></div>`).join('') || '<p class="empty">冇</p>'}</div>
+    <div class="card"><h2>🏪 商戶（${pm.length} 個等審批）</h2><div class="tbl-wrap"><table><thead><tr><th>店名</th><th>地區</th><th>聯絡</th><th>申請人</th><th>日期</th><th>狀態</th><th></th></tr></thead><tbody>
+      ${a.merchants.map(m => `<tr><td><b>${esc(m.name)}</b><div class="small muted">${m.coupons} 張優惠券</div></td><td>${esc(m.district || '')}</td>
+        <td class="small">${esc(m.contact_phone || '')} ${esc(m.contact_email || '')}</td><td class="small">${esc(m.applicant || '—')}</td><td class="small">${dmy(m.created_at)}</td>
+        <td>${pill(m.status)}<div class="small muted">${esc(m.review_note || '')}</div></td>
+        <td>${m.status === 'pending' ? reviewBtns('m', m.id) : m.status === 'approved' ? `<button class="btn ghost sm" data-rv="m" data-id="${m.id}" data-ok="0">取消資格</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">冇</td></tr>'}
+    </tbody></table></div></div>`;
+  bindReview(app);
+}
+
+function renderParks() {
+  const app = $('app'), a = AD.a;
+  app.innerHTML = `${kpis()}
+    <div class="card"><h2>🅿️ 全部停車場（${a.locations.length}）</h2><p class="small muted" style="margin-top:0">平台層面只睇總數同開關；每個停車場嘅車位、閘口、平面圖由營運商喺「停車場管理系統」管理。</p>
+      <div class="tbl-wrap"><table><thead><tr><th>名稱</th><th>營運商</th><th class="num">一般（空／總）</th><th class="num">充電</th><th class="num">$／小時</th><th>模式</th><th>狀態</th><th></th></tr></thead><tbody>
+      ${a.locations.map(l => `<tr><td>${esc(l.name)}<div class="small muted">${esc(l.district || '')}${l.ext_park_id ? '．運輸署 ' + esc(l.ext_park_id) : ''}</div></td><td class="small">${esc(l.provider)}</td>
+        <td class="num">${l.regular.available} / ${l.regular.total}</td><td class="num">${l.ev ? l.ev.available + ' / ' + l.ev.total : '—'}</td><td class="num">${num(l.hourly_rate)}</td>
+        <td class="small">${l.bay_mode ? '🗺️ 平面圖' : '🔢 計數'}</td>
+        <td>${l.is_active ? '<span class="pill ok">✓ 接受預約</span>' : '<span class="pill">⏸ 暫停</span>'}</td>
+        <td><button class="btn ghost sm" data-lact="${l.id}" data-on="${l.is_active ? 0 : 1}">${l.is_active ? '暫停' : '恢復'}</button></td></tr>`).join('') || '<tr><td colspan="8" class="empty">冇</td></tr>'}
+    </tbody></table></div><p class="small muted">提示：喺用家網站地圖撳運輸署停車場，都可以「＋ 加入試點」。</p></div>`;
+  app.querySelectorAll('[data-lact]').forEach(b => b.onclick = () => busy(b, async () => {
+    try { await rpc('ps_admin_set_active', { p_location: +b.dataset.lact, p_active: b.dataset.on === '1' }); await reload(); } catch (err) { toast('⚠️ ' + err.message, 4000); }
+  }));
+}
+
+function renderPeople() {
+  const app = $('app'), a = AD.a;
+  app.innerHTML = `<div class="grid2">
+      <div class="card"><h2>👤 設定用戶角色</h2><form class="form" data-role><label class="f">用戶電郵<input type="email" name="email" required></label>
+        <label class="f">角色<select name="role"><option value="driver">普通用戶</option><option value="operator">營運商</option><option value="merchant">商戶</option><option value="admin">平台管理員</option></select></label>
+        <label class="f">（營運商）加入邊個停車場嘅公司<select name="loc"><option value="">唔使</option>${a.locations.map(l => `<option value="${l.id}">${esc(l.name)}．${esc(l.provider)}</option>`).join('')}</select></label>
+        <div class="err" data-err></div><div class="okmsg" data-ok></div><div><button class="btn ghost">設定</button></div></form>
+        <p class="small muted">一般情況唔使喺度設定：營運商同商戶自己喺後台申請，你喺「📋 審批」批准就得。</p></div>
+      <div class="card"><h2>🧾 審計記錄（最近 40）</h2><div class="tbl-wrap" style="max-height:420px;overflow-y:auto"><table><thead><tr><th>時間</th><th>動作</th><th>邊個</th></tr></thead><tbody>
+        ${a.audit.map(x => `<tr><td class="small">${dt(x.at)}</td><td class="small">${esc(x.action)}${x.entity ? `<span class="muted">．${esc(x.entity)} ${esc(x.entity_id || '')}</span>` : ''}</td><td class="small">${esc(x.actor || '系統')}</td></tr>`).join('')}
+      </tbody></table></div></div></div>`;
+  const rf = app.querySelector('[data-role]');
+  rf.onsubmit = e => { e.preventDefault(); busy(rf.querySelector('button'), async () => {
+    const d = formData(rf);
+    rf.querySelector('[data-err]').textContent = ''; rf.querySelector('[data-ok]').textContent = '';
+    try { await rpc('ps_admin_set_role', { p_email: d.email, p_role: d.role, p_location: d.loc ? +d.loc : null }); rf.querySelector('[data-ok]').textContent = '✅ 已設定'; }
+    catch (err) { rf.querySelector('[data-err]').textContent = err.message; }
+  }); };
+}
+
+portalStart(AUTH_OPTS);
+
+</script>
+</body>
+</html>
