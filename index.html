@@ -667,6 +667,8 @@
     .ps-pill { font-size: 11px; padding: 2px 7px; border-radius: 8px; background: var(--panel2); white-space: nowrap; }
     .ps-pill.called, .ps-pill.reserved { background: rgba(255,176,32,0.2); color: var(--amber); }
     .ps-pill.checked_in { background: rgba(52,199,89,0.18); color: var(--green); }
+    .ps-plink { color: var(--text); text-decoration: none; cursor: pointer; }
+    .ps-plink:hover b { color: var(--accent); }
   </style>
 </head>
 <body>
@@ -7088,8 +7090,8 @@
   // ParkSmart HK：登入、預約車位、遙距排隊（Supabase）
   // =====================================================================
   // ▼▼▼ 喺 Supabase → Project Settings → API Keys 抄呢兩個值落嚟 ▼▼▼
- const PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
- const PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';
+  const PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';   // Project URL，例如 'https://abcdefgh.supabase.co'
+  const PS_KEY = '';   // Publishable key，例如 'sb_publishable_xxxxxxxx'
   // ▲▲▲ Publishable key 本身就係公開嘅；資料安全靠數據庫嘅 Row Level Security ▲▲▲
   // （千祈唔好將 secret key／service_role key 放入網頁）
 
@@ -7164,11 +7166,13 @@
         // 唔好喺 callback 入面直接再叫 Supabase（會卡死），用 setTimeout
         if (evt === 'PASSWORD_RECOVERY') setTimeout(() => psOpenAccount('newpass'), 300);
         if (['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'].includes(evt)) setTimeout(psRefreshMe, 0);
+        if (evt === 'SIGNED_IN') setTimeout(() => { try { if (localStorage.getItem('ps-pending-coupon')) psCouponLink(); } catch (e) {} }, 500);
       });
       const { data } = await PS.sb.auth.getSession();
       PS.session = data.session;
       psCleanUrl();
       await Promise.all([psRefreshLocs(), psRefreshMe()]);
+      psCouponLink();
       setSource('ParkSmart 預約', true, `${PS.locs.length} 個停車場可以預約`);
     } catch (e) {
       console.error('ParkSmart', e);
@@ -7186,6 +7190,24 @@
     ['code', 'error', 'error_code', 'error_description'].forEach(k => { if (u.searchParams.has(k)) { u.searchParams.delete(k); changed = true; } });
     if (h.has('error') || h.has('access_token')) { u.hash = ''; changed = true; }
     if (changed) history.replaceState(null, '', u.toString());
+  }
+
+  // 商戶 QR 海報：?coupon=CODE → 登入後自動領取（未登入就先記住）
+  function psCouponLink() {
+    const u = new URL(location.href);
+    let code = (u.searchParams.get('coupon') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+    if (code) { u.searchParams.delete('coupon'); history.replaceState(null, '', u.toString()); try { localStorage.setItem('ps-pending-coupon', code); } catch (e) {} }
+    else { try { code = localStorage.getItem('ps-pending-coupon') || ''; } catch (e) {} }
+    if (!code) return;
+    if (!PS.session) {
+      psOpenAccount('login', { note: `🎟️ 登入或者註冊之後，會自動幫你領取優惠券 ${code}`, after: () => { psCloseSheet(); psCouponLink(); } });
+      return;
+    }
+    try { localStorage.removeItem('ps-pending-coupon'); } catch (e) {}
+    psRpc('ps_claim_coupon', { p_code: code }).then(r => {
+      toast(r.ok ? `🎟️ 已領取優惠券：${r.description}（預約時揀用）` : `⚠️ 優惠券 ${code}：${psMsg(r.error)}`, 6000);
+      psRefreshMe();
+    }).catch(e => toast('⚠️ ' + e.message, 5000));
   }
 
   async function psRefreshLocs() {
@@ -7712,7 +7734,7 @@
         <form class="ps-form ps-inline" data-f="coupon"><input name="code" placeholder="輸入優惠碼" maxlength="30" autocomplete="off" required><button class="mini-btn">領取</button></form>
         <div class="ps-err" data-err-coupon></div>`)}
       ${sec('hist', '🧾 記錄', me.history.length ? me.history.map(psHistItem).join('') : '<div class="ps-note">未有記錄</div>')}
-      ${me.operates.length || u.role === 'admin' ? sec('op', '🏢 營運商工具', '<div data-op><div class="ps-load">讀緊…</div></div>', true) : ''}
+      ${sec('partner', '🤝 合作夥伴', psPartnerHtml(me), u.role === 'admin' || !!(me.partner && (me.partner.operator || me.partner.merchant)))}
       ${sec('prof', '👤 個人資料', `<form class="ps-form" data-f="prof"><label>用戶名<input name="username" maxlength="30" value="${esc(u.username || '')}"></label>
         <label>手機號碼<input type="tel" name="phone" value="${esc(u.phone_number || '')}"></label><div class="ps-err" data-err-prof></div>
         <button class="mini-btn" style="margin:8px 0 0">儲存</button> <a class="ps-link" data-view="newpass">改密碼</a></form>`)}
@@ -7757,8 +7779,6 @@
       await PS.sb.auth.signOut().catch(() => {});
       PS.session = null; PS.me = null; psAfterMe(); psCloseSheet(); toast('已登出', 2000);
     };
-    const opBox = body.querySelector('[data-op]');
-    if (opBox) psOpRender(opBox);
   }
 
   function psHistItem(h) {
@@ -7769,81 +7789,15 @@
     return `<div class="ps-item"><span>${esc(h.location.name)}<small>${when}．${how}．${psType(h.space_type)}</small></span><span>${st}</span></div>`;
   }
 
-  // ---------- 營運商：閘口模擬（代替車牌辨識鏡頭）、空位、隊伍 ----------
-  async function psOpRender(box) {
-    const ids = PS.me.operates;
-    if (!ids.length) { box.innerHTML = '<div class="ps-note">未有停車場。喺地圖撳運輸署停車場 → 「＋ 加入試點」。</div>' + psRoleForm(); psBindRoleForm(box); return; }
-    if (!ids.includes(PS.opLoc)) PS.opLoc = ids[0];
-    let q;
-    try { q = await psRpc('ps_op_queue', { p_location: PS.opLoc }); } catch (e) { box.innerHTML = `<div class="ps-err">${esc(e.message)}</div>`; return; }
-    const L = q.location;
-    const stat = (label, s) => `<div class="ps-stat"><small>${label}</small><b>${s.available}<small>／${s.total} 空</small></b>
-      <small>已答應 ${s.held}．可預約 ${s.free}．排隊 ${s.queue}．每 ${psNum(s.turnover_min)} 分鐘走一架</small></div>`;
-    const plate = x => esc(x.plate || '—');
-    box.innerHTML = `
-      ${ids.length > 1 ? `<select class="ps-select" data-op-loc>${ids.map(id => `<option value="${id}"${id === PS.opLoc ? ' selected' : ''}>${esc(PS.byId[id]?.name || '#' + id)}</option>`).join('')}</select>` : `<b>${esc(L.name)}</b>`}
-      <div class="ps-op-grid">${stat('一般車位', L.regular)}${L.ev ? stat('充電車位', L.ev) : ''}</div>
-      <div class="rs-label">閘口模擬（代替車牌辨識鏡頭）</div>
-      <form class="ps-form" data-f="gate">
-        <div class="ps-row2"><input name="plate" placeholder="車牌，例如 AB1234" maxlength="10" autocomplete="off" required>
-          <select name="t"><option value="">冇預約嘅車：一般位</option>${L.ev ? '<option value="ev">冇預約嘅車：充電位</option>' : ''}</select></div>
-        <div class="ps-row2" style="margin-top:6px"><button class="ps-btn" data-k="entry">🚗 入閘</button><button class="ps-btn queue" data-k="exit">出閘 🚗</button></div>
-      </form>
-      <div class="ps-note" data-op-res>${esc(PS.opMsg || '')}</div>
-      <form class="ps-form ps-inline" data-f="spots"><label>一般空位<input type="number" name="a" min="0" max="${L.regular.total}" value="${L.regular.available}"></label>
-        ${L.ev ? `<label>充電空位<input type="number" name="e" min="0" max="${L.ev.total}" value="${L.ev.available}"></label>` : ''}<button class="mini-btn">更新空位</button></form>
-      <div class="rs-label">隊伍（${q.tickets.length}）</div>
-      ${q.tickets.map(t => `<div class="ps-item"><span>${esc(t.ticket_no)}<small>${plate(t)}．${psType(t.space_type)}</small></span>
-        <span class="ps-pill ${t.status}">${t.status === 'called' ? `已叫號．${hhmm(t.respond_by)} 前到` : `第 ${t.position} 位`}</span></div>`).join('') || '<div class="ps-note">冇人排隊</div>'}
-      <div class="rs-label">預約／泊緊（${q.bookings.length}）</div>
-      ${q.bookings.map(b => `<div class="ps-item"><span>${plate(b)}<small>${psType(b.space_type)}．${b.source === 'queue' ? '排隊' : '預約'}</small></span>
-        <span class="ps-pill ${b.status}">${b.status === 'checked_in' ? `${hhmm(b.start_time)} 入咗` : `${hhmm(b.hold_until)} 前到`}</span></div>`).join('') || '<div class="ps-note">冇</div>'}
-      <div class="rs-label">最近出入閘</div>
-      <div class="ps-note">${q.events.map(e => `${hhmm(e.at)} ${e.kind === 'entry' ? '入' : '出'}${e.booked ? '（App）' : ''}`).join('．') || '未有'}</div>
-      ${PS.me.user.role === 'admin' ? psRoleForm() : ''}
-      <button class="mini-btn" data-op-refresh style="margin:10px 0 0">⟳ 更新</button>`;
-    const sel = box.querySelector('[data-op-loc]');
-    if (sel) sel.onchange = () => { PS.opLoc = +sel.value; psOpRender(box); };
-    box.querySelector('[data-op-refresh]').onclick = () => psOpRender(box);
-    const gf = box.querySelector('[data-f="gate"]');
-    gf.onsubmit = e => {
-      e.preventDefault();
-      const btn = e.submitter || gf.querySelector('[data-k="entry"]');
-      psBusy(btn, async () => {
-        const d = psFormData(gf), res = box.querySelector('[data-op-res]');
-        try {
-          const r = await psRpc('ps_op_gate', { p_location: PS.opLoc, p_kind: btn.dataset.k, p_plate: d.plate, p_space_type: d.t || null });
-          const b = r.booking;
-          const msg = btn.dataset.k === 'entry'
-            ? { booking: '✅ 認到預約，開閘', queue: '✅ 認到排隊籌號，開閘', walk_in: r.warning ? '⚠️ 冇預約嘅車，而且冇位（有人預約緊）' : '🚗 冇預約嘅車，開閘' }[r.result]
-            : b ? `✅ 出閘．泊咗 ${Math.max(1, Math.round((Date.parse(b.end_time) - Date.parse(b.start_time)) / 60000))} 分鐘．收 $${psNum(b.total_cost)}${+b.discount ? `（減咗 $${psNum(b.discount)}）` : ''}` : '🚗 冇預約嘅車出閘';
-          PS.opMsg = `${d.plate.toUpperCase().replace(/[^A-Z0-9]/g, '')}：${msg}`;
-          await Promise.all([psRefreshMe(), psRefreshLocs()]);     // 可能係自己架車：上面張卡都要更新
-          if (box.isConnected) await psOpRender(box);
-        } catch (err) { res.textContent = '⚠️ ' + err.message; }
-      });
-    };
-    const sf = box.querySelector('[data-f="spots"]');
-    sf.onsubmit = e => { e.preventDefault(); psBusy(sf.querySelector('button'), async () => {
-      const d = psFormData(sf);
-      try { await psRpc('ps_op_set_spots', { p_location: PS.opLoc, p_available: +d.a, p_ev_available: d.e === undefined ? null : +d.e }); await psOpRender(box); psRefreshLocs(); }
-      catch (err) { box.querySelector('[data-op-res]').textContent = '⚠️ ' + err.message; }
-    }); };
-    psBindRoleForm(box);
-  }
-  function psRoleForm() {
-    return `<div class="rs-label">管理員：設定用戶角色</div><form class="ps-form ps-inline" data-f="role">
-      <input type="email" name="email" placeholder="用戶電郵" required><select name="role"><option value="operator">營運商（呢個停車場）</option>
-      <option value="driver">普通用戶</option><option value="admin">管理員</option></select><button class="mini-btn">設定</button></form><div class="ps-note" data-role-res></div>`;
-  }
-  function psBindRoleForm(box) {
-    const rf = box.querySelector('[data-f="role"]');
-    if (!rf) return;
-    rf.onsubmit = e => { e.preventDefault(); psBusy(rf.querySelector('button'), async () => {
-      const d = psFormData(rf);
-      try { await psRpc('ps_admin_set_role', { p_email: d.email, p_role: d.role, p_location: d.role === 'operator' ? PS.opLoc : null }); box.querySelector('[data-role-res]').textContent = '✅ 已設定（對方重新整理網頁就見到）'; }
-      catch (err) { box.querySelector('[data-role-res]').textContent = '⚠️ ' + err.message; }
-    }); };
+  // ---------- 合作夥伴：營運商後台、商戶後台（另外兩個網頁） ----------
+  function psPartnerHtml(me) {
+    const st = { pending: '審批中', approved: '已批准', rejected: '未獲批准' };
+    const op = me.partner?.operator, mc = me.partner?.merchant, admin = me.user.role === 'admin';
+    const row = (href, icon, title, sub, status) => `<a class="ps-item ps-plink" href="${href}" target="_blank" rel="noopener">
+      <span>${icon} <b>${title}</b><small>${sub}</small></span><span>${status ? `<span class="ps-pill${status === 'approved' ? ' checked_in' : status === 'pending' ? ' called' : ''}">${st[status]}</span>` : ''} ↗</span></a>`;
+    return (admin ? row('operator.html#admin', '🛠️', '管理員後台', '審批營運商、商戶、新停車場', '') : '')
+      + row('operator.html', '🏢', '營運商後台', op ? '管理停車場、閘口、隊伍同報表' : '你係停車場營運商？申請加入', op)
+      + row('merchant.html', '🏪', '商戶後台', mc ? '管理泊車優惠券' : '開舖做生意？開泊車優惠券吸引客人', mc);
   }
 
   // ---------- 管理員：將運輸署停車場加入試點 ----------
