@@ -578,7 +578,7 @@
     .ps-head b { color: #b06000; } .ps-head small { color: #5f6368; }
     .ps-line { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; font-size: 13px; margin: 3px 0; }
     .ps-line span { min-width: 72px; color: #5f6368; }
-    .ps-line b.ok { color: #188038; } .ps-line b.full { color: #d93025; } .ps-line small { color: #5f6368; }
+    .ps-line b.ok { color: #188038; } .ps-line b.full { color: #d93025; } .ps-line b.warn { color: #b06000; } .ps-line small { color: #5f6368; }
     .ps-btn { width: 100%; margin-top: 6px; padding: 9px; border: none; border-radius: 8px; background: #1a73e8; color: #fff; font-size: 14px;
       font-weight: 600; cursor: pointer; font-family: inherit; }
     .ps-btn.queue { background: #e37400; }
@@ -7141,7 +7141,11 @@
   const psNum = x => { const n = +x || 0; return n % 1 ? n.toFixed(1) : String(n); };
   const psType = t => t === 'ev' ? '⚡ 充電車位' : '一般車位';
   const psNav = l => `https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}&travelmode=driving`;
-  const psWait = s => Math.max(1, Math.round((s.queue + 1) * s.turnover_min));
+  // 排隊預計：v4 數據庫會畀 wait_next（存活分析，有範圍）；舊版用「人數 × 平均間隔」
+  const psWait = s => s.wait_next?.p50 ?? Math.max(1, Math.round((s.queue + 1) * s.turnover_min));
+  const psWaitTxt = (w, s) => w && w.p50 != null ? (w.lo != null ? `${w.p50} 分鐘（${w.lo}–${w.hi}）` : `${w.p50} 分鐘`) : `${psWait(s)} 分鐘`;
+  const psBk = s => s ? (s.bookable ?? s.free) : 0;          // 仲可以預約幾多個（有預約上限時少過空位）
+  const PS_STAY_OPTS = [[null, '唔知'], [30, '30 分鐘'], [60, '1 小時'], [120, '2 小時'], [180, '3 小時'], [240, '4 小時'], [480, '8 小時']];
   const psLeft = t => Math.max(0, minsFromNow(t));
 
   // ---------------------------------------------------------------------
@@ -7181,6 +7185,7 @@
       psCleanUrl();
       await Promise.all([psRefreshLocs(), psRefreshMe()]);
       psCouponLink();
+      psQueueLink();
       setSource('ParkSmart 預約', true, `${PS.locs.length} 個停車場可以預約`);
     } catch (e) {
       console.error('ParkSmart', e);
@@ -7216,6 +7221,16 @@
       toast(r.ok ? `🎟️ 已領取優惠券：${r.description}（預約時揀用）` : `⚠️ 優惠券 ${code}：${psMsg(r.error)}`, 6000);
       psRefreshMe();
     }).catch(e => toast('⚠️ ' + e.message, 5000));
+  }
+
+  // 停車場入口嘅 QR（?q=停車場編號）：已滿就直接開遙距排隊，有位就開預約
+  function psQueueLink() {
+    const u = new URL(location.href), q = u.searchParams.get('q');
+    if (!q || !/^[0-9]{1,9}$/.test(q)) return;
+    u.searchParams.delete('q'); history.replaceState(null, '', u.toString());
+    const l = PS.byId[+q];
+    if (!l) { toast('呢個停車場暫時唔接受預約或者排隊', 4000); return; }
+    psOpenBook(l.id);
   }
 
   async function psRefreshLocs() {
@@ -7304,15 +7319,17 @@
     });
   }
   function psBoxInner(l) {
-    const line = (s, label) => s ? `<div class="ps-line"><span>${label}</span>${s.free > 0
-      ? `<b class="ok">可預約 ${s.free} 個</b>`
-      : `<b class="full">已滿</b><small>${s.queue ? `排緊 ${s.queue} 人．` : ''}約等 ${psWait(s)} 分鐘</small>`}</div>` : '';
+    const line = (s, label) => s ? `<div class="ps-line"><span>${label}</span>${psBk(s) > 0
+      ? `<b class="ok">可預約 ${psBk(s)} 個</b>${s.free > psBk(s) ? `<small>另有即場 ${s.free - psBk(s)} 個</small>` : ''}`
+      : s.free > 0 ? `<b class="warn">預約名額滿</b><small>即場仲有 ${s.free} 個，可以直接駛去</small>`
+      : `<b class="full">已滿</b><small>${s.queue ? `排緊 ${s.queue} 人．` : ''}約等 ${psWaitTxt(s.wait_next, s)}</small>`}</div>` : '';
     const a = PS.me?.active;
     const mine = a && a.location?.id === l.id;
-    const anyFree = l.regular.free > 0 || (l.ev && l.ev.free > 0);
+    const anyBook = psBk(l.regular) > 0 || psBk(l.ev) > 0, anyFree = l.regular.free > 0 || (l.ev && l.ev.free > 0);
     const btn = mine
       ? `<button class="ps-btn ghost" data-ps-mine="1">查看我嘅${a.kind === 'ticket' ? '籌號' : '預約'}</button>`
-      : `<button class="ps-btn${anyFree ? '' : ' queue'}" data-ps-open="${l.id}">${anyFree ? '📅 預約車位' : '🎫 遙距排隊（唔使喺街等）'}</button>`;
+      : anyBook || !anyFree ? `<button class="ps-btn${anyBook ? '' : ' queue'}" data-ps-open="${l.id}">${anyBook ? '📅 預約車位' : '🎫 遙距排隊（唔使喺街等）'}</button>`
+      : `<a class="ps-btn" href="${psNav(l)}" target="_blank" rel="noopener">🚗 即場有位：直接駛去（唔使預約）</a>`;
     return `<div class="ps-head"><b>ParkSmart 預約</b><small>$${psNum(l.hourly_rate)}／小時</small></div>${line(l.regular, '一般車位')}${line(l.ev, '⚡ 充電車位')}${btn}`;
   }
   function psParkBox(p) {
@@ -7420,17 +7437,17 @@
     const st = keep || {
       // 預設一般車位；除非架車係電動車、一般位滿咗而充電位有空
       type: v0?.is_ev && l.ev?.free > 0 && !(l.regular.free > 0) ? 'ev' : 'regular',
-      eta: guess ? guess.opt : 30, vehicle: v0?.id || null, coupon: '', agree: false, addCar: !me.vehicles.length
+      eta: guess ? guess.opt : 30, vehicle: v0?.id || null, coupon: '', agree: false, addCar: !me.vehicles.length, stay: null
     };
     const render = (errMsg) => {
       const s = st.type === 'ev' ? l.ev : l.regular;
-      const mode = s && s.free > 0 ? 'book' : 'queue';
+      const mode = s && psBk(s) > 0 ? 'book' : s && s.free > 0 ? 'walk' : 'queue';
       const v = me.vehicles.find(x => x.id === st.vehicle);
       const evBad = st.type === 'ev' && v && !v.is_ev;
       const coupons = me.coupons.filter(c => !c.used && (!c.location_id || c.location_id === l.id));
       const eta = new Date(Date.now() + st.eta * 60000), until = new Date(eta.getTime() + l.grace_min * 60000);
       const typeOpt = (t, label, sp) => sp ? `<button class="rs-opt${st.type === t ? ' on' : ''}" data-t="${t}"><b>${label}</b>
-        <small>${sp.free > 0 ? `有 ${sp.free} 個位` : `滿咗．${sp.queue} 人排緊`}</small></button>` : '';
+        <small>${psBk(sp) > 0 ? `可預約 ${psBk(sp)} 個` : sp.free > 0 ? `預約名額滿．即場 ${sp.free} 個` : `滿咗．${sp.queue} 人排緊`}</small></button>` : '';
       const needCard = me.require_payment && !me.has_payment_method;
       body.innerHTML = `
         <div class="ps-place"><b>${esc(l.name)}</b><small>${esc(l.address || '')}．$${psNum(l.hourly_rate)}／小時</small></div>
@@ -7440,29 +7457,37 @@
           <div class="rs-label">幾耐到？${guess ? `<span class="ps-hint">📍 按你位置估計約 ${guess.m} 分鐘</span>` : ''}</div>
           <div class="rs-opts">${PS_ETA_OPTS.map(m => `<button class="rs-opt small${st.eta === m ? ' on' : ''}" data-eta="${m}">${m < 60 ? m + ' 分鐘' : m / 60 + ' 小時'}</button>`).join('')}</div>
           <div class="ps-note">車位會留到 <b>${hhmm(until)}</b>（預計 ${hhmm(eta)} 到 + ${l.grace_min} 分鐘寬限）</div>`
-        : `<div class="ps-queue-info">🚦 ${psType(st.type)}已滿．前面有 <b>${s.queue}</b> 人．估計等 <b>${psWait(s)}</b> 分鐘
-            <small>唔使喺街上排隊：可以慢慢駛過去，輪到你會通知你，之後 ${me.call_window_min} 分鐘內入閘就得。</small></div>`}
-        <div class="rs-label">邊架車？</div>
+        : mode === 'walk' ? `<div class="ps-queue-info">🚗 ${psType(st.type)}嘅預約名額已經滿咗（停車場留咗一部分車位畀即場）。
+            而家即場仲有 <b>${s.free}</b> 個位，可以直接駛去，閘口會自動分配車位。<small>即場位先到先得，唔保證有位；如果到咗已滿，可以掃入口 QR 遙距排隊。</small>
+            <a class="fr-big" style="display:block;text-align:center;margin-top:10px;text-decoration:none" href="${psNav(l)}" target="_blank" rel="noopener">🧭 導航去 ${esc(l.name)}</a></div>`
+        : `<div class="ps-queue-info">🚦 ${psType(st.type)}已滿．前面有 <b>${s.queue}</b> 人．估計等 <b>${psWaitTxt(s.wait_next, s)}</b>
+            <small>${s.wait_next?.method === 'survival' ? '按呢個停車場以往嘅泊車時間同場內每架車已經泊咗幾耐預測。' : ''}唔使喺街上排隊：可以慢慢駛過去，輪到你會通知你，之後 ${me.call_window_min} 分鐘內入閘就得。</small></div>`}
+        ${mode === 'walk' ? '' : `<div class="rs-label">預計泊幾耐？<span class="ps-hint">可以唔揀；幫系統估計幾時有位畀排隊嘅人</span></div>
+        <div class="rs-opts">${PS_STAY_OPTS.map(([m, t]) => `<button class="rs-opt small${st.stay === m ? ' on' : ''}" data-stay="${m ?? ''}">${t}</button>`).join('')}</div>`}
+        ${mode === 'walk' ? '' : `<div class="rs-label">邊架車？</div>
         <div class="rs-opts">${me.vehicles.map(x => `<button class="rs-opt small${x.id === st.vehicle ? ' on' : ''}" data-v="${x.id}"><b>${esc(x.plate)}</b><small>${x.is_ev ? '⚡ 電動車' : '私家車'}</small></button>`).join('')}
           <button class="rs-opt small${st.addCar ? ' on' : ''}" data-addcar="1"><b>＋</b><small>加車</small></button></div>
         ${st.addCar ? `<form class="ps-form ps-inline" data-f="car"><input name="plate" placeholder="車牌，例如 AB1234" maxlength="10" autocomplete="off" required>
           <label class="ps-chk"><input type="checkbox" name="ev"> 電動車</label><button class="mini-btn">加入</button></form>` : ''}
-        ${evBad ? '<div class="ps-err">呢架車唔係電動車：揀電動車，或者改揀一般車位。</div>' : ''}
+        ${evBad ? '<div class="ps-err">呢架車唔係電動車：揀電動車，或者改揀一般車位。</div>' : ''}`}
         ${coupons.length ? `<div class="rs-label">優惠券</div><div class="rs-opts"><button class="rs-opt small${!st.coupon ? ' on' : ''}" data-c="">唔用</button>
           ${coupons.map(c => `<button class="rs-opt small${String(c.id) === String(st.coupon) ? ' on' : ''}" data-c="${c.id}"><b>${c.discount_type === 'percent' ? psNum(c.discount_value) + '% off' : '減 $' + psNum(c.discount_value)}</b><small>${esc(c.merchant || c.code)}</small></button>`).join('')}</div>` : ''}
-        <div class="rs-label">付款</div>
+        ${mode === 'walk' ? '' : `<div class="rs-label">付款</div>
         <div class="ps-note">${needCard ? '⚠️ 要先綁定信用卡（功能整緊）' : me.require_payment ? '💳 用你綁定咗嘅信用卡' : '🧪 示範模式：未接駁 Stripe，唔使綁卡，唔會真係收錢'}</div>
         <label class="ps-terms"><input type="checkbox" data-agree ${st.agree ? 'checked' : ''}>
           <span>我明白：${mode === 'book' ? `如果 ${hhmm(until)} 之前都未入閘` : `叫到號之後 ${me.call_window_min} 分鐘內唔到`}，會預先授權並收取 <b>HK$${psNum(me.noshow_fee)}</b> 失約費。準時到或者提早取消就唔收。</span></label>
         <div class="ps-err" data-err>${errMsg ? esc(errMsg) : ''}</div>
-        <button class="fr-big${mode === 'queue' ? ' ps-q' : ''}" data-go ${!st.vehicle || evBad || needCard ? 'disabled' : ''}>${mode === 'book' ? '確認預約' : '確認遙距排隊'}</button>`;
+        <button class="fr-big${mode === 'queue' ? ' ps-q' : ''}" data-go ${!st.vehicle || evBad || needCard ? 'disabled' : ''}>${mode === 'book' ? '確認預約' : '確認遙距排隊'}</button>`}`;
 
       body.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { st.type = b.dataset.t; render(); });
       body.querySelectorAll('[data-eta]').forEach(b => b.onclick = () => { st.eta = +b.dataset.eta; render(); });
+      body.querySelectorAll('[data-stay]').forEach(b => b.onclick = () => { st.stay = b.dataset.stay ? +b.dataset.stay : null; render(); });
       body.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { st.vehicle = +b.dataset.v; st.addCar = false; render(); });
       body.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { st.coupon = b.dataset.c; render(); });
-      body.querySelector('[data-addcar]').onclick = () => { st.addCar = !st.addCar; render(); };
-      body.querySelector('[data-agree]').onchange = e => { st.agree = e.target.checked; body.querySelector('[data-err]').textContent = ''; };
+      const addc = body.querySelector('[data-addcar]');
+      if (addc) addc.onclick = () => { st.addCar = !st.addCar; render(); };
+      const ag = body.querySelector('[data-agree]');
+      if (ag) ag.onchange = e => { st.agree = e.target.checked; body.querySelector('[data-err]').textContent = ''; };
       const carForm = body.querySelector('[data-f="car"]');
       if (carForm) carForm.onsubmit = async e => {
         e.preventDefault();
@@ -7478,13 +7503,19 @@
           } catch (err) { render(err.message); }
         });
       };
-      body.querySelector('[data-go]').onclick = e => psBusy(e.currentTarget, async () => {
+      const go = body.querySelector('[data-go]');
+      if (go) go.onclick = e => psBusy(e.currentTarget, async () => {
         if (!st.agree) { body.querySelector('[data-err]').textContent = '請先剔「我明白」失約條款'; return; }
-        const args = { p_location: l.id, p_vehicle: st.vehicle, p_space_type: st.type, p_user_coupon: st.coupon ? +st.coupon : null, p_accept_terms: true };
+        const args = { p_location: l.id, p_vehicle: st.vehicle, p_space_type: st.type, p_user_coupon: st.coupon ? +st.coupon : null, p_accept_terms: true,
+                       ...(st.stay ? { p_expected_min: st.stay } : {}) };   // 舊版數據庫冇呢個參數：冇揀就唔送
         try {
           const r = mode === 'book' ? await psRpc('ps_book', { ...args, p_eta_min: st.eta }) : await psRpc('ps_join_queue', args);
+          if (r.kind === 'quota_full') {                                   // 預約名額啱啱滿咗：講明即場仲有位
+            toast(`預約名額啱啱滿咗；即場仲有 ${r.free} 個位，可以直接駛去`, 5000);
+            await psRefreshLocs(); psOpenBook(id, st); return;
+          }
           psCloseSheet();
-          toast(r.kind === 'ticket' ? `🎫 攞咗籌：${r.ticket_no}，第 ${r.position} 位，估計等 ${r.est_wait_min} 分鐘` : `✅ 已預約「${l.name}」，請喺 ${hhmm(r.hold_until)} 前入閘`, 6000);
+          toast(r.kind === 'ticket' ? `🎫 攞咗籌：${r.ticket_no}，第 ${r.position} 位，估計等 ${psWaitTxt(r.wait, { queue: r.position - 1, turnover_min: (r.est_wait_min || 10) / r.position })}` : `✅ 已預約「${l.name}」，請喺 ${hhmm(r.hold_until)} 前入閘`, 6000);
           await Promise.all([psRefreshMe(), psRefreshLocs()]);
           goTab('parking');
           if ('Notification' in window && Notification.permission === 'default') askNotify();   // 叫號時要通知
@@ -7521,7 +7552,7 @@
       <div class="ps-sub">仲有 ${psLeft(a.respond_by)} 分鐘．${sub}．閘口會自動認車牌</div>${acts}</div>`;
     if (a.kind === 'ticket') return `<div class="ps-card">
       <div class="ps-t"><span>🎫 遙距排隊．${esc(a.ticket_no)}</span><span>${esc(L.name)}</span></div>
-      <div class="ps-big">第 ${a.position} 位<small>估計等 ${a.est_wait_min} 分鐘（約 ${hhmm(Date.now() + a.est_wait_min * 60000)}）</small></div>
+      <div class="ps-big">第 ${a.position} 位<small>估計等 ${a.wait && a.wait.lo != null ? `${a.est_wait_min} 分鐘（${a.wait.lo}–${a.wait.hi}）` : `${a.est_wait_min} 分鐘`}，約 ${hhmm(Date.now() + a.est_wait_min * 60000)}</small></div>
       <div class="ps-sub">${sub}．可以慢慢駛過去，唔使喺街上等；輪到你會通知你</div>${acts}</div>`;
     if (a.status === 'checked_in') {
       const mins = Math.max(1, Math.ceil((Date.now() - Date.parse(a.start_time)) / 60000));
