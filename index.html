@@ -7101,7 +7101,7 @@
 
   const PS_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
   const PS_SDK_SRI = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
-  const PS_PDPO_VERSION = '2026-11';
+  const PS_PDPO_VERSION = '2026-12';
   const PS_ETA_OPTS = [10, 15, 20, 30, 45, 60, 90, 120];
   const PS = { sb: null, session: null, me: null, meLoaded: false, locs: [], byExt: {}, byId: {}, markers: {}, opLoc: null, tick: 0 };
 
@@ -7434,7 +7434,7 @@
       body.innerHTML = `<div class="ps-note" style="margin-bottom:8px">你已經有一個${me.active.kind === 'ticket' ? '籌號' : '預約'}，一次只可以有一個。</div>${psActiveHtml(me.active, true)}`;
       return;
     }
-    if (!me.user.consent) { psConsentView(body, () => psOpenBook(id)); return; }
+    if (!me.user.consent || me.user.consent_current === false) { psConsentView(body, () => psOpenBook(id), me.user.consent); return; }
     const guess = psGuessEta(l);
     const v0 = me.vehicles[0];
     const st = keep || {
@@ -7629,12 +7629,14 @@
   const PS_PRIVACY = `<details class="ps-privacy"><summary>私隱政策（重點）</summary>
     <p>收集咩：電郵、用戶名、電話（可以唔填）、車牌、預約同排隊記錄。</p>
     <p>做咩用：處理預約、排隊、計泊車費同失約費、防止濫用。唔會賣畀第三方，唔會用嚟賣廣告。</p>
+    <p>邊個睇到：你預約或者排隊嗰個停車場嘅職員，有需要時（例如核對車輛、聯絡你）可以睇到你嘅用戶名、電話同完整車牌；佢哋要逐次撳先見到，每次都有審計紀錄。冇預約直接駛入嘅車，系統只喺架車喺場內期間保留完整車牌，出閘即刻刪除。</p>
     <p>點保護：密碼經雜湊處理；預約同出入閘記錄入面嘅車牌只存加密雜湊；用戶只可以睇到自己嘅資料。你嘅位置只喺你部機計到達時間，唔會上載。</p>
     <p>存放：Supabase 雲端數據庫（新加坡）。你可以隨時喺「帳戶 → 私隱」下載或者刪除自己嘅資料（《個人資料（私隱）條例》第 486 章）。</p>
     <p>呢個係 University of West London 畢業專題嘅原型系統。</p></details>`;
 
-  function psConsentView(body, after) {
-    body.innerHTML = `<div class="ps-note">用 ParkSmart 預約之前，請先睇吓同同意私隱政策。</div>${PS_PRIVACY}
+  function psConsentView(body, after, updated) {
+    body.innerHTML = `<div class="ps-note">${updated ? '私隱政策更新咗（2026-12）：加咗「邊個睇到」——你預約或者排隊嗰個停車場嘅職員可以睇到你嘅用戶名、電話同車牌。請再睇一次同同意。'
+      : '用 ParkSmart 預約之前，請先睇吓同同意私隱政策。'}</div>${PS_PRIVACY}
       <label class="ps-terms"><input type="checkbox" data-c1> <span>我已閱讀並同意私隱政策</span></label>
       <div class="ps-err" data-err></div><button class="fr-big" data-ok>同意，繼續</button>`;
     body.querySelector('details').open = true;
