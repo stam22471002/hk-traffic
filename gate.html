@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-LzaLs4+ynrjbLETpU4uSOfI9N6sYfhnpR5KCVQ/C5rk=' 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-s96XYAvrC5siHgYDDXzMrn7a8Aems3krz4g1856mqC0=' 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex">
 <title>ParkSmart 手機閘口鏡頭</title>
@@ -464,11 +464,13 @@ function applyFormHtml(title, intro, fields, note) {
 //   引擎：ONNX Runtime Web 1.24.3（WebAssembly SIMD，單線程，唔使 GPU）
 // =====================================================================
 const LPR = {
-  ort: ['lpr/ort.wasm.min.js', 'sha384-1SBQgvQsxJRGAOAJ6K2nPaLO1SKelZwoF+biXgv2/D9fPspYLhvG4WIMDb/BUoJC'],
-  wasm: ['lpr/ort-wasm-simd-threaded.wasm', 'be0e129949062ad50290ef94683fac8be5bb6156f709e030b7a5f1661a2f6c17', 12361745],
-  det: ['lpr/yolo-v9-t-384-license-plates-end2end.onnx', '888397b96d761c89db40bc9c305838e8652660f5e282c2cadebbe8d2951a77a8', 7771218],
-  ocr: ['lpr/cct_xs_v1_global.onnx', 'c1ae2ae031b10f8ab7ed6e3cdaf8d9c753477e299dbad3579c8f705a7d882134', 2113942]
+  ort: ['ort.wasm.min.js', 'sha384-1SBQgvQsxJRGAOAJ6K2nPaLO1SKelZwoF+biXgv2/D9fPspYLhvG4WIMDb/BUoJC'],
+  wasm: ['ort-wasm-simd-threaded.wasm', 'be0e129949062ad50290ef94683fac8be5bb6156f709e030b7a5f1661a2f6c17', 12361745],
+  det: ['yolo-v9-t-384-license-plates-end2end.onnx', '888397b96d761c89db40bc9c305838e8652660f5e282c2cadebbe8d2951a77a8', 7771218],
+  ocr: ['cct_xs_v1_global.onnx', 'c1ae2ae031b10f8ab7ed6e3cdaf8d9c753477e299dbad3579c8f705a7d882134', 2113942]
 };
+// 引擎同模型放 lpr/ 資料夾，或者直接放喺 gate.html 隔籬（同一層）都得
+const LPR_DIRS = ['lpr/', ''];
 const DET_S = 384, OCR_W = 128, OCR_H = 64, ALPHA = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_', GAP_MS = 250, LPR_CACHE = 'ps-lpr-v1';
 // 測試 WebAssembly SIMD（iOS 16.4／Chrome 91 之後先有）
 const SIMD_TEST = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]);
@@ -550,9 +552,14 @@ async function loadCams() {
   if (G.cam && !G.cams.some(c => c.id === G.cam.id)) G.cam = null;
   if (G.cam) G.cam = G.cams.find(c => c.id === G.cam.id);
 }
+// 直接開手機入面嘅檔案（content://、file://）瀏覽器唔會俾用鏡頭，亦搵唔到 lpr/ 資料夾
+const WEB_OK = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+const GATE_HINT = '請先將 gate.html 同 lpr 資料夾上載去 GitHub，再用手機開網址（或者掃停車場管理系統「⚙️ 設定」→「📱 手機做鏡頭」個 QR）';
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 function support() {
   const miss = [];
-  if (!window.isSecureContext) miss.push('要用 https 開（GitHub Pages 就得）');
+  if (!WEB_OK) miss.push(`而家係直接開緊手機入面嘅檔案（${location.protocol}//…），瀏覽器唔會俾呢種頁面用鏡頭。${GATE_HINT}`);
+  else if (!window.isSecureContext) miss.push('要用 https 開（GitHub Pages 就得）');
   if (!navigator.mediaDevices?.getUserMedia) miss.push('呢個瀏覽器用唔到鏡頭');
   let simd = false; try { simd = WebAssembly.validate(SIMD_TEST); } catch (e) { simd = false; }
   if (!simd) miss.push('呢個瀏覽器唔支援 WebAssembly SIMD（iPhone 要 iOS 16.4 或以上；Android 用新版 Chrome）');
@@ -586,25 +593,33 @@ function renderSetup() {
 // ---------------------------------------------------------------------
 // 下載模型（核對 SHA-256，存入瀏覽器 Cache，下次唔使再下載）
 // ---------------------------------------------------------------------
-function loadOrt() {
-  if (window.ort?.InferenceSession) return Promise.resolve();
+async function findBase() {
+  if (G.base != null) return G.base;
+  for (const d of LPR_DIRS) {
+    try { const r = await fetch(new URL(d + LPR.ort[0], location.href).href, { method: 'HEAD', cache: 'no-cache' }); if (r.ok) return (G.base = d); } catch (e) { /* 試下一個位 */ }
+  }
+  throw new Error('搵唔到辨識引擎 ort.wasm.min.js：要上載去 GitHub，放喺 lpr 資料夾或者同 gate.html 同一層');
+}
+async function loadOrt() {
+  await findBase();
+  if (window.ort?.InferenceSession) return;
   return new Promise((ok, bad) => {
     const s = document.createElement('script');
-    s.src = LPR.ort[0]; s.integrity = LPR.ort[1];
-    s.onload = ok; s.onerror = () => bad(new Error('載入唔到辨識引擎（lpr/ort.wasm.min.js）：檢查 lpr 資料夾有冇上載齊'));
+    s.src = G.base + LPR.ort[0]; s.integrity = LPR.ort[1];
+    s.onload = ok; s.onerror = () => bad(new Error(`載入唔到辨識引擎（${G.base}${LPR.ort[0]}）：可能檔案唔完整，請重新上載`));
     document.head.appendChild(s);
   });
 }
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 const sha256 = async buf => hex(await crypto.subtle.digest('SHA-256', buf));
 async function fetchChecked([path, sha, size], onBytes) {
-  const url = new URL(path, location.href).href;
+  const url = new URL(G.base + path, location.href).href;
   let cache = null, buf = null;
   try { cache = await caches.open(LPR_CACHE); const hit = await cache.match(url); if (hit) buf = await hit.arrayBuffer(); } catch (e) { cache = null; }
   if (buf && await sha256(buf) !== sha) { buf = null; try { await cache.delete(url); } catch (e) { /* 冇所謂 */ } }
   if (!buf) {
     const res = await fetch(url, { cache: 'no-cache' });
-    if (!res.ok) throw new Error(`下載唔到 ${path}（HTTP ${res.status}）：檢查 lpr 資料夾有冇上載齊`);
+    if (!res.ok) throw new Error(`下載唔到 ${G.base}${path}（HTTP ${res.status}）：呢個檔要同 ort.wasm.min.js 放喺同一個位`);
     if (res.body?.getReader) {
       const rd = res.body.getReader(), parts = []; let got = 0;
       for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; onBytes(Math.min(got, size)); }
@@ -627,7 +642,7 @@ async function loadEngine(progress) {
   progress(1, '準備緊辨識引擎…');
   ort.env.wasm.numThreads = 1;                                  // GitHub Pages 冇 cross-origin isolation，用單線程
   ort.env.wasm.proxy = false;
-  ort.env.wasm.wasmPaths = new URL('lpr/', location.href).href;
+  ort.env.wasm.wasmPaths = new URL(G.base || './', location.href).href;
   ort.env.wasm.wasmBinary = bufs[0];
   ort.env.logLevel = 'error';
   const opt = { executionProviders: ['wasm'], graphOptimizationLevel: 'all' };
@@ -711,7 +726,9 @@ document.addEventListener('visibilitychange', async () => {
     if (!G.track || G.track.readyState === 'ended') { try { await openCamera(); } catch (e) { banner('📷 開唔到鏡頭：' + camErr(e), 'bad'); } }
   }
 });
-const camErr = e => /NotAllowed|Permission/i.test(e?.name + e?.message) ? '你拒絕咗用鏡頭。iPhone：設定 → Safari → 相機 → 允許；然後重新整理呢頁'
+const camErr = e => !WEB_OK ? `呢頁係直接開檔案（${location.protocol}），瀏覽器唔准用鏡頭。${GATE_HINT}`
+  : /NotAllowed|Permission/i.test(e?.name + e?.message) ? (IS_IOS ? '冇鏡頭權限。iPhone：設定 → Safari → 相機 → 允許；然後重新整理呢頁'
+    : '冇鏡頭權限。Chrome：撳網址列左邊嘅 ⓘ 或者鎖頭 → 權限 → 相機 → 允許；然後重新整理呢頁。如果手機設定入面 Chrome 冇相機權限，都要開返')
   : /NotFound|Overconstrained/i.test(e?.name) ? '搵唔到鏡頭' : /NotReadable/i.test(e?.name) ? '鏡頭俾第二個 app 用緊' : (e?.message || String(e));
 
 async function gStart() {
