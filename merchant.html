@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Rc5hMFUM2t8zwSxqXvIkR1y0jsKqy9Pt76kYG0Gepc=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-eOhPF8jieThT0wC2lWBwOIqBU5++ABUXYNqjx2ueqT0=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex">
 <title>ParkSmart 商戶後台</title>
@@ -153,7 +153,7 @@ let PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
 let PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';
 const PS_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
 const PS_SDK_SRI = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
-const PS_PDPO_VERSION = '2026-11';
+const PS_PDPO_VERSION = '2026-12';
 const MAIN_URL = new URL('./', location.href).href;   // 用家網站
 const P = { sb: null, session: null };
 
@@ -309,6 +309,7 @@ function renderWho() {
 const PRIVACY = `<details class="box"><summary>私隱政策（重點）</summary>
   <p>收集：電郵、名稱、聯絡電話、你提交嘅公司／商戶同停車場資料。用途：審批、營運停車場或者優惠券、防止濫用。</p>
   <p>保護：密碼經雜湊處理；數據庫用 Row Level Security，每個帳戶只睇到自己有權睇嘅資料；所有操作都有審計記錄。</p>
+  <p>停車場職員責任：只可以為咗核對車輛或者聯絡司機而撳「顯示」睇司機名、電話同完整車牌；每次都記低邊個、幾時睇，平台管理員睇得到。</p>
   <p>存放：Supabase 雲端數據庫（新加坡）。你可以喺用家網站「帳戶 → 私隱」下載或者刪除自己嘅資料（《個人資料（私隱）條例》第 486 章）。</p>
   <p>呢個係 University of West London 畢業專題嘅原型系統。</p></details>`;
 
