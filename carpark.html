@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-HeEe9w22QffXAe7MhiRCXoYP3c5GhQgg1/HXQVj0hTY=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-wStyGYP/csz93TjsHUzQ99ntJJDyIQc/bRVPAzs/mH0=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex">
 <title>ParkSmart 停車場管理系統</title>
@@ -285,6 +285,11 @@ details.box { background: var(--soft); }
 .gate-qr a { overflow-wrap: anywhere; }
 @media (max-width: 520px) { .gate-qr { flex-direction: column; align-items: flex-start; } }
 
+/* v5：顯示車主資料 */
+.who { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); border: 1px solid rgba(57, 135, 229, 0.45); display: grid; gap: 2px; font-size: 14px; }
+.who b.mono { letter-spacing: 1px; font-size: 16px; }
+tr.who-row td { padding-top: 0; }
+
 </style>
 </head>
 <body>
@@ -309,7 +314,7 @@ let PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
 let PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';
 const PS_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
 const PS_SDK_SRI = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
-const PS_PDPO_VERSION = '2026-11';
+const PS_PDPO_VERSION = '2026-12';
 const MAIN_URL = new URL('./', location.href).href;   // 用家網站
 const P = { sb: null, session: null };
 
@@ -465,6 +470,7 @@ function renderWho() {
 const PRIVACY = `<details class="box"><summary>私隱政策（重點）</summary>
   <p>收集：電郵、名稱、聯絡電話、你提交嘅公司／商戶同停車場資料。用途：審批、營運停車場或者優惠券、防止濫用。</p>
   <p>保護：密碼經雜湊處理；數據庫用 Row Level Security，每個帳戶只睇到自己有權睇嘅資料；所有操作都有審計記錄。</p>
+  <p>停車場職員責任：只可以為咗核對車輛或者聯絡司機而撳「顯示」睇司機名、電話同完整車牌；每次都記低邊個、幾時睇，平台管理員睇得到。</p>
   <p>存放：Supabase 雲端數據庫（新加坡）。你可以喺用家網站「帳戶 → 私隱」下載或者刪除自己嘅資料（《個人資料（私隱）條例》第 486 章）。</p>
   <p>呢個係 University of West London 畢業專題嘅原型系統。</p></details>`;
 
@@ -846,6 +852,21 @@ async function renderFloor(L) {
   });
 }
 
+// 顯示完整車牌同車主資料：每次都寫審計紀錄；60 秒後自動收埋（避免一直留喺螢幕）
+// 控制台每幾秒會重畫，所以結果放喺 CP.who，重畫時照樣顯示，夠鐘先消失
+async function reveal(key, args, redraw) {
+  CP.who = CP.who || {};
+  try {
+    const r = await rpc('ps_cp_reveal', { p_location: CP.loc, ...args });
+    const row = (k, v) => v ? `<div><span class="muted">${k}</span> <b class="${k === '車牌' ? 'mono' : ''}">${esc(v)}</b></div>` : '';
+    CP.who[key] = { until: Date.now() + 60000, html: `<div class="who">${row('車牌', r.plate || '（入閘時未有記錄完整車牌）')}${row('司機', r.name)}${row('電話', r.phone)}
+      ${r.note ? `<div class="small muted">${esc(r.note)}</div>` : ''}<div class="small muted">🔒 已記入審計紀錄（邊個職員、幾時睇）．60 秒後自動收埋</div></div>` };
+  } catch (e) { CP.who[key] = { until: Date.now() + 8000, html: `<div class="small err">${esc(e.message)}</div>` }; }
+  redraw();
+  setTimeout(redraw, 60500);
+}
+const whoOf = key => { const w = CP.who?.[key]; return w && w.until > Date.now() ? w.html : ''; };
+
 // 預計幾時走（存活分析：同類車喺已經泊咗咁耐嘅情況下，通常仲泊幾耐）
 function leaveText(b) {
   if (b.status !== 'occupied') return '';
@@ -868,9 +889,12 @@ function renderDetail() {
   el.innerHTML = `<div class="card-head" style="margin:0 0 6px"><b style="font-size:16px">${esc(b.code)} <span class="small muted">${KIND[b.kind]}</span></b><button class="btn ghost sm" data-x>✕</button></div>
     <div class="small">${BAYST[b.status]}${b.source ? '．' + SRC[b.source] : ''}${b.plate && b.status !== 'free' ? '．車牌 ' + esc(b.plate) : ''}
       ${b.status === 'occupied' && b.since ? `．${hhmm(b.since)} 入閘（泊咗 ${dur(minsSince(b.since))}）${leaveText(b).replace('<br>', '．')}` : ''}${b.deadline ? `．${hhmm(b.deadline)} 前要到，過時自動放返` : ''}</div>
-    ${acts.length ? `<div class="btns" style="margin-top:8px">${acts.map(([k, t, c]) => `<button class="btn sm ${c}" data-act="${k}">${t}</button>`).join('')}</div>` : '<p class="small muted" style="margin:8px 0 0">留畀司機嘅車位，佢到咗閘口會自動認車牌。</p>'}`;
+    ${acts.length ? `<div class="btns" style="margin-top:8px">${acts.map(([k, t, c]) => `<button class="btn sm ${c}" data-act="${k}">${t}</button>`).join('')}</div>` : '<p class="small muted" style="margin:8px 0 0">留畀司機嘅車位，佢到咗閘口會自動認車牌。</p>'}
+    ${['occupied', 'reserved'].includes(b.status) ? `<div class="btns" style="margin-top:8px"><button class="btn ghost sm" data-reveal>👁 顯示完整車牌同車主資料</button></div><div data-who>${whoOf('b' + b.id)}</div>` : ''}`;
   el.classList.add('on');
   el.querySelector('[data-x]').onclick = () => { CP.sel = null; el.classList.remove('on'); $('fp').querySelectorAll('.bay').forEach(x => x.classList.remove('sel')); };
+  const rv = el.querySelector('[data-reveal]');
+  if (rv) rv.onclick = () => busy(rv, () => reveal('b' + b.id, { p_bay: b.id }, renderDetail));
   el.querySelectorAll('[data-act]').forEach(btn => btn.onclick = () => busy(btn, async () => {
     try {
       if (btn.dataset.act === 'exit') {
@@ -960,11 +984,13 @@ function renderQueue(L) {
   renderSign(L);
   const t = L.tickets;
   $('qnote').textContent = t.length ? `${t.filter(x => x.status === 'waiting').length} 人等緊` : '';
-  $('queue').innerHTML = t.length ? `<div class="tbl-wrap dark"><table><thead><tr><th>籌號</th><th>車牌</th><th>狀態</th><th>預計等</th><th class="num">預計泊</th></tr></thead><tbody>
+  $('queue').innerHTML = t.length ? `<div class="tbl-wrap dark"><table><thead><tr><th>籌號</th><th>車牌</th><th>狀態</th><th>預計等</th><th class="num">預計泊</th><th></th></tr></thead><tbody>
     ${t.map(x => `<tr><td><b>${esc(x.ticket_no)}</b><div class="small muted">${x.space_type === 'ev' ? '⚡ 充電' : '一般'}．${hhmm(x.joined_at)} 攞籌（等咗 ${minsSince(x.joined_at)} 分鐘）</div></td><td class="mono">${esc(x.plate)}</td>
       <td>${x.status === 'called' ? `<span class="pill called">已叫號</span><div class="small muted">${hhmm(x.respond_by)} 前到</div>` : `<span class="pill waiting">第 ${x.position} 位</span>`}</td>
-      <td class="small">${x.wait ? esc(waitText(x.wait)) : x.status === 'called' ? '有位留咗' : '—'}</td><td class="num small">${x.expected_min ? dur(x.expected_min) : '—'}</td></tr>`).join('')}
+      <td class="small">${x.wait ? esc(waitText(x.wait)) : x.status === 'called' ? '有位留咗' : '—'}</td><td class="num small">${x.expected_min ? dur(x.expected_min) : '—'}</td><td><button class="btn ghost sm" data-tk="${x.id}" title="顯示完整車牌同車主資料">👁</button></td></tr>
+      ${whoOf('t' + x.id) ? `<tr class="who-row"><td colspan="6">${whoOf('t' + x.id)}</td></tr>` : ''}`).join('')}
     </tbody></table></div>` : '<p class="small muted">冇人排隊。滿咗嘅時候，司機掃入口 QR 或者喺 App 攞籌，唔使喺街上等；有車出閘會自動叫號同留位。</p>';
+  $('queue').querySelectorAll('[data-tk]').forEach(btn => btn.onclick = () => busy(btn, () => reveal('t' + btn.dataset.tk, { p_ticket: +btn.dataset.tk }, () => CP.live && renderQueue(CP.live))));
 }
 
 // ---------- 圖表（SVG，自己畫；一條 y 軸、hover 十字線） ----------
@@ -1266,7 +1292,7 @@ function afterRead(r, cam, v) {
   const dir = cam ? cam.cfg.direction : 'exit';
   const msg = dir === 'entry'
     ? { booking: `✅ ${plate} 認到預約 → 泊 ${r.bay || '（計數模式）'}`, queue: `✅ ${plate} 認到排隊籌號 → 泊 ${r.bay || ''}`, walk_in: `🚗 ${plate} 冇預約 → 分配 ${r.bay || '車位'}`,
-        full: `🚫 ${plate} 已滿，閘口唔開${r.wait ? `；排隊預計 ${waitText(r.wait)}` : ''}（入口 QR 可以攞籌）`, low_conf: `⚠️ ${plate} 信心 ${Math.round((v?.conf ?? 0) * 100)}%，等人手確認`, already_in: `↺ ${plate} 重複讀取` }[res]
+        full: `🚫 ${plate} 已滿，閘口唔開${r.wait ? `；排隊預計 ${waitText(r.wait)}` : ''}（入口 QR 可以攞籌）`, low_conf: `⚠️ ${plate} 信心 ${Math.round((v?.conf ?? r.confidence ?? 0) * 100)}%（未夠 ${Math.round((r.min_conf ?? 0.95) * 100)}%），等人手確認`, already_in: `↺ ${plate} 重複讀取` }[res]
     : `⬆️ ${plate} 出閘${r.bay ? '，放返 ' + r.bay : ''}${r.fee != null ? `，收 ${money(r.fee)}${+r.discount ? `（優惠減 ${money(r.discount)}）` : ''}` : ''}`;
   syslog(`${cam ? cam.cfg.name : '出口'}｜${msg || res}`, gateOpen || dir === 'exit' ? 'r-ok' : res === 'full' ? 'r-bad' : 'r-warn');
   const rr = $('ocrres');
@@ -1323,7 +1349,7 @@ function simTick() {
     if (occM.length && (Math.random() < occM.length / Math.max(1, mb.length) || !mb.some(b => b.status === 'free'))) {
       const b = occM[Math.floor(Math.random() * occM.length)];
       if (!camBusy(motoOut)) spawn(motoOut, exitVeh(b, 0.96));
-    } else if (!camBusy(motoIn) && mb.some(b => b.status === 'free')) spawn(motoIn, { plate: randPlate(), type: 'motorcycle', conf: 0.9 + Math.random() * 0.09 });
+    } else if (!camBusy(motoIn) && mb.some(b => b.status === 'free')) spawn(motoIn, { plate: randPlate(), type: 'motorcycle', conf: 0.955 + Math.random() * 0.044 });
     return;
   }
   const total = loc.regular.total + (loc.ev?.total || 0), avail = loc.regular.available + (loc.ev?.available || 0);
@@ -1334,7 +1360,7 @@ function simTick() {
   if (goIn && !camBusy(carIn)) {
     const lowConf = Math.random() < 0.07;
     const ev = loc.ev && Math.random() < 0.14;
-    spawn(carIn, { plate: randPlate(), type: ev ? 'ev' : 'regular', conf: lowConf ? 0.42 + Math.random() * 0.16 : 0.88 + Math.random() * 0.11 });
+    spawn(carIn, { plate: randPlate(), type: ev ? 'ev' : 'regular', conf: lowConf ? 0.6 + Math.random() * 0.3 : 0.955 + Math.random() * 0.044 });
   } else if (!goIn && !camBusy(carOut)) {
     spawn(carOut, exitVeh(outs[Math.floor(Math.random() * outs.length)], 0.97));
   }
@@ -1730,7 +1756,22 @@ async function renderSettings() {
         <p class="small" id="fcinfo">讀緊…</p>
         <p class="small muted">夠 30 次泊車記錄之後，系統用存活分析：按場內每架車已經泊咗幾耐，估計佢幾時走，模擬 200 次得出「排第幾位大約等幾耐」同範圍。記錄唔夠就用平均出閘間隔。</p>
         <div class="btns"><button class="btn ghost sm" id="demogen">產生 14 日示範記錄</button><button class="btn ghost sm" id="democlr">清除示範記錄</button></div>
-        <p class="small muted">示範記錄標明「示範」，只用嚟示範預測，報表唔會計，可以隨時清走。</p></div></div>` : ''}
+        <p class="small muted">示範記錄標明「示範」，只用嚟示範預測，報表唔會計，可以隨時清走。</p></div></div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="panel"><div class="ph"><h2>車牌辨識：自動開閘門檻</h2></div>
+        <form class="form" id="cform"><label class="f">信心值要幾高先自動開閘
+          <div style="display:flex;gap:10px;align-items:center"><input type="range" name="r" min="50" max="99" step="1" value="95" style="flex:1" aria-label="自動開閘門檻">
+          <input type="number" name="pct" min="50" max="99" value="95" style="width:90px"> %</div></label>
+          <p class="small" id="cprev" style="margin:0"></p>
+          <div class="err" id="cerr"></div><div><button class="btn">儲存門檻</button></div></form>
+        <p class="small muted">低過門檻：閘口唔開，等職員確認（手機鏡頭：喺閘口部手機撳「確認放行」；模擬車：喺控制台確認）。門檻越高越少認錯車，但要人手確認嘅車會多啲。預設 95%。</p></div>
+      <div class="panel"><div class="ph"><h2>🔒 車主資料</h2></div>
+        <ul class="small" style="margin:0;padding-left:18px;line-height:1.7">
+          <li>平面圖撳車位、或者排隊表撳 👁，先會顯示完整車牌、司機名同電話；60 秒後自動收埋。</li>
+          <li>只限自己停車場、而家場內／已留位／排緊隊嘅車；每次都記入審計紀錄；每個職員每小時最多 60 次。</li>
+          <li>冇預約直接駛入嘅車：系統冇車主資料（運輸署車主資料唔可以畀停車場查），只有完整車牌，出閘即刻刪走。</li>
+          <li>司機要同意 2026-12 版私隱政策（寫明會畀停車場職員睇）先會顯示名同電話。</li>
+        </ul></div></div>` : ''}
     ${provs.length ? `<div class="grid2" style="margin-top:14px">
       <div class="panel"><div class="ph"><h2>➕ 新增停車場</h2></div>
         <form class="form" data-add>${provs.length > 1 ? `<label class="f">公司<select name="prov">${provs.map(p => `<option value="${p.id}">${esc(p.company_name)}</option>`).join('')}</select></label>` : ''}
@@ -1762,7 +1803,18 @@ async function renderSettings() {
       try { await rpc('ps_cp_set_quota', { p_location: CP.loc, p_pct: Math.round(+qf.pct.value) }); toast('✅ 已儲存預約上限'); await cpLoad(true); renderSettings(); }
       catch (err) { $('qerr').textContent = err.message; }
     }); };
+    const cf = $('cform');
+    const cprev = () => { const v = Math.max(50, Math.min(99, +cf.pct.value || 95)); $('cprev').textContent = `車牌辨識信心 ${v}% 或以上先自動開閘；${v - 1}% 或以下等人手確認。`; };
+    cf.r.oninput = () => { cf.pct.value = cf.r.value; cprev(); };
+    cf.pct.oninput = () => { cf.r.value = cf.pct.value; cprev(); };
+    cf.onsubmit = e => { e.preventDefault(); busy(cf.querySelector('button'), async () => {
+      $('cerr').textContent = '';
+      try { await rpc('ps_cp_set_lpr_conf', { p_location: CP.loc, p_pct: Math.round(+cf.pct.value) }); toast('✅ 已儲存自動開閘門檻'); }
+      catch (err) { $('cerr').textContent = err.message; }
+    }); };
+    cprev();
     rpc('ps_cp_live', { p_location: CP.loc }).then(lv => {
+      if (lv.lpr_min_conf != null) { cf.pct.value = cf.r.value = Math.round(lv.lpr_min_conf * 100); cprev(); }
       const f = lv.forecast?.regular, el = $('fcinfo');
       const n = lv.forecast?.samples ?? 0;
       if (el) el.innerHTML = !f ? '未有資料。' : f.method === 'survival' ? `而家用 <b>存活分析</b>（${n} 次泊車記錄）。下一架車預計 ${esc(waitText(f))} 後走。`
