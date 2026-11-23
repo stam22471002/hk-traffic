@@ -1,0 +1,98 @@
+ParkSmart 手機閘口鏡頭（gate.html）用嘅第三方檔案
+====================================================
+全部係 MIT 授權，原封不動複製，冇改過。gate.html 每次載入都會核對 SHA-256，
+對唔上就唔會用（防止檔案上載唔完整或者俾人改過）。
+
+檔案：
+  cct_xs_v1_global.onnx   2,113,942 bytes  sha256 c1ae2ae031b10f8ab7ed6e3cdaf8d9c753477e299dbad3579c8f705a7d882134
+  ort-wasm-simd-threaded.mjs      24,274 bytes  sha256 5687566b1bc1c8cf628d76c2ddb16b2a3b81a7997273d4666564880495088e57
+  ort-wasm-simd-threaded.wasm  12,361,745 bytes  sha256 be0e129949062ad50290ef94683fac8be5bb6156f709e030b7a5f1661a2f6c17
+  ort.wasm.min.js      50,067 bytes  sha256 4043d2deda6a2e2fc783afc2b06d984068808181b88d451862c1230c433fce7a
+  yolo-v9-t-384-license-plates-end2end.onnx   7,771,218 bytes  sha256 888397b96d761c89db40bc9c305838e8652660f5e282c2cadebbe8d2951a77a8
+
+1. ONNX Runtime Web 1.24.3（ort.wasm.min.js、ort-wasm-simd-threaded.mjs、ort-wasm-simd-threaded.wasm）
+   來源：https://www.npmjs.com/package/onnxruntime-web （https://github.com/microsoft/onnxruntime）
+
+2. 車牌位置偵測模型 yolo-v9-t-384-license-plates-end2end.onnx
+   來源：open-image-models 0.6.0 https://github.com/ankandrew/open-image-models
+   原作者公佈：384 輸入，Precision 0.942、Recall 0.863、mAP50 0.92（佢哋嘅驗證集）
+
+3. 車牌文字辨識模型 cct_xs_v1_global.onnx（最多 9 個字，0-9 A-Z，輸入 128x64 RGB uint8）
+   來源：fast-plate-ocr https://github.com/ankandrew/fast-plate-ocr
+   原作者驗證結果（cct_xs_v1_global_val_results.json）：Hong Kong：成個車牌讀啱 plate_acc 0.911，逐個字 cat_acc 0.978
+   註：呢個係「已經剪好嘅車牌圖」嘅準確度，唔係成套系統喺現場嘅準確度。
+
+----------------------------------------------------------------------
+ONNX Runtime
+----------------------------------------------------------------------
+MIT License
+
+Copyright (c) Microsoft Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------------
+open-image-models
+----------------------------------------------------------------------
+MIT License
+
+Copyright (c) 2024 ankandrew
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------------
+fast-plate-ocr
+----------------------------------------------------------------------
+MIT License
+
+Copyright (c) 2024 ankandrew
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

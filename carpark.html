@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-Ufax+3FarudC28cjp+5SAMxojc1ysgbhYc42y76ZtOY=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-HeEe9w22QffXAe7MhiRCXoYP3c5GhQgg1/HXQVj0hTY=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex">
 <title>ParkSmart 停車場管理系統</title>
@@ -278,6 +278,13 @@ details.box { background: var(--soft); }
   .no-print { display: none !important; }
 }
 
+/* v5：設定 → 閘口鏡頭 → 手機做鏡頭 QR */
+.gate-qr { display: flex; gap: 12px; align-items: center; margin-top: 8px; padding: 10px; border-radius: 8px; background: var(--soft); border: 1px solid var(--line); }
+.gate-qr .sg-qr { width: 132px; flex: none; background: #fff; border-radius: 6px; padding: 6px; }
+.gate-qr .sg-qr svg { width: 120px; height: 120px; display: block; }
+.gate-qr a { overflow-wrap: anywhere; }
+@media (max-width: 520px) { .gate-qr { flex-direction: column; align-items: flex-start; } }
+
 </style>
 </head>
 <body>
@@ -335,7 +342,7 @@ const PS_ERR = {
   'PS:NO_LOCATION': '搵唔到呢個停車場', 'PS:BAD_PLATE': '車牌格式唔啱', 'PS:NAME': '名稱要 2 至 30 個字',
   'PS:BAY_MODE': '呢個停車場用緊平面圖，車位數由平面圖計，請去「平面圖編輯」改', 'PS:BAY_BUSY': '呢個車位有車或者已預留，而家唔可以咁做',
   'PS:USE_EXIT': '預約車要經出閘收費，請用「模擬出閘」', 'PS:HAS_LAYOUT': '已經有平面圖', 'PS:BAD_LAYOUT': '平面圖資料唔啱（樓層大細 200–4000，車位編號只可以用英文字母、數字同 -）',
-  'PS:DUP_CODE': '車位編號重複', 'PS:BAD_IMAGE': '背景圖唔啱：只接受 PNG／JPG／WebP，最大約 1 MB'
+  'PS:NEED_STAY': '請揀預計泊幾耐', 'PS:DUP_CODE': '車位編號重複', 'PS:BAD_IMAGE': '背景圖唔啱：只接受 PNG／JPG／WebP，最大約 1 MB'
 };
 const PS_AUTH_ERR = [
   [/invalid login credentials/i, '電郵或者密碼唔啱'], [/email not confirmed/i, '未確認電郵：請先去郵箱撳確認連結'],
@@ -572,7 +579,7 @@ const RES = {
   exit_booking: ['💳 出閘收費', 'r-ok'], exit_walk_in: ['⬆️ 出閘', 'r-ok'], manual_clear: ['✋ 人手清走', 'r-mute'], manual_occupy: ['✋ 人手標記', 'r-mute']
 };
 const minsSince = t => t ? Math.max(0, Math.round((Date.now() - Date.parse(t)) / 60000)) : 0;
-const dur = m => m < 60 ? `${m} 分鐘` : `${Math.floor(m / 60)} 小時 ${m % 60} 分`;
+const dur = m => m < 60 ? `${m} 分鐘` : `${Math.floor(m / 60)} 小時${m % 60 ? ` ${m % 60} 分` : ""}`;
 
 function stopAll() { clearInterval(CP.poll); clearInterval(CP.clock); clearInterval(CP.simT); CP.cams.forEach(c => cancelAnimationFrame(c.raf)); CP.cams = []; }
 function syslog(msg, kind = '') {
@@ -842,7 +849,8 @@ async function renderFloor(L) {
 // 預計幾時走（存活分析：同類車喺已經泊咗咁耐嘅情況下，通常仲泊幾耐）
 function leaveText(b) {
   if (b.status !== 'occupied') return '';
-  const said = b.expected_min ? `<br>司機話泊 ${dur(b.expected_min)}` : '';
+  const el = b.since ? minsSince(b.since) : 0, over = b.expected_min && el > b.expected_min;
+  const said = !b.expected_min ? '' : over ? `<br>司機話泊 ${dur(b.expected_min)}，已經超咗 ${dur(el - b.expected_min)}` : `<br>司機話泊 ${dur(b.expected_min)}`;
   if (b.leave_min != null) return `${said}<br>預計仲有約 ${dur(b.leave_min)}（${hhmm(Date.now() + b.leave_min * 60000)} 左右走）`;
   return (CP.live?.forecast?.samples ?? 0) >= 30 ? `${said}<br>已經泊得比平時耐` : `${said}<br>記錄未夠，未能預計`;
 }
@@ -910,6 +918,7 @@ async function qrSvg(url) {
   return qrCache[url];
 }
 const queueUrl = () => new URL(`./?q=${CP.loc}`, MAIN_URL).href;
+const gateUrl = cam => new URL(`gate.html?loc=${CP.loc}&cam=${cam}`, MAIN_URL).href;
 const waitText = w => !w ? '' : w.lo != null ? `約 ${w.p50} 分鐘（${w.lo}–${w.hi}）` : `約 ${w.p50} 分鐘`;
 function renderSign(L) {
   const r = L.location.regular, ev = L.location.ev, full = r.free <= 0, w = r.wait_next;
@@ -951,9 +960,10 @@ function renderQueue(L) {
   renderSign(L);
   const t = L.tickets;
   $('qnote').textContent = t.length ? `${t.filter(x => x.status === 'waiting').length} 人等緊` : '';
-  $('queue').innerHTML = t.length ? `<div class="tbl-wrap dark"><table><thead><tr><th>籌號</th><th>車牌</th><th>狀態</th></tr></thead><tbody>
-    ${t.map(x => `<tr><td><b>${esc(x.ticket_no)}</b><div class="small muted">${x.space_type === 'ev' ? '⚡ 充電' : '一般'}．${hhmm(x.joined_at)} 攞籌</div></td><td class="mono">${esc(x.plate)}</td>
-      <td>${x.status === 'called' ? `<span class="pill called">已叫號</span><div class="small muted">${hhmm(x.respond_by)} 前到</div>` : `<span class="pill waiting">第 ${x.position} 位</span>`}</td></tr>`).join('')}
+  $('queue').innerHTML = t.length ? `<div class="tbl-wrap dark"><table><thead><tr><th>籌號</th><th>車牌</th><th>狀態</th><th>預計等</th><th class="num">預計泊</th></tr></thead><tbody>
+    ${t.map(x => `<tr><td><b>${esc(x.ticket_no)}</b><div class="small muted">${x.space_type === 'ev' ? '⚡ 充電' : '一般'}．${hhmm(x.joined_at)} 攞籌（等咗 ${minsSince(x.joined_at)} 分鐘）</div></td><td class="mono">${esc(x.plate)}</td>
+      <td>${x.status === 'called' ? `<span class="pill called">已叫號</span><div class="small muted">${hhmm(x.respond_by)} 前到</div>` : `<span class="pill waiting">第 ${x.position} 位</span>`}</td>
+      <td class="small">${x.wait ? esc(waitText(x.wait)) : x.status === 'called' ? '有位留咗' : '—'}</td><td class="num small">${x.expected_min ? dur(x.expected_min) : '—'}</td></tr>`).join('')}
     </tbody></table></div>` : '<p class="small muted">冇人排隊。滿咗嘅時候，司機掃入口 QR 或者喺 App 攞籌，唔使喺街上等；有車出閘會自動叫號同留位。</p>';
 }
 
@@ -1575,6 +1585,8 @@ function drawRecords(d) {
     <div class="kstrip" style="grid-template-columns:repeat(6,1fr)">
       ${tile('架次', S.count)}${tile('仲喺場內', S.open)}${tile('平均泊車', S.avg_min != null ? `${dur(S.avg_min)}` : '—')}
       ${tile('中位數', S.median_min != null ? dur(S.median_min) : '—')}${tile('收費總額', money(S.fee_total))}${tile('即場比例', `${walkPct}<small>%</small>`)}</div>
+    ${S.declared && S.declared.n ? `<p class="small">司機預計 vs 實際（${S.declared.n} 架有講預計嘅車）：平均${S.declared.avg_diff >= 0 ? '多' : '少'}泊 ${dur(Math.abs(S.declared.avg_diff))}；
+      ${S.declared.within15}% 喺 ±15 分鐘之內；${S.declared.over}% 遲走超過 15 分鐘。</p>` : ''}
     ${S.demo ? `<p class="small muted">包括 ${S.demo} 架次示範記錄（標明「示範」）。</p>` : ''}
     <div class="cgrid2b" style="margin-top:0;margin-bottom:14px">
       <section class="panel"><div class="ph"><h2>泊車時間分佈（已出閘 ${done} 架次）</h2></div><div class="chart" id="hist"></div>
@@ -1704,7 +1716,7 @@ async function renderSettings() {
           <label class="check"><input type="checkbox" name="active" ${L.is_active ? 'checked' : ''}> 接受預約（取消剔 = 暫停）</label>
           <div class="err" data-err></div><div><button class="btn">儲存</button></div></form></div>
       <div class="panel"><div class="ph"><h2>閘口鏡頭</h2><button class="btn ghost sm" id="camadd">＋ 加鏡頭</button></div>
-        <p class="small muted" style="margin-top:0">ROI＝畫面入面辨識車牌嘅範圍（0 至 1）。「串流位址」畀 Python 車牌辨識程式（lpr_edge.py）用；呢個網頁唔會連去鏡頭。</p>
+        <p class="small muted" style="margin-top:0">兩個做法：① 舊手機開「📱 手機做鏡頭」個 QR，部手機自己認車牌，唔使電腦；② 電腦行 Python 程式 lpr_edge.py（填「串流位址」）。ROI＝畫面入面辨識車牌嘅範圍（0 至 1），手機版可以直接喺畫面上拉。</p>
         <div id="camlist"></div><div class="err" id="camerr"></div><button class="btn" id="camsave" style="margin-top:8px">儲存鏡頭設定</button></div></div>` : ''}
     ${L ? `<div class="grid2" style="margin-top:14px">
       <div class="panel"><div class="ph"><h2>預約上限</h2></div>
@@ -1786,12 +1798,22 @@ async function renderSettings() {
         <div class="row" style="display:grid;grid-template-columns:repeat(4,1fr) 2fr;gap:6px;margin-top:6px">
           ${['x1', 'y1', 'x2', 'y2'].map(k => `<label class="f">ROI ${k}<input type="number" step="0.01" min="0" max="1" data-roi="${k}" value="${(+c.roi[k]).toFixed(2)}"></label>`).join('')}
           <label class="f">串流位址（Python 用）<input data-k="stream_hint" value="${esc(c.stream_hint || '')}" placeholder="rtsp://… 或 0（webcam）" maxlength="200"></label></div>
-        <div class="small muted" style="margin-top:4px">鏡頭 ID：<b class="mono">${c.id ?? '（儲存後先有）'}</b></div></div>`).join('') || '<p class="small muted">未有鏡頭</p>';
+        <div class="small muted" style="margin-top:4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">鏡頭 ID：<b class="mono">${c.id ?? '（儲存後先有）'}</b>
+          ${c.id ? `<button class="btn ghost sm" type="button" data-phone="${i}">📱 手機做鏡頭</button>` : ''}</div><div data-qr hidden></div></div>`).join('') || '<p class="small muted">未有鏡頭</p>';
       $('camlist').querySelectorAll('[data-ci]').forEach(row => {
         const c = cams[+row.dataset.ci];
         row.querySelectorAll('[data-k]').forEach(inp => inp.onchange = () => { c[inp.dataset.k] = inp.value; });
         row.querySelectorAll('[data-roi]').forEach(inp => inp.onchange = () => { c.roi = { ...c.roi, [inp.dataset.roi]: +inp.value }; });
         row.querySelector('[data-del]').onclick = () => { cams.splice(+row.dataset.ci, 1); draw(); };
+        const ph = row.querySelector('[data-phone]'), box = row.querySelector('[data-qr]');
+        if (ph) ph.onclick = () => busy(ph, async () => {
+          if (!box.hidden) { box.hidden = true; return; }
+          const url = gateUrl(c.id);
+          try { box.innerHTML = `<div class="gate-qr"><div class="sg-qr">${await qrSvg(url)}</div><div class="small"><b>用舊手機相機掃呢個 QR</b>，用職員帳戶登入，就變成「${esc(c.name)}」。
+            <br><span class="muted">要 iPhone iOS 16.4 或以上（或者新版 Android Chrome）；第一次要下載約 22 MB 模型。</span><br><a href="${esc(url)}" target="_blank" rel="noopener" class="mono">${esc(url)}</a></div></div>`; }
+          catch (err) { box.innerHTML = `<div class="small"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a></div>`; }
+          box.hidden = false;
+        });
       });
     };
     draw();

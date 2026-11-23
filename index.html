@@ -598,6 +598,7 @@
     .ps-card .ps-big { font-size: 21px; font-weight: bold; margin: 6px 0 2px; line-height: 1.25; }
     .ps-card .ps-big small { display: block; font-size: 13px; font-weight: normal; color: var(--muted); margin-top: 2px; }
     .ps-card .ps-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .ps-card .ps-over { margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(250, 178, 25, 0.16); color: #8a5a00; font-size: 12px; }
     .ps-card .ps-bay { display: inline-flex; align-items: baseline; gap: 8px; margin: 6px 0 4px; padding: 4px 12px; border: 2px solid currentColor; border-radius: 10px; }
     .ps-card .ps-bay span, .ps-card .ps-bay small { font-size: 12px; color: var(--muted); }
     .ps-card .ps-bay b { font-size: 22px; letter-spacing: 0.5px; }
@@ -7116,6 +7117,7 @@
     'PS:BAD_PLATE': '車牌格式唔啱（只可以英文字母同數字，最多 8 個）', 'PS:TOO_MANY': '每人最多登記 5 架車',
     'PS:VEHICLE_BUSY': '呢架車有預約緊，唔可以刪除', 'PS:NOT_FOUND': '搵唔到', 'PS:FORBIDDEN': '你冇權限做呢樣嘢',
     'PS:BAD_NAME': '名稱要 2 至 30 個字', 'PS:BAD_PHONE': '電話號碼格式唔啱',
+    'PS:NEED_STAY': '請揀預計泊幾耐（排緊隊嘅人靠呢個估計幾時有位）',
     'PS:BAY_MODE': '呢個停車場用緊平面圖，車位數由平面圖計', 'PS:BAY_BUSY': '呢個車位有車或者已預留'
   };
   const PS_AUTH_ERR = [
@@ -7145,7 +7147,8 @@
   const psWait = s => s.wait_next?.p50 ?? Math.max(1, Math.round((s.queue + 1) * s.turnover_min));
   const psWaitTxt = (w, s) => w && w.p50 != null ? (w.lo != null ? `${w.p50} 分鐘（${w.lo}–${w.hi}）` : `${w.p50} 分鐘`) : `${psWait(s)} 分鐘`;
   const psBk = s => s ? (s.bookable ?? s.free) : 0;          // 仲可以預約幾多個（有預約上限時少過空位）
-  const PS_STAY_OPTS = [[null, '唔知'], [30, '30 分鐘'], [60, '1 小時'], [120, '2 小時'], [180, '3 小時'], [240, '4 小時'], [480, '8 小時']];
+  const PS_STAY_OPTS = [[30, '30 分鐘'], [60, '1 小時'], [90, '1.5 小時'], [120, '2 小時'], [180, '3 小時'], [240, '4 小時'], [360, '6 小時'], [480, '8 小時或以上']];
+  const psDur = m => m < 60 ? `${m} 分鐘` : m % 60 ? `${(m / 60).toFixed(1)} 小時` : `${m / 60} 小時`;
   const psLeft = t => Math.max(0, minsFromNow(t));
 
   // ---------------------------------------------------------------------
@@ -7462,8 +7465,8 @@
             <a class="fr-big" style="display:block;text-align:center;margin-top:10px;text-decoration:none" href="${psNav(l)}" target="_blank" rel="noopener">🧭 導航去 ${esc(l.name)}</a></div>`
         : `<div class="ps-queue-info">🚦 ${psType(st.type)}已滿．前面有 <b>${s.queue}</b> 人．估計等 <b>${psWaitTxt(s.wait_next, s)}</b>
             <small>${s.wait_next?.method === 'survival' ? '按呢個停車場以往嘅泊車時間同場內每架車已經泊咗幾耐預測。' : ''}唔使喺街上排隊：可以慢慢駛過去，輪到你會通知你，之後 ${me.call_window_min} 分鐘內入閘就得。</small></div>`}
-        ${mode === 'walk' ? '' : `<div class="rs-label">預計泊幾耐？<span class="ps-hint">可以唔揀；幫系統估計幾時有位畀排隊嘅人</span></div>
-        <div class="rs-opts">${PS_STAY_OPTS.map(([m, t]) => `<button class="rs-opt small${st.stay === m ? ' on' : ''}" data-stay="${m ?? ''}">${t}</button>`).join('')}</div>`}
+        ${mode === 'walk' ? '' : `<div class="rs-label">預計泊幾耐？（必填）<span class="ps-hint">排緊隊嘅人靠呢個估計幾時有位</span></div>
+        <div class="rs-opts">${PS_STAY_OPTS.map(([m, t]) => `<button class="rs-opt small${st.stay === m ? ' on' : ''}" data-stay="${m}">${t}</button>`).join('')}</div>`}
         ${mode === 'walk' ? '' : `<div class="rs-label">邊架車？</div>
         <div class="rs-opts">${me.vehicles.map(x => `<button class="rs-opt small${x.id === st.vehicle ? ' on' : ''}" data-v="${x.id}"><b>${esc(x.plate)}</b><small>${x.is_ev ? '⚡ 電動車' : '私家車'}</small></button>`).join('')}
           <button class="rs-opt small${st.addCar ? ' on' : ''}" data-addcar="1"><b>＋</b><small>加車</small></button></div>
@@ -7477,11 +7480,11 @@
         <label class="ps-terms"><input type="checkbox" data-agree ${st.agree ? 'checked' : ''}>
           <span>我明白：${mode === 'book' ? `如果 ${hhmm(until)} 之前都未入閘` : `叫到號之後 ${me.call_window_min} 分鐘內唔到`}，會預先授權並收取 <b>HK$${psNum(me.noshow_fee)}</b> 失約費。準時到或者提早取消就唔收。</span></label>
         <div class="ps-err" data-err>${errMsg ? esc(errMsg) : ''}</div>
-        <button class="fr-big${mode === 'queue' ? ' ps-q' : ''}" data-go ${!st.vehicle || evBad || needCard ? 'disabled' : ''}>${mode === 'book' ? '確認預約' : '確認遙距排隊'}</button>`}`;
+        <button class="fr-big${mode === 'queue' ? ' ps-q' : ''}" data-go ${!st.vehicle || !st.stay || evBad || needCard ? 'disabled' : ''}>${mode === 'book' ? '確認預約' : '確認遙距排隊'}</button>`}`;
 
       body.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { st.type = b.dataset.t; render(); });
       body.querySelectorAll('[data-eta]').forEach(b => b.onclick = () => { st.eta = +b.dataset.eta; render(); });
-      body.querySelectorAll('[data-stay]').forEach(b => b.onclick = () => { st.stay = b.dataset.stay ? +b.dataset.stay : null; render(); });
+      body.querySelectorAll('[data-stay]').forEach(b => b.onclick = () => { st.stay = +b.dataset.stay; render(); });
       body.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { st.vehicle = +b.dataset.v; st.addCar = false; render(); });
       body.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { st.coupon = b.dataset.c; render(); });
       const addc = body.querySelector('[data-addcar]');
@@ -7505,9 +7508,10 @@
       };
       const go = body.querySelector('[data-go]');
       if (go) go.onclick = e => psBusy(e.currentTarget, async () => {
+        if (!st.stay) { body.querySelector('[data-err]').textContent = PS_ERR['PS:NEED_STAY']; return; }
         if (!st.agree) { body.querySelector('[data-err]').textContent = '請先剔「我明白」失約條款'; return; }
         const args = { p_location: l.id, p_vehicle: st.vehicle, p_space_type: st.type, p_user_coupon: st.coupon ? +st.coupon : null, p_accept_terms: true,
-                       ...(st.stay ? { p_expected_min: st.stay } : {}) };   // 舊版數據庫冇呢個參數：冇揀就唔送
+                       p_expected_min: st.stay };
         try {
           const r = mode === 'book' ? await psRpc('ps_book', { ...args, p_eta_min: st.eta }) : await psRpc('ps_join_queue', args);
           if (r.kind === 'quota_full') {                                   // 預約名額啱啱滿咗：講明即場仲有位
@@ -7544,7 +7548,10 @@
     const acts = `<div class="ps-acts"><a class="mini-btn" href="${psNav(L)}" target="_blank" rel="noopener">🧭 導航</a>
       ${inSheet ? '' : `<button class="mini-btn" data-ps-focus="${L.id}">🗺️ 地圖</button>`}
       ${a.status === 'checked_in' ? '' : '<button class="mini-btn ps-cancel" data-ps-cancel="1">取消</button>'}</div>`;
-    const sub = `${psType(a.space_type)}${a.plate ? '．' + esc(a.plate) : ''}${a.coupon ? '．🎟️ ' + esc(a.coupon) : ''}`;
+    const sub = `${psType(a.space_type)}${a.plate ? '．' + esc(a.plate) : ''}${a.expected_min ? '．預計泊 ' + psDur(a.expected_min) : ''}${a.coupon ? '．🎟️ ' + esc(a.coupon) : ''}`;
+    // 泊咗超過自己講嘅時間：提一提（排緊隊嘅人等緊）
+    const over = a.status === 'checked_in' && a.expected_min && a.start_time && (Date.now() - Date.parse(a.start_time)) / 60000 > a.expected_min + 5
+      ? `<div class="ps-over">⏰ 已經超過你講嘅 ${psDur(a.expected_min)}；有人排緊隊，方便嘅話請盡早出閘。</div>` : '';
     const bay = a.bay ? `<div class="ps-bay"><span>你嘅車位</span><b>${esc(a.bay.code)}</b><small>${esc(a.bay.level)} 層</small></div>` : '';
     if (a.kind === 'ticket' && a.status === 'called') return `<div class="ps-card called">
       <div class="ps-t"><span>🔔 輪到你！籌號 ${esc(a.ticket_no)}</span><span>${esc(L.name)}</span></div>
@@ -7560,7 +7567,7 @@
       return `<div class="ps-card in">
         <div class="ps-t"><span>🅿️ 泊緊車</span><span>${esc(L.name)}</span></div>
         <div class="ps-big">${mins < 60 ? mins + ' 分鐘' : Math.floor(mins / 60) + ' 小時 ' + (mins % 60) + ' 分'}<small>${hhmm(a.start_time)} 入閘．而家約 $${psNum(fee)}${a.coupon ? '（未減優惠）' : ''}</small></div>
-        ${bay}<div class="ps-sub">${sub}．出閘時自動計錢</div>${acts}</div>`;
+        ${bay}<div class="ps-sub">${sub}．出閘時自動計錢</div>${over}${acts}</div>`;
     }
     return `<div class="ps-card">
       <div class="ps-t"><span>📅 已預約</span><span>${esc(L.name)}</span></div>

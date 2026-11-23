@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-EPcEou2nrX+TAX/w18ovogkbXPAgH2kQJmlm0e6sOjE=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-EOx0qbfEZFBmGb7xLZZnUiMoEmZWKsXLwKapYwvb/mU=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex">
 <title>ParkSmart 平台管理員後台</title>
@@ -167,7 +167,7 @@ const PS_ERR = {
   'PS:NO_LOCATION': '搵唔到呢個停車場', 'PS:BAD_PLATE': '車牌格式唔啱', 'PS:NAME': '名稱要 2 至 30 個字',
   'PS:BAY_MODE': '呢個停車場用緊平面圖，車位數由平面圖計，請去「平面圖編輯」改', 'PS:BAY_BUSY': '呢個車位有車或者已預留，而家唔可以咁做',
   'PS:USE_EXIT': '預約車要經出閘收費，請用「模擬出閘」', 'PS:HAS_LAYOUT': '已經有平面圖', 'PS:BAD_LAYOUT': '平面圖資料唔啱（樓層大細 200–4000，車位編號只可以用英文字母、數字同 -）',
-  'PS:DUP_CODE': '車位編號重複', 'PS:BAD_IMAGE': '背景圖唔啱：只接受 PNG／JPG／WebP，最大約 1 MB'
+  'PS:NEED_STAY': '請揀預計泊幾耐', 'PS:DUP_CODE': '車位編號重複', 'PS:BAD_IMAGE': '背景圖唔啱：只接受 PNG／JPG／WebP，最大約 1 MB'
 };
 const PS_AUTH_ERR = [
   [/invalid login credentials/i, '電郵或者密碼唔啱'], [/email not confirmed/i, '未確認電郵：請先去郵箱撳確認連結'],

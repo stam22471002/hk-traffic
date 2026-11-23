@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-LzaLs4+ynrjbLETpU4uSOfI9N6sYfhnpR5KCVQ/C5rk=' 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex">
+<title>ParkSmart 手機閘口鏡頭</title>
+<style>
+:root {
+  --bg: #f4f6f9; --card: #ffffff; --ink: #1c2430; --muted: #66707d; --line: #e3e7ed; --soft: #f0f3f7;
+  --accent: #0b63c5; --accent-ink: #ffffff; --accent-soft: #e6f0fb;
+  --ok: #1e8e3e; --ok-soft: #e6f4ea; --warn: #b26a00; --warn-soft: #fff4e0; --bad: #c62828; --bad-soft: #fdecea;
+  --radius: 12px; --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 -apple-system, "Segoe UI", "Noto Sans TC", "PingFang HK", "Microsoft JhengHei", sans-serif; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* 頂部 */
+.top { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1180px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; white-space: nowrap; }
+.brand .logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 16px; }
+.brand small { font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+.top .sp { flex: 1; }
+.who { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34vw; }
+.tabs { max-width: 1180px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+.tabs button { background: none; border: none; border-bottom: 3px solid transparent; padding: 10px 12px; cursor: pointer; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs .badge { background: var(--bad); color: #fff; border-radius: 999px; font-size: 11px; padding: 0 6px; margin-left: 4px; }
+
+main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 60px; }
+h1 { font-size: 22px; margin: 4px 0 14px; }
+h2 { font-size: 17px; margin: 0 0 10px; }
+h3 { font-size: 15px; margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.card-head h2 { margin: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 860px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.narrow { max-width: 460px; margin: 30px auto; }
+
+/* 數字格 */
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.kpi { background: var(--soft); border-radius: 10px; padding: 10px 12px; }
+.kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 640px) { .kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.25; }
+.kpi .v small { font-size: 13px; color: var(--muted); font-weight: 500; }
+.kpi.ok { background: var(--ok-soft); } .kpi.warn { background: var(--warn-soft); } .kpi.bad { background: var(--bad-soft); }
+
+/* 表格 */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { background: var(--soft); font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); padding: 14px; text-align: center; }
+
+/* 標籤 */
+.pill { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+.pill.ok, .pill.approved, .pill.checked_in { background: var(--ok-soft); color: var(--ok); }
+.pill.warn, .pill.pending, .pill.called, .pill.reserved, .pill.waiting { background: var(--warn-soft); color: var(--warn); }
+.pill.bad, .pill.rejected { background: var(--bad-soft); color: var(--bad); }
+
+/* 表單 */
+.form { display: grid; gap: 12px; }
+.form .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+label.f input, label.f select, label.f textarea, .inp { width: 100%; border: 1px solid #cfd6df; border-radius: 8px; padding: 9px 11px; background: #fff; color: var(--ink); font-size: 15px; }
+label.f input:focus, label.f select:focus, .inp:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--muted); }
+.check input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--accent); flex-shrink: 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid transparent; border-radius: 8px; padding: 9px 16px;
+  background: var(--accent); color: var(--accent-ink); font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn:hover { filter: brightness(1.06); }
+.btn:disabled { opacity: 0.55; cursor: default; filter: none; }
+.btn.ghost { background: #fff; color: var(--ink); border-color: #cfd6df; }
+.btn.ok { background: var(--ok); } .btn.bad { background: var(--bad); } .btn.warn { background: #e37400; }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+.btn.block { width: 100%; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.err { color: var(--bad); font-size: 14px; }
+.err:empty { display: none; }
+.okmsg { color: var(--ok); font-size: 14px; }
+.okmsg:empty { display: none; }
+.links { display: flex; justify-content: space-between; font-size: 14px; margin-top: 12px; }
+.links a { cursor: pointer; }
+details.box { background: var(--soft); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+details.box summary { cursor: pointer; color: var(--ink); }
+details.box p { margin: 6px 0; }
+
+/* 提示訊息 */
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; transition: 0.2s; background: #1c2430; color: #fff;
+  padding: 10px 16px; border-radius: 10px; z-index: 100; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); pointer-events: none; }
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+.loading { color: var(--muted); padding: 40px 0; text-align: center; }
+.status-card { text-align: center; padding: 28px 16px; }
+.status-card .big { font-size: 40px; }
+@media (max-width: 560px) { .top-in { gap: 8px; } .brand small { display: none; } .who { display: none; } .tabs { overflow-x: auto; white-space: nowrap; } }
+
+/* ===== 手機閘口鏡頭（深色，同停車場管理系統一致） ===== */
+:root {
+  --bg: #0b1016; --card: #121a23; --ink: #e6edf5; --muted: #8b9bb0; --line: #243243; --soft: #182330;
+  --accent: #3987e5; --accent-ink: #ffffff; --accent-soft: rgba(57, 135, 229, 0.16);
+  --ok: #0ca30c; --ok-soft: rgba(12, 163, 12, 0.18); --warn: #fab219; --warn-soft: rgba(250, 178, 25, 0.16);
+  --bad: #d03b3b; --bad-soft: rgba(208, 59, 59, 0.2);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+body { background: var(--bg); }
+.top { background: rgba(11, 16, 22, 0.92); }
+.tabs:empty { display: none; }
+main { max-width: 980px; }
+.btn.ghost { background: var(--soft); color: var(--ink); border-color: var(--line); }
+.inp, label.f input, label.f select { background: #0e151d; color: var(--ink); border: 1px solid #2a394b; border-radius: 8px; padding: 8px 10px; }
+.pill { background: #1c2836; }
+#toast { background: #e6edf5; color: #0b1016; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
+.panel .ph { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.panel .ph h2 { font-size: 16px; margin: 0; flex: 1; min-width: 0; }
+
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.g-wrap { max-width: 980px; margin: 0 auto; }
+.g-cams { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.g-cam { display: grid; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--soft); color: var(--ink); cursor: pointer; }
+.g-cam span { font-size: 13px; color: var(--muted); }
+.g-cam small { font-size: 11px; color: var(--muted); }
+.g-cam.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent) inset; }
+.g-tips { margin: 0; padding-left: 18px; color: var(--muted); }
+.g-tips li { margin: 4px 0; }
+.g-tips b { color: var(--ink); }
+
+.g-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.g-head .sp { flex: 1; }
+.g-stage { position: relative; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.g-stage video { display: block; width: 100%; height: auto; min-height: 180px; max-height: min(62vh, 560px); object-fit: contain; background: #000; }
+.g-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.g-stage.edit canvas { touch-action: none; cursor: crosshair; }
+.g-roi-hint { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); background: rgba(250, 178, 25, 0.95); color: #1a1200;
+  font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; pointer-events: none; white-space: nowrap; max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis; }
+
+.g-banner { margin-top: 10px; padding: 14px 16px; border-radius: 12px; font-size: 20px; font-weight: 700; line-height: 1.35; border: 1px solid var(--line); background: var(--soft); overflow-wrap: anywhere; }
+.g-banner.ok { background: var(--ok-soft); border-color: var(--ok); }
+.g-banner.bad { background: var(--bad-soft); border-color: var(--bad); }
+.g-banner.warn { background: var(--warn-soft); border-color: var(--warn); }
+.g-banner.mute { font-size: 16px; font-weight: 600; color: var(--muted); }
+.g-prog { height: 6px; border-radius: 999px; background: var(--soft); margin-top: 8px; overflow: hidden; }
+.g-prog i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.g-stats { color: var(--muted); margin-top: 8px; overflow-wrap: anywhere; }
+.g-ctl { margin-top: 10px; align-items: center; }
+.g-zoom { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.g-zoom input { width: 120px; }
+.g-man { display: flex; gap: 8px; margin-top: 10px; }
+.g-man .inp { flex: 1; min-width: 0; text-transform: uppercase; font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+.g-log { display: grid; gap: 2px; max-height: 320px; overflow: auto; }
+.g-log > div { display: grid; grid-template-columns: auto auto auto 1fr; gap: 10px; align-items: baseline; font-size: 13px; padding: 5px 6px; border-radius: 6px; }
+.g-log > div.ok { background: var(--ok-soft); }
+.g-log > div.bad { background: var(--bad-soft); }
+.g-log > div.warn { background: var(--warn-soft); }
+.g-log > div.mute { color: var(--muted); }
+@media (max-width: 520px) {
+  .g-banner { font-size: 18px; }
+  .g-log > div { grid-template-columns: auto auto 1fr; }
+  .g-log > div > span.muted { display: none; }
+}
+
+/* 現場測試 */
+.g-eval { margin-top: 10px; padding: 10px 12px; border-radius: 10px; border: 1px dashed #3a4d63; background: var(--soft); display: grid; gap: 8px; }
+.g-judge { display: inline-flex; gap: 4px; }
+.g-judge button { width: 34px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: #0e151d; color: var(--muted); cursor: pointer; font-size: 14px; }
+.g-judge button[data-ok="1"].on { background: var(--ok-soft); border-color: var(--ok); color: var(--ink); }
+.g-judge button[data-ok="0"].on { background: var(--bad-soft); border-color: var(--bad); color: var(--ink); }
+.g-log > div:has(.g-judge) { grid-template-columns: auto auto auto 1fr auto; }
+@media (max-width: 520px) { .g-log > div:has(.g-judge) { grid-template-columns: auto auto 1fr auto; } }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="logo">P</span>ParkSmart <small>手機閘口鏡頭</small></div>
+    <span class="sp"></span>
+    <span class="who" id="who"></span>
+    <button class="btn ghost sm" id="logout" hidden>登出</button>
+    <a class="btn ghost sm" href="./">用家網站</a>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main id="app"><div class="loading">載入緊…</div></main>
+<script>
+// =====================================================================
+// ParkSmart 後台共用：設定、登入、工具
+// =====================================================================
+// Supabase 設定：自動讀同一個資料夾入面 index.html 嘅 PS_URL／PS_KEY，呢個檔唔使改。
+// （呢頁有 Content-Security-Policy：改咗入面嘅 JavaScript，瀏覽器會拒絕執行）
+let PS_URL = 'https://xdrpgzjkuurzcfyhspgl.supabase.co';
+let PS_KEY = 'sb_publishable_w55H6_7ZLGEP0HEfyKxHeQ__ZUpR1F9';
+const PS_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+const PS_SDK_SRI = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
+const PS_PDPO_VERSION = '2026-11';
+const MAIN_URL = new URL('./', location.href).href;   // 用家網站
+const P = { sb: null, session: null };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = x => { const n = +x || 0; return n % 1 ? n.toFixed(1) : String(n); };
+const money = x => '$' + (+x || 0).toLocaleString('en-HK', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+const hhmm = t => t ? new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Hong_Kong' }) : '—';
+const dmy = t => t ? new Date(t).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Hong_Kong' }) : '—';
+const dt = t => t ? `${dmy(t)} ${hhmm(t)}` : '—';
+const formData = f => Object.fromEntries(new FormData(f).entries());
+const STATUS = { pending: '審批中', approved: '已批准', rejected: '已拒絕', waiting: '排隊中', called: '已叫號', reserved: '已預約', checked_in: '泊緊',
+  completed: '完成', cancelled: '取消', no_show: '失約', expired: '過期', arrived: '已到' };
+const pill = s => `<span class="pill ${esc(s)}">${esc(STATUS[s] || s)}</span>`;
+
+function toast(msg, ms = 2600) {
+  let t = $('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), ms);
+}
+
+const PS_ERR = {
+  'PS:LOGIN': '請先登入', 'PS:CONSENT': '請先同意私隱政策', 'PS:RATE': '操作得太密，請遲啲再試', 'PS:BAD_INPUT': '資料唔啱，請再檢查',
+  'PS:FORBIDDEN': '你冇權限做呢樣嘢', 'PS:NOT_FOUND': '搵唔到', 'PS:CHANGED': '狀態啱啱變咗，請重新整理',
+  'PS:BAD_EMAIL': '電郵格式唔啱', 'PS:BAD_PHONE': '電話號碼格式唔啱', 'PS:ALREADY': '你已經申請咗（審批中或者已批准）',
+  'PS:NOT_APPROVED': '要等管理員批准咗先可以用', 'PS:BAD_ROWS': '檔案冇資料，或者多過 200 行', 'PS:HAS_BOOKINGS': '有人預約緊或者排緊隊，暫時唔可以停用',
+  'PS:ROW_INVALID': '有一行資料已經唔啱（例如運輸署編號俾人用咗），請拒絕後叫營運商重新上載',
+  'PS:BAD_CODE': '優惠碼要 4 至 20 個英文字母或數字', 'PS:CODE_TAKEN': '呢個優惠碼已經有人用，請換一個', 'PS:TOO_MANY': '數量已經到上限',
+  'PS:NO_LOCATION': '搵唔到呢個停車場', 'PS:BAD_PLATE': '車牌格式唔啱', 'PS:NAME': '名稱要 2 至 30 個字',
+  'PS:BAY_MODE': '呢個停車場用緊平面圖，車位數由平面圖計，請去「平面圖編輯」改', 'PS:BAY_BUSY': '呢個車位有車或者已預留，而家唔可以咁做',
+  'PS:USE_EXIT': '預約車要經出閘收費，請用「模擬出閘」', 'PS:HAS_LAYOUT': '已經有平面圖', 'PS:BAD_LAYOUT': '平面圖資料唔啱（樓層大細 200–4000，車位編號只可以用英文字母、數字同 -）',
+  'PS:NEED_STAY': '請揀預計泊幾耐', 'PS:DUP_CODE': '車位編號重複', 'PS:BAD_IMAGE': '背景圖唔啱：只接受 PNG／JPG／WebP，最大約 1 MB'
+};
+const PS_AUTH_ERR = [
+  [/invalid login credentials/i, '電郵或者密碼唔啱'], [/email not confirmed/i, '未確認電郵：請先去郵箱撳確認連結'],
+  [/password should be at least|weak password|password is too weak/i, '密碼太弱：最少 8 個字，要有英文字母同數字'],
+  [/rate limit|too many requests/i, '操作得太密，請遲啲再試'], [/only request this after/i, '請等一分鐘再試'],
+  [/invalid api key/i, 'Supabase key 唔啱：請檢查 index.html 入面嘅 PS_KEY'], [/failed to fetch|network/i, '連唔到伺服器，請檢查網絡']
+];
+function msgOf(e) {
+  const m = String(e?.message || e || '');
+  const k = (m.match(/PS:[A-Z_]+/) || [])[0];
+  if (k) return PS_ERR[k] || k;
+  const hit = PS_AUTH_ERR.find(([re]) => re.test(m));
+  return hit ? hit[1] : (m || '出錯，請再試');
+}
+async function rpc(fn, args) {
+  const { data, error } = await P.sb.rpc(fn, args || {});
+  if (error) throw new Error(msgOf(error));
+  return data;
+}
+async function busy(btn, fn) {
+  if (!btn || btn.disabled) return;
+  const t = btn.textContent;
+  btn.disabled = true; btn.textContent = '處理緊…';
+  try { return await fn(); } finally { if (btn.isConnected) { btn.disabled = false; btn.textContent = t; } }
+}
+function download(name, text, type = 'text/csv;charset=utf-8') {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([type.startsWith('text/csv') ? '﻿' + text : text], { type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+const csvCell = v => /[",\n]/.test(String(v ?? '')) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? '');
+
+// 讀 CSV（支援引號、逗號、換行；第一行係標題）
+function parseCsv(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  const clean = rows.filter(r => r.some(x => x.trim() !== ''));
+  if (!clean.length) return [];
+  const head = clean[0].map(h => h.trim().toLowerCase());
+  return clean.slice(1).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+}
+
+// ---------------------------------------------------------------------
+// 開始：讀設定 → 載入 Supabase → 登入狀態
+// ---------------------------------------------------------------------
+let CFG_INFO = '';
+async function loadConfig() {
+  if (PS_URL && PS_KEY) return;
+  const html = await fetch(new URL('index.html', location.href), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').catch(() => '');
+  const pick = name => ((html.match(new RegExp('(?:const|let|var)\\s+' + name + '\\s*=\\s*([\'"`])\\s*([^\'"`]*?)\\s*\\1')) || [])[2] || '').trim();
+  PS_URL = PS_URL || pick('PS_URL');
+  PS_KEY = PS_KEY || pick('PS_KEY');
+  CFG_INFO = !html ? '讀唔到同一個資料夾嘅 index.html（檔名要啱，同埋要喺同一個資料夾）'
+    : !PS_URL && !PS_KEY ? 'index.html 入面嘅 PS_URL 同 PS_KEY 都係空白'
+    : !PS_URL ? 'index.html 入面嘅 PS_URL 係空白' : !PS_KEY ? 'index.html 入面嘅 PS_KEY 係空白：請喺 Supabase → API Keys 複製 publishable key 貼入引號入面' : '';
+  if (PS_URL && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(PS_URL)) CFG_INFO = `PS_URL 格式唔啱（${PS_URL}）：應該係 https://你的編號.supabase.co，尾唔好有 /`;
+  if (PS_KEY && !/^sb_publishable_|^eyJ/.test(PS_KEY)) CFG_INFO = 'PS_KEY 唔似 publishable key（應該係 sb_publishable_ 開頭）';
+  if (/[^\x21-\x7E]/.test(PS_KEY)) CFG_INFO = 'PS_KEY 入面有唔應該有嘅字（例如「…」、中文、全形符號或者空格）。通常係用滑鼠揀咗 Supabase 顯示嘅縮短版 key。請喺 Supabase → API Keys 撳 key 旁邊嘅「複製」掣，再貼入引號入面。';
+}
+function loadSdk() {
+  if (window.supabase?.createClient) return Promise.resolve();
+  return new Promise((ok, bad) => {
+    const s = document.createElement('script');
+    s.src = PS_SDK; s.integrity = PS_SDK_SRI; s.crossOrigin = 'anonymous';
+    s.onload = ok; s.onerror = () => bad(new Error('載入唔到登入元件'));
+    document.head.appendChild(s);
+  });
+}
+function cleanUrl() {
+  const u = new URL(location.href), h = new URLSearchParams(u.hash.slice(1));
+  const err = u.searchParams.get('error_description') || h.get('error_description');
+  if (err) toast('⚠️ ' + (/expired|invalid/i.test(err) ? '條連結過咗期或者用過咗，請再試一次' : err), 6000);
+  let changed = false;
+  ['code', 'error', 'error_code', 'error_description'].forEach(k => { if (u.searchParams.has(k)) { u.searchParams.delete(k); changed = true; } });
+  if (h.has('error') || h.has('access_token')) { u.hash = ''; changed = true; }
+  if (changed) history.replaceState(null, '', u.toString());
+}
+
+// opts: { title, intro, onReady(), onSignedOut() }
+async function portalStart(opts) {
+  const app = $('app');
+  try {
+    await loadConfig();
+    if (!PS_URL || !PS_KEY || CFG_INFO) {
+      app.innerHTML = `<div class="card narrow"><h2>未設定好 Supabase</h2><p class="err">${esc(CFG_INFO || '缺少 PS_URL／PS_KEY')}</p>
+        <p class="small muted">後台會自動讀同一個資料夾入面 <b>index.html</b> 嘅設定。改好 index.html 上載之後，等一兩分鐘再按 Ctrl + F5。</p></div>`;
+      return;
+    }
+    await loadSdk();
+    P.sb = window.supabase.createClient(PS_URL, PS_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    P.sb.auth.onAuthStateChange((evt, session) => {
+      P.session = session;
+      if (evt === 'PASSWORD_RECOVERY') setTimeout(() => renderAuth(opts, 'newpass'), 200);
+      if (evt === 'SIGNED_OUT') setTimeout(() => { renderWho(); renderAuth(opts, 'login'); opts.onSignedOut?.(); }, 0);
+    });
+    P.session = (await P.sb.auth.getSession()).data.session;
+    cleanUrl();
+  } catch (e) { app.innerHTML = `<div class="card narrow err">${esc(msgOf(e))}</div>`; return; }
+  renderWho();
+  if (P.session) opts.onReady(); else renderAuth(opts, 'login');
+}
+function renderWho() {
+  const w = $('who'), lo = $('logout');
+  if (w) w.textContent = P.session?.user?.email || '';
+  if (lo) { lo.hidden = !P.session; lo.onclick = async () => { await P.sb.auth.signOut().catch(() => {}); P.session = null; toast('已登出'); }; }
+}
+
+const PRIVACY = `<details class="box"><summary>私隱政策（重點）</summary>
+  <p>收集：電郵、名稱、聯絡電話、你提交嘅公司／商戶同停車場資料。用途：審批、營運停車場或者優惠券、防止濫用。</p>
+  <p>保護：密碼經雜湊處理；數據庫用 Row Level Security，每個帳戶只睇到自己有權睇嘅資料；所有操作都有審計記錄。</p>
+  <p>存放：Supabase 雲端數據庫（新加坡）。你可以喺用家網站「帳戶 → 私隱」下載或者刪除自己嘅資料（《個人資料（私隱）條例》第 486 章）。</p>
+  <p>呢個係 University of West London 畢業專題嘅原型系統。</p></details>`;
+
+function pwProblem(pw, email) {
+  if (pw.length < 8) return '密碼最少 8 個字';
+  if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return '密碼要有英文字母同數字';
+  if (email && pw.toLowerCase().includes(email.split('@')[0].toLowerCase())) return '密碼唔好包含電郵名';
+  return '';
+}
+
+function renderAuth(opts, view) {
+  const app = $('app');
+  const redirect = location.origin + location.pathname;
+  const links = (...ls) => `<div class="links">${ls.map(([v, t]) => `<a data-v="${v}">${t}</a>`).join('')}</div>`;
+  const intro = `<div class="muted small" style="margin-bottom:12px">${opts.intro}</div>`;
+  const forms = {
+    login: `<h1>登入${esc(opts.title)}</h1>${intro}<form class="form"><label class="f">電郵<input type="email" name="email" autocomplete="email" required></label>
+      <label class="f">密碼<input type="password" name="pw" autocomplete="current-password" required></label>
+      <div class="err" data-err></div><button class="btn block">登入</button></form>${links(['signup', '未有帳戶？註冊'], ['forgot', '忘記密碼'])}
+      <p class="small muted" style="margin-top:14px">用家網站同後台用同一個帳戶。</p>`,
+    signup: `<h1>註冊帳戶</h1>${intro}<form class="form"><label class="f">名稱（2 至 30 個字）<input name="username" maxlength="30" required></label>
+      <label class="f">電郵<input type="email" name="email" autocomplete="email" required></label>
+      <label class="f">密碼（最少 8 個字，要有英文字母同數字）<input type="password" name="pw" autocomplete="new-password" required></label>
+      <label class="f">再輸入一次密碼<input type="password" name="pw2" autocomplete="new-password" required></label>
+      ${PRIVACY}<label class="check"><input type="checkbox" name="consent"> 我已閱讀並同意私隱政策</label>
+      <div class="err" data-err></div><button class="btn block">註冊</button></form>${links(['login', '已經有帳戶？登入'])}`,
+    forgot: `<h1>忘記密碼</h1><form class="form"><label class="f">註冊用嘅電郵<input type="email" name="email" required></label>
+      <div class="err" data-err></div><button class="btn block">寄重設連結</button></form>${links(['login', '返去登入'])}`,
+    newpass: `<h1>設定新密碼</h1><form class="form"><label class="f">新密碼<input type="password" name="pw" autocomplete="new-password" required></label>
+      <label class="f">再輸入一次<input type="password" name="pw2" autocomplete="new-password" required></label>
+      <div class="err" data-err></div><button class="btn block">更新密碼</button></form>`
+  };
+  app.innerHTML = `<div class="card narrow">${forms[view]}</div>`;
+  app.querySelectorAll('[data-v]').forEach(a => a.onclick = () => renderAuth(opts, a.dataset.v));
+  const f = app.querySelector('form'), errBox = app.querySelector('[data-err]');
+  f.onsubmit = e => { e.preventDefault(); busy(f.querySelector('button'), async () => {
+    const d = formData(f);
+    if (view === 'login') {
+      const { error } = await P.sb.auth.signInWithPassword({ email: d.email.trim(), password: d.pw });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      P.session = (await P.sb.auth.getSession()).data.session; renderWho(); opts.onReady();
+    } else if (view === 'signup') {
+      const email = d.email.trim();
+      const bad = d.username.trim().length < 2 ? '名稱最少 2 個字' : pwProblem(d.pw, email) || (d.pw !== d.pw2 ? '兩次密碼唔一樣' : '') || (!d.consent ? '要同意私隱政策先可以註冊' : '');
+      if (bad) { errBox.textContent = bad; return; }
+      const { data, error } = await P.sb.auth.signUp({ email, password: d.pw, options: { emailRedirectTo: redirect,
+        data: { username: d.username.trim(), pdpo_consent: true, pdpo_version: PS_PDPO_VERSION } } });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      if (data.session) { P.session = data.session; renderWho(); opts.onReady(); return; }
+      app.innerHTML = `<div class="card narrow status-card"><div class="big">📧</div><h2>差少少就完成</h2>
+        <p>我哋寄咗確認電郵去 <b>${esc(email)}</b>，撳入面條連結就完成註冊。</p><p class="small muted">搵唔到？睇吓垃圾郵件。</p>
+        <button class="btn ghost" data-v="login">去登入</button></div>`;
+      app.querySelector('[data-v]').onclick = () => renderAuth(opts, 'login');
+    } else if (view === 'forgot') {
+      const { error } = await P.sb.auth.resetPasswordForEmail(d.email.trim(), { redirectTo: redirect });
+      if (error && !/not found/i.test(error.message)) { errBox.textContent = msgOf(error); return; }
+      app.innerHTML = '<div class="card narrow status-card"><div class="big">📧</div><p>如果有呢個帳戶，我哋已經寄咗重設密碼連結。</p></div>';
+    } else if (view === 'newpass') {
+      const bad = pwProblem(d.pw, P.session?.user?.email) || (d.pw !== d.pw2 ? '兩次密碼唔一樣' : '');
+      if (bad) { errBox.textContent = bad; return; }
+      const { error } = await P.sb.auth.updateUser({ password: d.pw });
+      if (error) { errBox.textContent = msgOf(error); return; }
+      toast('✅ 密碼已更新'); opts.onReady();
+    }
+  }); };
+}
+
+// 未同意私隱政策（例如喺數據庫建立之前註冊）
+function renderConsent(after) {
+  const app = $('app');
+  app.innerHTML = `<div class="card narrow"><h1>同意私隱政策</h1>${PRIVACY}
+    <label class="check" style="margin-top:12px"><input type="checkbox" data-c> 我已閱讀並同意私隱政策</label>
+    <div class="err" data-err style="margin-top:8px"></div><button class="btn block" style="margin-top:12px" data-ok>同意，繼續</button></div>`;
+  app.querySelector('details').open = true;
+  app.querySelector('[data-ok]').onclick = e => busy(e.currentTarget, async () => {
+    if (!app.querySelector('[data-c]').checked) { app.querySelector('[data-err]').textContent = '要剔咗先可以繼續'; return; }
+    try { await rpc('ps_give_consent', { p_version: PS_PDPO_VERSION }); after(); } catch (err) { app.querySelector('[data-err]').textContent = err.message; }
+  });
+}
+
+// 申請表（營運商／商戶共用）：fields = [[name, label, type, required, placeholder]]
+function applyFormHtml(title, intro, fields, note) {
+  return `<div class="card narrow"><h1>${title}</h1><p class="muted small">${intro}</p>
+    ${note ? `<div class="err" style="margin-bottom:10px">${note}</div>` : ''}
+    <form class="form">${fields.map(([n, l, t, req, ph]) => `<label class="f">${l}<input name="${n}" type="${t}" ${req ? 'required' : ''} placeholder="${esc(ph || '')}" maxlength="120"></label>`).join('')}
+    <div class="err" data-err></div><button class="btn block">提交申請</button></form>
+    <p class="small muted" style="margin-top:12px">提交之後，管理員會審批。批准咗就可以用晒所有功能。</p></div>`;
+}
+
+// =====================================================================
+// 📱 手機閘口鏡頭（gate.html）
+// 舊 iPhone／Android 手機用瀏覽器開呢頁 → 後鏡頭對住閘口 → 喺部手機度認車牌 → 送去 ps_cp_lpr_event
+// 私隱：影像只喺手機記憶體處理，唔會上載、唔會儲存；只係送車牌文字（數據庫再雜湊同遮蔽）
+// 模型同引擎全部 MIT 授權，放喺同一個網站嘅 lpr/ 資料夾，每次載入都核對 SHA-256：
+//   車牌位置：open-image-models YOLOv9-t 384（mAP50 0.92）
+//   車牌文字：fast-plate-ocr CCT-XS v1 global（香港驗證集：成個車牌讀啱 91.1%，逐個字 97.8%）
+//   引擎：ONNX Runtime Web 1.24.3（WebAssembly SIMD，單線程，唔使 GPU）
+// =====================================================================
+const LPR = {
+  ort: ['lpr/ort.wasm.min.js', 'sha384-1SBQgvQsxJRGAOAJ6K2nPaLO1SKelZwoF+biXgv2/D9fPspYLhvG4WIMDb/BUoJC'],
+  wasm: ['lpr/ort-wasm-simd-threaded.wasm', 'be0e129949062ad50290ef94683fac8be5bb6156f709e030b7a5f1661a2f6c17', 12361745],
+  det: ['lpr/yolo-v9-t-384-license-plates-end2end.onnx', '888397b96d761c89db40bc9c305838e8652660f5e282c2cadebbe8d2951a77a8', 7771218],
+  ocr: ['lpr/cct_xs_v1_global.onnx', 'c1ae2ae031b10f8ab7ed6e3cdaf8d9c753477e299dbad3579c8f705a7d882134', 2113942]
+};
+const DET_S = 384, OCR_W = 128, OCR_H = 64, ALPHA = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_', GAP_MS = 250, LPR_CACHE = 'ps-lpr-v1';
+// 測試 WebAssembly SIMD（iOS 16.4／Chrome 91 之後先有）
+const SIMD_TEST = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]);
+
+const G = {
+  home: null, loc: null, cams: [], cam: null, stream: null, track: null, on: false, paused: false, dry: false, timer: 0,
+  det: null, ocr: null, ctx: null, fbuf: null, ubuf: null, voter: null, ms: [], frames: 0, hits: 0, sent: 0, log: [], evals: [], missed: 0,
+  wake: null, last: null, roiEdit: null, thr: 0.35, need: 3
+};
+const GATE_OPTS = {
+  title: '手機閘口鏡頭', intro: '用停車場管理系統嘅職員帳戶登入。登入之後，部手機就係閘口鏡頭：喺手機度認車牌，再送去系統開閘。',
+  onReady: () => gLoad(), onSignedOut: () => gStop()
+};
+const KIND_G = { regular: '一般', ev: '⚡ 充電', motorcycle: '🏍️ 電單車' };
+const maskP = p => p && p.length > 3 ? p.slice(0, 2) + '••' + p.slice(-1) : '•••';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ---------------------------------------------------------------------
+// 香港車牌：同 lpr_edge.py 一樣嘅規則（唔用 I、O、Q；1–2 個字母 + 1–4 個數字，唔會 0 開頭；自訂車牌最多 8 個字）
+// ---------------------------------------------------------------------
+const STD_RE = /^[A-HJ-NPR-Z]{1,2}[1-9][0-9]{0,3}$/, CUSTOM_RE = /^[A-Z0-9]{1,8}$/;
+const TO_DIGIT = { O: '0', D: '0', Q: '0', I: '1', L: '1', Z: '2', S: '5', B: '8', G: '6', T: '7' };
+const TO_ALPHA = { 0: 'D', 1: 'T', 2: 'Z', 5: 'S', 8: 'B', 6: 'G', 4: 'A' };
+const tr = (s, m) => s.replace(/./g, c => m[c] || c);
+function normalise(text) {
+  const t = String(text || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!t || t.length > 8) return [null, false];
+  if (STD_RE.test(t)) return [t, true];
+  for (const n of [2, 1]) {                                   // 常見 OCR 混淆：頭 1–2 個應該係字母，後面應該係數字
+    if (t.length > n) { const f = tr(t.slice(0, n), TO_ALPHA) + tr(t.slice(n), TO_DIGIT); if (STD_RE.test(f)) return [f, true]; }
+  }
+  return CUSTOM_RE.test(t) ? [t, false] : [null, false];
+}
+
+// 連續幾格畫面都讀到同一個車牌先算數；同一架車一段時間內唔會重複送（同 lpr_edge.py 嘅 Voter 一樣）
+class Voter {
+  constructor(need = 3, window = 6, cooldown = 45) { this.need = need; this.window = window; this.cooldown = cooldown; this.hist = []; this.sent = {}; }
+  add(plate, conf, now) {
+    this.hist.push([plate, conf]); if (this.hist.length > this.window) this.hist.shift();
+    const votes = {};
+    for (const [p] of this.hist) if (p) votes[p] = (votes[p] || 0) + 1;
+    const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+    if (!best) return null;
+    const [p, n] = best;
+    if (n < this.need || (p in this.sent && now - this.sent[p] < this.cooldown)) return null;
+    const confs = this.hist.filter(([q]) => q === p).map(([, c]) => c), agree = n / this.hist.length;
+    this.sent[p] = now; this.hist = [];
+    return [p, Math.round(Math.min(1, confs.reduce((a, b) => a + b, 0) / confs.length * (0.85 + 0.15 * agree)) * 1000) / 1000];
+  }
+}
+
+// ---------------------------------------------------------------------
+// 載入：權限 → 揀停車場同鏡頭
+// ---------------------------------------------------------------------
+async function gLoad() {
+  const app = $('app');
+  app.innerHTML = '<div class="loading">讀緊…</div>';
+  try { G.home = await rpc('ps_op_home'); } catch (e) { app.innerHTML = `<div class="card narrow err">${esc(e.message)}</div>`; return; }
+  if (!G.home.user.consent) { renderConsent(() => gLoad()); return; }
+  const locs = G.home.locations || [];
+  if (!locs.length) {
+    app.innerHTML = `<div class="card narrow status-card"><div class="big">🅿️</div><h2>呢個帳戶未有停車場</h2>
+      <p class="muted small">要用停車場職員帳戶登入（平台批准咗嘅營運商）。可以先去 <a href="carpark.html">停車場管理系統</a> 申請或者加停車場。</p></div>`;
+    return;
+  }
+  const q = new URLSearchParams(location.search);
+  const want = +q.get('loc'), wantCam = +q.get('cam');
+  if (!G.loc || !locs.some(l => l.id === G.loc)) G.loc = locs.some(l => l.id === want) ? want : locs[0].id;
+  await loadCams();
+  if (wantCam && !G.cam) G.cam = G.cams.find(c => c.id === wantCam) || null;
+  renderSetup();
+}
+async function loadCams() {
+  try {
+    let all = (await rpc('ps_cp_layout', { p_location: G.loc })).cameras || [];
+    if (!all.length) { await rpc('ps_cp_live', { p_location: G.loc }); all = (await rpc('ps_cp_layout', { p_location: G.loc })).cameras || []; }   // 第一次：建立預設入口／出口鏡頭
+    G.cams = all.filter(c => c.is_active);
+  } catch (e) { G.cams = []; }
+  if (G.cam && !G.cams.some(c => c.id === G.cam.id)) G.cam = null;
+  if (G.cam) G.cam = G.cams.find(c => c.id === G.cam.id);
+}
+function support() {
+  const miss = [];
+  if (!window.isSecureContext) miss.push('要用 https 開（GitHub Pages 就得）');
+  if (!navigator.mediaDevices?.getUserMedia) miss.push('呢個瀏覽器用唔到鏡頭');
+  let simd = false; try { simd = WebAssembly.validate(SIMD_TEST); } catch (e) { simd = false; }
+  if (!simd) miss.push('呢個瀏覽器唔支援 WebAssembly SIMD（iPhone 要 iOS 16.4 或以上；Android 用新版 Chrome）');
+  return miss;
+}
+function renderSetup() {
+  const app = $('app'), locs = G.home.locations, miss = support();
+  const camBtn = c => `<button class="g-cam ${G.cam?.id === c.id ? 'on' : ''}" data-cam="${c.id}">
+      <b>${esc(c.name)}</b><span>${c.direction === 'entry' ? '⬇️ 入口' : '⬆️ 出口'}．${KIND_G[c.default_type] || c.default_type}</span><small class="mono">ID ${c.id}</small></button>`;
+  app.innerHTML = `<div class="g-wrap">
+    <div class="panel"><div class="ph"><h2>📱 手機閘口鏡頭</h2>
+      ${locs.length > 1 ? `<select id="gloc" class="inp" aria-label="停車場">${locs.map(l => `<option value="${l.id}" ${l.id === G.loc ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select>` : `<span class="muted small">${esc(locs[0].name)}</span>`}</div>
+      <p class="small muted" style="margin-top:0">呢部手機會做邊個鏡頭？（鏡頭喺 <a href="carpark.html">停車場管理系統</a> →「⚙️ 設定」→「閘口鏡頭」加）</p>
+      <div class="g-cams">${G.cams.map(camBtn).join('') || '<p class="small err">呢個停車場未有鏡頭：請先喺停車場管理系統「⚙️ 設定」加一個。</p>'}</div>
+      <label class="check" style="margin-top:10px"><input type="checkbox" id="gdry" ${G.dry ? 'checked' : ''}> 🧪 只試辨識，唔送去系統（試位置同準確度用，唔會開閘）</label>
+      ${miss.length ? `<div class="err" style="margin-top:10px">${miss.map(esc).join('<br>')}</div>` : ''}
+      <div class="btns" style="margin-top:12px"><button class="btn" id="gstart" ${!G.cam || miss.length ? 'disabled' : ''}>▶️ 開始</button></div></div>
+    <div class="panel" style="margin-top:14px"><div class="ph"><h2>點擺部手機</h2></div>
+      <ul class="small g-tips">
+        <li>用<b>後鏡頭</b>，對住車停低嘅位置，車牌最好佔畫面闊度 <b>1/5 以上</b>；手機打橫或者打直都得。</li>
+        <li>用手機架或者索帶固定，唔好對住太陽或者車頭燈；夜晚要有燈照住車牌。</li>
+        <li>插住電：辨識會一直用 CPU。呢頁會盡量叫部手機唔好熄螢幕。</li>
+        <li>第一次開要下載約 22 MB 模型（之後會記住）；之後全部喺手機度計，<b>影像唔會上載、唔會儲存</b>。</li>
+      </ul></div></div>`;
+  $('gloc')?.addEventListener('change', async e => { G.loc = +e.target.value; G.cam = null; await loadCams(); renderSetup(); });
+  app.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => { G.cam = G.cams.find(c => c.id === +b.dataset.cam); renderSetup(); });
+  $('gdry').onchange = e => { G.dry = e.target.checked; };
+  $('gstart').onclick = () => gStart();
+}
+
+// ---------------------------------------------------------------------
+// 下載模型（核對 SHA-256，存入瀏覽器 Cache，下次唔使再下載）
+// ---------------------------------------------------------------------
+function loadOrt() {
+  if (window.ort?.InferenceSession) return Promise.resolve();
+  return new Promise((ok, bad) => {
+    const s = document.createElement('script');
+    s.src = LPR.ort[0]; s.integrity = LPR.ort[1];
+    s.onload = ok; s.onerror = () => bad(new Error('載入唔到辨識引擎（lpr/ort.wasm.min.js）：檢查 lpr 資料夾有冇上載齊'));
+    document.head.appendChild(s);
+  });
+}
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+const sha256 = async buf => hex(await crypto.subtle.digest('SHA-256', buf));
+async function fetchChecked([path, sha, size], onBytes) {
+  const url = new URL(path, location.href).href;
+  let cache = null, buf = null;
+  try { cache = await caches.open(LPR_CACHE); const hit = await cache.match(url); if (hit) buf = await hit.arrayBuffer(); } catch (e) { cache = null; }
+  if (buf && await sha256(buf) !== sha) { buf = null; try { await cache.delete(url); } catch (e) { /* 冇所謂 */ } }
+  if (!buf) {
+    const res = await fetch(url, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`下載唔到 ${path}（HTTP ${res.status}）：檢查 lpr 資料夾有冇上載齊`);
+    if (res.body?.getReader) {
+      const rd = res.body.getReader(), parts = []; let got = 0;
+      for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; onBytes(Math.min(got, size)); }
+      const all = new Uint8Array(got); let o = 0; for (const p of parts) { all.set(p, o); o += p.length; }
+      buf = all.buffer;
+    } else buf = await res.arrayBuffer();
+    if (await sha256(buf) !== sha) throw new Error(`${path} 檔案唔啱（SHA-256 對唔上）：可能上載唔完整或者俾人改過，請重新上載原本個檔`);
+    try { await cache?.put(url, new Response(buf.slice(0), { headers: { 'Content-Type': 'application/octet-stream' } })); } catch (e) { /* 冇 Cache 都照用 */ }
+  }
+  onBytes(size);
+  return buf;
+}
+async function loadEngine(progress) {
+  if (G.det && G.ocr) return;
+  await loadOrt();
+  const parts = [LPR.wasm, LPR.det, LPR.ocr], total = parts.reduce((a, p) => a + p[2], 0);
+  let base = 0;
+  const bufs = [];
+  for (const p of parts) { bufs.push(await fetchChecked(p, n => progress((base + n) / total))); base += p[2]; }
+  progress(1, '準備緊辨識引擎…');
+  ort.env.wasm.numThreads = 1;                                  // GitHub Pages 冇 cross-origin isolation，用單線程
+  ort.env.wasm.proxy = false;
+  ort.env.wasm.wasmPaths = new URL('lpr/', location.href).href;
+  ort.env.wasm.wasmBinary = bufs[0];
+  ort.env.logLevel = 'error';
+  const opt = { executionProviders: ['wasm'], graphOptimizationLevel: 'all' };
+  G.det = await ort.InferenceSession.create(new Uint8Array(bufs[1]), opt);
+  G.ocr = await ort.InferenceSession.create(new Uint8Array(bufs[2]), opt);
+  G.fbuf = new Float32Array(3 * DET_S * DET_S); G.ubuf = new Uint8Array(OCR_W * OCR_H * 3);
+  await G.det.run({ [G.det.inputNames[0]]: new ort.Tensor('float32', G.fbuf, [1, 3, DET_S, DET_S]) });   // 熱身
+  await G.ocr.run({ [G.ocr.inputNames[0]]: new ort.Tensor('uint8', G.ubuf, [1, OCR_H, OCR_W, 3]) });
+}
+function canvases() {
+  if (G.ctx) return G.ctx;
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c.getContext('2d', { willReadFrequently: true }); };
+  G.ctx = { lb: mk(DET_S, DET_S), oc: mk(OCR_W, OCR_H) };
+  G.ctx.oc.imageSmoothingQuality = 'high'; G.ctx.lb.imageSmoothingQuality = 'high';
+  return G.ctx;
+}
+
+// ---------------------------------------------------------------------
+// 一格畫面：ROI → 偵測車牌位置 → 剪出車牌 → 讀字 → 香港車牌規則
+// ---------------------------------------------------------------------
+async function readFrame(v) {
+  const W = v.videoWidth, H = v.videoHeight;
+  if (!W || !H || v.readyState < 2) return null;
+  const R = G.cam.roi, rx = Math.round(R.x1 * W), ry = Math.round(R.y1 * H);
+  const rw = Math.max(16, Math.round((R.x2 - R.x1) * W)), rh = Math.max(16, Math.round((R.y2 - R.y1) * H));
+  const r = Math.min(DET_S / rw, DET_S / rh), nw = Math.round(rw * r), nh = Math.round(rh * r), dw = (DET_S - nw) / 2, dh = (DET_S - nh) / 2;
+  const { lb, oc } = canvases();
+  lb.fillStyle = 'rgb(114,114,114)'; lb.fillRect(0, 0, DET_S, DET_S);   // letterbox（同 YOLOv9 訓練時一樣）
+  lb.drawImage(v, rx, ry, rw, rh, Math.round(dw - 0.1), Math.round(dh - 0.1), nw, nh);
+  const d = lb.getImageData(0, 0, DET_S, DET_S).data, n = DET_S * DET_S, f = G.fbuf;
+  for (let i = 0, j = 0; i < n; i++, j += 4) { f[i] = d[j] / 255; f[n + i] = d[j + 1] / 255; f[2 * n + i] = d[j + 2] / 255; }
+  const out = (await G.det.run({ [G.det.inputNames[0]]: new ort.Tensor('float32', f, [1, 3, DET_S, DET_S]) }))[G.det.outputNames[0]];
+  const k = out.dims[1] || 7, rows = out.data.length / k, o = out.data;
+  let best = null;
+  for (let i = 0; i < rows; i++) {                              // 每行：[batch, x1, y1, x2, y2, class, score]（模型已經做咗 NMS）
+    const s = o[i * k + 6];
+    if (s >= G.thr && (!best || s > best.s)) best = { s, x1: o[i * k + 1], y1: o[i * k + 2], x2: o[i * k + 3], y2: o[i * k + 4] };
+  }
+  const res = { box: null, plate: null, raw: '', conf: 0, det: 0, W, H };
+  if (!best) return res;
+  const X = x => Math.max(rx, Math.min(rx + rw, (x - dw) / r + rx)), Y = y => Math.max(ry, Math.min(ry + rh, (y - dh) / r + ry));
+  const bx = X(best.x1), by = Y(best.y1), bw = X(best.x2) - bx, bh = Y(best.y2) - by;
+  if (bw < 8 || bh < 4) return res;
+  res.box = [bx, by, bw, bh]; res.det = best.s;
+  oc.drawImage(v, bx, by, bw, bh, 0, 0, OCR_W, OCR_H);
+  const d2 = oc.getImageData(0, 0, OCR_W, OCR_H).data, u = G.ubuf;
+  for (let i = 0, j = 0, q = 0; i < OCR_W * OCR_H; i++, j += 4) { u[q++] = d2[j]; u[q++] = d2[j + 1]; u[q++] = d2[j + 2]; }
+  const p = (await G.ocr.run({ [G.ocr.inputNames[0]]: new ort.Tensor('uint8', u, [1, OCR_H, OCR_W, 3]) }))[G.ocr.outputNames[0]].data;
+  const A = ALPHA.length, slots = p.length / A;
+  let txt = ''; const probs = [];
+  for (let s = 0; s < slots; s++) {
+    let bi = 0, bv = -1;
+    for (let a = 0; a < A; a++) { const pv = p[s * A + a]; if (pv > bv) { bv = pv; bi = a; } }
+    txt += ALPHA[bi]; probs.push(bv);
+  }
+  let end = txt.length; while (end > 0 && txt[end - 1] === '_') end--;
+  const kept = probs.slice(0, end).filter((_, i) => txt[i] !== '_');
+  res.raw = txt.slice(0, end).replace(/_/g, '');
+  const [plate, std] = normalise(res.raw);
+  const conf = kept.length ? kept.reduce((a, b) => a + b, 0) / kept.length : 0;
+  res.plate = plate; res.conf = Math.round(conf * (std ? 1 : 0.85) * 1000) / 1000;
+  return res;
+}
+
+// ---------------------------------------------------------------------
+// 開始／停止
+// ---------------------------------------------------------------------
+async function openCamera() {
+  const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+  G.stream = s; G.track = s.getVideoTracks()[0];
+  const v = $('gv'); v.srcObject = s; v.muted = true; v.setAttribute('playsinline', ''); await v.play().catch(() => {});
+  G.track.onended = () => { if (G.on) banner('📷 鏡頭停咗：撳「▶️ 繼續」再開', 'warn'); };
+  renderCamCtl();
+}
+function closeCamera() { G.stream?.getTracks().forEach(t => t.stop()); G.stream = null; G.track = null; }
+async function wakeOn() { try { if (navigator.wakeLock && !G.wake) { G.wake = await navigator.wakeLock.request('screen'); G.wake.onrelease = () => { G.wake = null; }; } } catch (e) { G.wake = null; } }
+document.addEventListener('visibilitychange', async () => {
+  if (!G.on) return;
+  if (document.visibilityState === 'visible') {
+    await wakeOn();
+    if (!G.track || G.track.readyState === 'ended') { try { await openCamera(); } catch (e) { banner('📷 開唔到鏡頭：' + camErr(e), 'bad'); } }
+  }
+});
+const camErr = e => /NotAllowed|Permission/i.test(e?.name + e?.message) ? '你拒絕咗用鏡頭。iPhone：設定 → Safari → 相機 → 允許；然後重新整理呢頁'
+  : /NotFound|Overconstrained/i.test(e?.name) ? '搵唔到鏡頭' : /NotReadable/i.test(e?.name) ? '鏡頭俾第二個 app 用緊' : (e?.message || String(e));
+
+async function gStart() {
+  const app = $('app');
+  G.voter = new Voter(G.need, 6, 45); G.ms = []; G.frames = 0; G.hits = 0; G.sent = 0; G.log = []; G.evals = []; G.missed = 0; G.last = null; G.paused = false; G.roiEdit = null;
+  const L = G.home.locations.find(l => l.id === G.loc);
+  app.innerHTML = `<div class="g-wrap">
+    <div class="g-head"><div><b>${esc(G.cam.name)}</b> <span class="pill">${G.cam.direction === 'entry' ? '⬇️ 入口' : '⬆️ 出口'}</span>
+      <span class="muted small">${esc(L?.name || '')}</span></div><span class="sp"></span>
+      <label class="check small"><input type="checkbox" id="gdry2" ${G.dry ? 'checked' : ''}> 🧪 只試辨識</label></div>
+    <div class="g-stage" id="gstage"><video id="gv" playsinline muted autoplay></video><canvas id="go"></canvas>
+      <div class="g-roi-hint" id="groih" hidden>喺畫面上拉一個長方形＝新嘅辨識範圍</div></div>
+    <div class="g-banner mute" id="gban" role="status" aria-live="polite">準備緊…</div>
+    <div class="g-prog" id="gprog" hidden><i></i></div>
+    <div class="g-stats mono small" id="gstat"></div>
+    <div class="btns g-ctl">
+      <button class="btn ghost sm" id="gpause">⏸ 暫停</button>
+      <button class="btn ghost sm" id="groi">✏️ 調整辨識範圍</button>
+      <span id="gcamctl"></span>
+      <button class="btn ghost sm" id="gstop">⏹ 停止</button></div>
+    <form class="g-man" id="gman"><input class="inp" name="plate" maxlength="8" placeholder="認唔到？人手輸入車牌" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="人手輸入車牌">
+      <button class="btn sm">${G.cam.direction === 'entry' ? '入閘' : '出閘'}</button></form>
+    <div class="g-eval" id="geval" hidden></div>
+    <div class="panel" style="margin-top:12px"><div class="ph"><h2>呢部手機嘅紀錄</h2><span class="muted small">唔會儲存影像．送出嘅車牌已遮蔽</span></div><div class="g-log" id="glog"><p class="small muted">未有</p></div></div>
+  </div>`;
+  $('gdry2').onchange = e => { G.dry = e.target.checked; banner(G.dry ? '🧪 只試辨識：唔會送去系統' : '✅ 會送去系統開閘', 'mute'); evalBar(); };
+  $('glog').onclick = e => {
+    const b = e.target.closest('[data-ok]'), w = b?.closest('[data-ev]'); if (!b || !w) return;
+    const ev = G.evals[+w.dataset.ev], v = b.dataset.ok === '1'; if (!ev) return;
+    ev.ok = ev.ok === v ? null : v; renderLog(); evalBar();
+  };
+  evalBar();
+  $('gpause').onclick = () => { G.paused = !G.paused; $('gpause').textContent = G.paused ? '▶️ 繼續' : '⏸ 暫停'; banner(G.paused ? '⏸ 暫停咗' : '👀 等緊車…', 'mute');
+    if (!G.paused && (!G.track || G.track.readyState === 'ended')) openCamera().catch(e => banner('📷 開唔到鏡頭：' + camErr(e), 'bad')); };
+  $('gstop').onclick = () => { gStop(); renderSetup(); };
+  $('groi').onclick = () => roiEditStart();
+  $('gman').onsubmit = e => { e.preventDefault(); const f = e.currentTarget, t = f.plate.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!CUSTOM_RE.test(t)) { banner('車牌格式唔啱（最多 8 個英文字母或數字）', 'warn'); return; }
+    busy(f.querySelector('button'), async () => { await send(t, 1, true); f.plate.value = ''; }); };
+  bindRoiDraw();
+  G.on = true;
+  try { await openCamera(); } catch (e) { banner('📷 開唔到鏡頭：' + camErr(e), 'bad'); G.on = false; return; }
+  await wakeOn();
+  const prog = $('gprog');
+  try {
+    if (!G.det) { prog.hidden = false; banner('⬇️ 第一次用：下載緊辨識模型…', 'mute'); }
+    await loadEngine((x, msg) => { prog.querySelector('i').style.width = Math.round(x * 100) + '%'; if (msg) banner(msg, 'mute');
+      else banner(`⬇️ 下載緊辨識模型 ${(x * 22.2).toFixed(1)} / 22.2 MB`, 'mute'); });
+  } catch (e) { banner('⚠️ ' + (e.message || e), 'bad'); prog.hidden = true; return; }
+  prog.hidden = true;
+  banner(G.dry ? '🧪 只試辨識：唔會送去系統' : '👀 等緊車…', 'mute');
+  clearTimeout(G.timer); tick();
+}
+function gStop() {
+  G.on = false; clearTimeout(G.timer); closeCamera();
+  try { G.wake?.release(); } catch (e) { /* 冇所謂 */ }
+  G.wake = null;
+}
+
+async function tick() {
+  if (!G.on) return;
+  const v = $('gv');
+  if (!v || G.paused || G.roiEdit || document.hidden || !G.det) { G.timer = setTimeout(tick, 400); return; }
+  const t0 = performance.now();
+  let r = null;
+  try { r = await readFrame(v); G.err = ''; } catch (e) { r = null; G.err = String(e?.message || e).slice(0, 120); }
+  const ms = performance.now() - t0;
+  if (r) {
+    G.frames++; G.ms.push(ms); if (G.ms.length > 20) G.ms.shift();
+    if (r.box) G.hits++;
+    G.last = r;
+    const now = Date.now() / 1000, vote = G.voter.add(r.plate, r.conf, now);
+    if (vote) send(vote[0], vote[1]);
+  }
+  draw(); stats();
+  if (G.on) G.timer = setTimeout(tick, Math.max(30, GAP_MS - ms));
+}
+
+// ---------------------------------------------------------------------
+// 送去系統（同 lpr_edge.py 一樣：網絡斷咗會重試；數據庫拒絕就唔再試）
+// ---------------------------------------------------------------------
+const OPEN_R = ['booking', 'queue', 'walk_in'];
+function resultOf(r) {
+  const res = r.result, exit = r.direction === 'exit';
+  if (OPEN_R.includes(res)) {
+    if (exit) return ['⬆️ 出閘．開閘' + (r.fee != null ? `．收 $${r.fee}` : '') + (r.minutes != null ? `．泊咗 ${r.minutes} 分鐘` : ''), 'ok'];
+    return [({ booking: '✅ 有預約 → 開閘', queue: '✅ 排隊籌號 → 開閘', walk_in: '🚗 冇預約 → 開閘' })[res] + (r.bay ? `．車位 ${r.bay}` : '')
+      + (r.warning === 'FULL' ? '．⚠️ 入咗之後已滿' : ''), 'ok'];
+  }
+  if (res === 'full') { const w = r.wait || {}; return ['🚫 已滿，唔開閘' + (w.p50 != null ? `．排隊約 ${w.p50} 分鐘` + (w.lo != null ? `（${w.lo}–${w.hi}）` : '') : ''), 'bad']; }
+  if (res === 'already_in') return ['↺ 呢架車已經喺場內', 'mute'];
+  if (res === 'low_conf') return ['⚠️ 信心低，唔開閘：等職員喺控制台確認', 'warn'];
+  return [String(res || '？'), 'mute'];
+}
+async function send(plate, conf, manual = false) {
+  const m = maskP(plate);
+  if (G.dry && !manual) {                                     // 現場測試：完整車牌只喺部手機顯示，等職員判斷讀啱定讀錯
+    G.evals.push({ at: Date.now(), plate, conf, ms: Math.round(avgMs()), ok: null });
+    addLog(plate, conf, '🧪 試辨識（冇送出）', 'mute', G.evals.length - 1);
+    banner(`🧪 讀到 ${plate}（信心 ${conf.toFixed(2)}）．冇送出`, 'mute'); evalBar(); return;
+  }
+  const args = { p_camera: G.cam.id, p_plate: plate, p_confidence: conf, p_space_type: null, p_source: manual ? 'manual' : 'edge' };
+  for (let i = 0; i < 3; i++) {
+    let data = null, error = null;
+    try { ({ data, error } = await P.sb.rpc('ps_cp_lpr_event', args)); } catch (e) { error = e; }
+    if (!error) {
+      G.sent++;
+      const [t, cls] = resultOf(data);
+      addLog(data.plate || m, conf, t, cls); banner(`${data.plate || m}　${t}`, cls);
+      return data;
+    }
+    const msg = String(error.message || error);
+    if (error.code || /PS:[A-Z_]+/.test(msg)) { addLog(m, conf, '✗ ' + msgOf(error), 'bad'); banner(`${m}　✗ ${msgOf(error)}`, 'bad'); return null; }
+    banner(`📶 網絡問題，${2 ** i} 秒後再試…`, 'warn');
+    await sleep(1000 * 2 ** i);
+  }
+  addLog(m, conf, '✗ 送唔到（網絡）', 'bad'); banner(`${m}　✗ 送唔到：請檢查網絡；閘口要用人手處理`, 'bad');
+  return null;
+}
+function banner(t, cls) { const b = $('gban'); if (b) { b.textContent = t; b.className = 'g-banner ' + cls; } }
+function addLog(plate, conf, text, cls, ev = null) {
+  G.log.unshift({ at: Date.now(), plate, conf, text, cls, ev });
+  G.log = G.log.slice(0, 40);
+  renderLog();
+}
+function renderLog() {
+  const el = $('glog'); if (!el) return;
+  el.innerHTML = G.log.map(l => {
+    const e = l.ev != null ? G.evals[l.ev] : null;
+    const judge = e ? `<span class="g-judge" data-ev="${l.ev}"><button type="button" class="${e.ok === true ? 'on' : ''}" data-ok="1" aria-label="讀啱">✓</button><button type="button" class="${e.ok === false ? 'on' : ''}" data-ok="0" aria-label="讀錯">✗</button></span>` : '';
+    return `<div class="${l.cls}"><span class="mono">${hhmm(l.at)}:${String(new Date(l.at).getSeconds()).padStart(2, '0')}</span><b class="mono">${esc(l.plate)}</b>
+      <span class="mono muted">${(+l.conf).toFixed(2)}</span><span>${esc(l.text)}</span>${judge}</div>`;
+  }).join('') || '<p class="small muted">未有</p>';
+}
+// 現場測試統計（寫 report 用）：讀啱率 = 讀啱 ÷（讀啱 + 讀錯 + 漏讀）
+function evalBar() {
+  const el = $('geval'); if (!el) return;
+  const judged = G.evals.filter(e => e.ok != null), good = judged.filter(e => e.ok).length, bad = judged.length - good, n = good + bad + G.missed;
+  el.hidden = !G.evals.length && !G.missed && !G.dry;
+  el.innerHTML = `<div class="small"><b>🧪 現場測試</b>：讀到 ${G.evals.length} 次．✓ ${good}．✗ ${bad}．漏讀 ${G.missed}${n ? `．<b>讀啱率 ${Math.round(good / n * 100)}%</b>（${good}/${n}）` : ''}<span class="muted">．每個讀數撳 ✓ 或 ✗；有車經過但冇讀到就撳「漏讀」</span></div>
+    <div class="btns"><button type="button" class="btn ghost sm" id="gmiss">＋ 漏讀一架</button><button type="button" class="btn ghost sm" id="gcsv" ${G.evals.length || G.missed ? '' : 'disabled'}>⬇️ 下載 CSV</button></div>`;
+  $('gmiss').onclick = () => { G.missed++; evalBar(); };
+  $('gcsv').onclick = () => {
+    const rows = G.evals.map(e => [dt(e.at), maskP(e.plate), e.conf, e.ms, e.ok == null ? '' : e.ok ? 1 : 0].map(csvCell).join(','));
+    if (G.missed) rows.push(['', '（漏讀）', '', '', `0 x ${G.missed}`].map(csvCell).join(','));
+    download(`lpr-field-test-${G.cam.id}.csv`, '\ufeff時間,車牌（遮蔽）,信心,每格毫秒,讀啱(1/0)\n' + rows.join('\n') + '\n');
+  };
+}
+const avgMs = () => G.ms.length ? G.ms.reduce((a, b) => a + b, 0) / G.ms.length : 0;
+function stats() {
+  const el = $('gstat'); if (!el) return;
+  const avg = avgMs();
+  const fps = avg ? 1000 / Math.max(avg, GAP_MS) : 0;
+  el.textContent = `每格 ${Math.round(avg)} ms．${fps.toFixed(1)} 格/秒．處理咗 ${G.frames} 格．見到車牌 ${G.hits} 格．已送出 ${G.sent} 次${G.wake ? '．螢幕常亮' : ''}${G.err ? '．⚠️ ' + G.err : ''}`;
+}
+
+// ---------------------------------------------------------------------
+// 畫面：ROI、車牌框、讀到嘅字（只喺部手機顯示）
+// ---------------------------------------------------------------------
+function fit() {
+  const v = $('gv'), c = $('go'); if (!v || !c) return null;
+  const cw = c.clientWidth, ch = c.clientHeight, W = v.videoWidth, H = v.videoHeight;
+  if (!W || !H || !cw || !ch) return null;
+  const dpr = window.devicePixelRatio || 1;
+  if (c.width !== Math.round(cw * dpr) || c.height !== Math.round(ch * dpr)) { c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr); }
+  const s = Math.min(cw / W, ch / H);
+  return { c, g: c.getContext('2d'), dpr, s, ox: (cw - W * s) / 2, oy: (ch - H * s) / 2, W, H, cw, ch };
+}
+function draw() {
+  const F = fit(); if (!F) return;
+  const { g, dpr, s, ox, oy, W, H, cw, ch } = F;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cw, ch);
+  const R = G.roiEdit?.rect || G.cam.roi;
+  const x = ox + R.x1 * W * s, y = oy + R.y1 * H * s, w = (R.x2 - R.x1) * W * s, h = (R.y2 - R.y1) * H * s;
+  g.fillStyle = 'rgba(0,0,0,0.38)';                             // ROI 外面調暗
+  g.beginPath(); g.rect(ox, oy, W * s, H * s); g.rect(x, y, w, h); g.fill('evenodd');
+  g.setLineDash([6, 4]); g.lineWidth = 2; g.strokeStyle = G.roiEdit ? '#fab219' : '#3987e5'; g.strokeRect(x, y, w, h); g.setLineDash([]);
+  const r = G.last;
+  if (!G.roiEdit && r?.box) {
+    const [bx, by, bw, bh] = r.box, X = ox + bx * s, Y = oy + by * s;
+    g.lineWidth = 3; g.strokeStyle = r.plate ? '#0ca30c' : '#fab219'; g.strokeRect(X, Y, bw * s, bh * s);
+    const label = r.plate ? `${r.plate}  ${r.conf.toFixed(2)}` : (r.raw ? `${r.raw} ?` : '?');
+    g.font = '600 16px -apple-system, "Segoe UI", sans-serif';
+    const tw = g.measureText(label).width + 12, ty = Math.max(oy + 2, Y - 26);
+    g.fillStyle = r.plate ? '#0ca30c' : '#b27a00'; g.fillRect(X, ty, tw, 24);
+    g.fillStyle = '#fff'; g.fillText(label, X + 6, ty + 17);
+  }
+}
+window.addEventListener('resize', () => draw());
+
+// 調整辨識範圍：喺畫面上拉長方形 → 儲存去鏡頭設定（同停車場管理系統「⚙️ 設定」係同一個設定）
+function roiEditStart() {
+  if (G.roiEdit) return;
+  G.roiEdit = { rect: { ...G.cam.roi }, start: null };
+  $('groih').hidden = false;
+  $('gstage').classList.add('edit');
+  $('groi').outerHTML = '<span id="groi"><button class="btn sm" id="groisave">💾 儲存範圍</button> <button class="btn ghost sm" id="groicancel">取消</button></span>';
+  $('groisave').onclick = e => busy(e.currentTarget, roiSave);
+  $('groicancel').onclick = () => roiEditEnd();
+  draw();
+}
+function roiEditEnd() {
+  G.roiEdit = null; $('groih').hidden = true;
+  $('gstage').classList.remove('edit');
+  $('groi').outerHTML = '<button class="btn ghost sm" id="groi">✏️ 調整辨識範圍</button>';
+  $('groi').onclick = () => roiEditStart();
+  draw();
+}
+async function roiSave() {
+  const rc = G.roiEdit.rect, roi = { x1: +rc.x1.toFixed(3), y1: +rc.y1.toFixed(3), x2: +rc.x2.toFixed(3), y2: +rc.y2.toFixed(3) };
+  if (roi.x2 - roi.x1 < 0.05 || roi.y2 - roi.y1 < 0.05) { banner('範圍太細，請再拉大啲', 'warn'); return; }
+  try {
+    const all = (await rpc('ps_cp_layout', { p_location: G.loc })).cameras;        // 用最新嘅鏡頭清單，避免蓋咗其他人改嘅嘢
+    const cams = all.map(c => c.id === G.cam.id ? { ...c, roi } : c);
+    const saved = await rpc('ps_cp_save_cameras', { p_location: G.loc, p_cameras: cams });
+    G.cams = saved.filter(c => c.is_active); G.cam = G.cams.find(c => c.id === G.cam.id) || { ...G.cam, roi };
+    toast('✅ 已儲存辨識範圍'); roiEditEnd();
+  } catch (e) { banner('⚠️ ' + e.message, 'bad'); }
+}
+function bindRoiDraw() {
+  const c = $('go');
+  const at = e => {
+    const F = fit(); if (!F) return null;
+    const b = c.getBoundingClientRect();
+    const px = (e.clientX - b.left - F.ox) / (F.W * F.s), py = (e.clientY - b.top - F.oy) / (F.H * F.s);
+    return [Math.max(0, Math.min(1, px)), Math.max(0, Math.min(1, py))];
+  };
+  c.addEventListener('pointerdown', e => { if (!G.roiEdit) return; const p = at(e); if (!p) return; G.roiEdit.start = p; c.setPointerCapture(e.pointerId); e.preventDefault(); });
+  c.addEventListener('pointermove', e => {
+    if (!G.roiEdit?.start) return; const p = at(e); if (!p) return; const [a, b] = G.roiEdit.start;
+    G.roiEdit.rect = { x1: Math.min(a, p[0]), y1: Math.min(b, p[1]), x2: Math.max(a, p[0]), y2: Math.max(b, p[1]) }; draw();
+  });
+  const up = () => { if (G.roiEdit) G.roiEdit.start = null; };
+  c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+}
+
+// 變焦（有啲手機支援）：手機擺得遠就放大，車牌會清楚啲
+function renderCamCtl() {
+  const el = $('gcamctl'); if (!el || !G.track) return;
+  let cap = {}; try { cap = G.track.getCapabilities?.() || {}; } catch (e) { cap = {}; }
+  const z = cap.zoom, parts = [];
+  if (z && z.max > z.min) {
+    const cur = G.track.getSettings?.().zoom ?? z.min;
+    parts.push(`<label class="small g-zoom">🔍 <input type="range" id="gzoom" min="${z.min}" max="${Math.min(z.max, 8)}" step="${z.step || 0.1}" value="${cur}" aria-label="變焦"></label>`);
+  }
+  if (cap.torch) parts.push('<button class="btn ghost sm" id="gtorch" type="button">🔦 燈</button>');
+  el.innerHTML = parts.join(' ');
+  $('gzoom')?.addEventListener('input', e => G.track.applyConstraints({ advanced: [{ zoom: +e.target.value }] }).catch(() => {}));
+  let torch = false;
+  $('gtorch')?.addEventListener('click', () => { torch = !torch; G.track.applyConstraints({ advanced: [{ torch }] }).catch(() => {}); });
+}
+
+portalStart(GATE_OPTS);
+
+</script>
+</body>
+</html>
